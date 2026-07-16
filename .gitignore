@@ -31,7 +31,7 @@ tests/*.db
 tests/_test_*.db
 
 # Large binary source materials (obtain NCCN PDF separately; do not commit)
-*.pdf
+# *.pdf
 
 # Frontend
 node_modules/
@@ -40,6 +40,9 @@ frontend/.vite/
 
 # Local notes (do not publish)
 周报.md
+
+# Deployment artifacts（本地打包上传用，勿提交）
+*.tgz
 
 # OS / IDE
 .DS_Store
