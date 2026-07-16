@@ -1,0 +1,47 @@
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+data/.auth_secret
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Data & cache (generated at runtime)
+data/processed/
+data/indexes/
+data/cache/
+data/app.db
+data/*.db
+logs/
+models/
+
+# Test artifacts
+tests/*.db
+tests/_test_*.db
+
+# Large binary source materials (obtain NCCN PDF separately; do not commit)
+*.pdf
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

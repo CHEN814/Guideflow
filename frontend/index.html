@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guideflow · DLBCL 指南问答</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app" id="appRoot">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <div class="brand-badge">G</div>
+          <div class="brand-text">
+            <div class="brand-title">Guideflow</div>
+            <div class="muted small">DLBCL 指南问答</div>
+          </div>
+        </div>
+        <button class="icon-btn" id="collapseSidebarBtn" title="收起侧栏" aria-label="收起侧栏">☰</button>
+      </div>
+
+      <button class="btn new-chat-btn" id="newChatBtn">＋ 开启新对话</button>
+
+      <div class="history-wrap">
+        <div class="history-label">历史记录</div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+
+      <div class="sidebar-footer" id="userArea">
+        <button class="user-chip" id="loginOpenBtn">登录 / 注册</button>
+      </div>
+    </aside>
+
+    <button class="sidebar-expand" id="expandSidebarBtn" title="展开侧栏" hidden>›</button>
+
+    <main class="main">
+      <div class="header">
+        <h1>Guideflow</h1>
+        <div class="header-actions">
+          <button class="btn ghost" id="toolsBtn" title="调试工具">⚙ 工具</button>
+        </div>
+      </div>
+
+      <section class="chat-panel">
+        <div class="chat-log" id="chatLog"></div>
+      </section>
+
+      <div class="composer">
+        <div class="composer-box" id="composerBox">
+          <textarea id="followUpInput" placeholder="问一个临床问题……" rows="1"></textarea>
+          <div class="composer-actions">
+            <button type="button" class="icon-btn composer-expand" id="expandInputBtn" title="展开输入" aria-label="展开输入">⤢</button>
+            <button class="circle-btn" id="askBtn" aria-label="发送">➤</button>
+          </div>
+        </div>
+        <div class="composer-hint muted small">回车发送 · Shift+回车换行 · 未登录也可问答，登录后可保存历史</div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="authModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 id="authTitle">登录</h2>
+        <button class="icon-btn" id="authCloseBtn" aria-label="关闭">✕</button>
+      </div>
+      <form id="authForm" class="auth-form">
+        <label>邮箱<input type="email" id="authEmail" required autocomplete="username" /></label>
+        <label id="authPasswordLabel">密码
+          <div class="password-wrap">
+            <input type="password" id="authPassword" required minlength="8" autocomplete="current-password" />
+            <button type="button" class="pw-toggle" id="authPwToggle" aria-label="显示密码" title="显示密码" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>
+            </button>
+          </div>
+        </label>
+        <label id="authNewPasswordLabel" hidden>新密码
+          <div class="password-wrap">
+            <input type="password" id="authNewPassword" minlength="8" autocomplete="new-password" />
+            <button type="button" class="pw-toggle" id="authNewPwToggle" aria-label="显示密码" title="显示密码" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>
+            </button>
+          </div>
+        </label>
+        <div class="auth-error" id="authError" hidden></div>
+        <p class="auth-hint muted small" id="authHint" hidden></p>
+        <div class="auth-actions">
+          <button type="submit" class="btn primary" id="authSubmitBtn">登录</button>
+          <button type="button" class="btn" id="authToggleModeBtn">没有账号？注册</button>
+        </div>
+        <button type="button" class="link-btn" id="authForgotBtn">忘记密码？</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="cite-popover" id="citePopover" hidden></div>
+  <div class="tools-menu" id="toolsMenu" hidden>
+    <button data-tool="trace">Trace 调试</button>
+    <button data-tool="sources">证据来源</button>
+    <button data-tool="graph">图谱路径</button>
+    <button data-tool="figures">流程图</button>
+  </div>
+
+  <script>
+    window.API_BASE = window.API_BASE || 'http://127.0.0.1:8001';
+  </script>
+  <script src="./vendor/marked.min.js"></script>
+  <script src="./vendor/purify.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
