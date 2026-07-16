@@ -11,6 +11,7 @@ const els = {
   newChatBtn: document.getElementById('newChatBtn'),
   collapseSidebarBtn: document.getElementById('collapseSidebarBtn'),
   expandSidebarBtn: document.getElementById('expandSidebarBtn'),
+  sidebarBackdrop: document.getElementById('sidebarBackdrop'),
   userArea: document.getElementById('userArea'),
   loginOpenBtn: document.getElementById('loginOpenBtn'),
   authModal: document.getElementById('authModal'),
@@ -161,11 +162,28 @@ function renderMarkdown(md) {
   return window.DOMPurify ? window.DOMPurify.sanitize(html) : html;
 }
 
-function setSidebarCollapsed(collapsed) {
+const mobileMQ = window.matchMedia('(max-width:900px)');
+
+function isMobileLayout() {
+  return mobileMQ.matches;
+}
+
+function setSidebarCollapsed(collapsed, { persist = true } = {}) {
   state.sidebarCollapsed = collapsed;
   els.appRoot.classList.toggle('collapsed', collapsed);
   els.expandSidebarBtn.hidden = !collapsed;
-  localStorage.setItem('gf_sidebar_collapsed', collapsed ? '1' : '0');
+  if (els.sidebarBackdrop) {
+    els.sidebarBackdrop.hidden = collapsed || !isMobileLayout();
+  }
+  if (persist) {
+    localStorage.setItem('gf_sidebar_collapsed', collapsed ? '1' : '0');
+  }
+}
+
+function closeSidebarOnMobile() {
+  if (isMobileLayout() && !state.sidebarCollapsed) {
+    setSidebarCollapsed(true, { persist: false });
+  }
 }
 
 function showAuthError(msg) {
@@ -325,6 +343,7 @@ function renderHistory() {
     el.addEventListener('click', (e) => {
       if (e.target.closest('[data-more]')) return;
       openConversation(el.dataset.id);
+      closeSidebarOnMobile();
     });
   });
   els.historyList.querySelectorAll('[data-more]').forEach((btn) => {
@@ -390,6 +409,7 @@ function newChat() {
   sessionStorage.removeItem(DRAFT_KEY);
   renderHistory();
   renderChat();
+  closeSidebarOnMobile();
   els.followUpInput.focus();
 }
 
@@ -879,6 +899,7 @@ function openToolsDrawer(kind) {
 // —— events ——
 els.collapseSidebarBtn?.addEventListener('click', () => setSidebarCollapsed(true));
 els.expandSidebarBtn?.addEventListener('click', () => setSidebarCollapsed(false));
+els.sidebarBackdrop?.addEventListener('click', () => setSidebarCollapsed(true, { persist: false }));
 els.newChatBtn?.addEventListener('click', () => newChat());
 els.loginOpenBtn?.addEventListener('click', () => openAuthModal('login'));
 els.authCloseBtn?.addEventListener('click', closeAuthModal);
@@ -961,7 +982,19 @@ els.toolsMenu?.addEventListener('click', (e) => {
   openToolsDrawer(btn.dataset.tool);
 });
 
-setSidebarCollapsed(state.sidebarCollapsed);
+if (isMobileLayout()) {
+  setSidebarCollapsed(true, { persist: false });
+} else {
+  setSidebarCollapsed(state.sidebarCollapsed);
+}
+mobileMQ.addEventListener('change', (e) => {
+  if (e.matches) {
+    setSidebarCollapsed(true, { persist: false });
+  } else {
+    setSidebarCollapsed(localStorage.getItem('gf_sidebar_collapsed') === '1');
+    if (els.sidebarBackdrop) els.sidebarBackdrop.hidden = true;
+  }
+});
 setComposerExpanded(false);
 renderChat();
 refreshMe();
