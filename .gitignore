@@ -40,6 +40,7 @@ frontend/.vite/
 
 # Local notes (do not publish)
 周报.md
+docs/临时文档/
 
 # Deployment artifacts（本地打包上传用，勿提交）
 *.tgz

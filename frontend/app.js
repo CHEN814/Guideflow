@@ -748,7 +748,7 @@ function renderReferences(payload) {
     });
   });
   return `
-    <details class="refs-block">
+    <details class="refs-block" open>
       <summary><span>References</span><span class="muted small">${items.length}</span></summary>
       ${items.map((it, i) => `
         <div class="ref-item">
@@ -1047,11 +1047,60 @@ function bindMessageActions() {
   });
 }
 
+function setAskBtnMode(mode) {
+  if (!els.askBtn) return;
+  if (mode === 'stop') {
+    els.askBtn.classList.add('is-stopping');
+    els.askBtn.textContent = '■';
+    els.askBtn.setAttribute('aria-label', '停止生成');
+    els.askBtn.disabled = false;
+  } else {
+    els.askBtn.classList.remove('is-stopping');
+    els.askBtn.textContent = '➤';
+    els.askBtn.setAttribute('aria-label', '发送');
+    els.askBtn.disabled = false;
+  }
+}
+
+function stopGeneration() {
+  if (state.abortController) state.abortController.abort();
+}
+
+function emptyAnswerPayload(text) {
+  return {
+    answer_markdown: text,
+    answer_paragraphs: [text],
+    sources: [],
+    figures: [],
+    attached_references: [],
+    reference_links: {},
+    graph_triples: [],
+  };
+}
+
+function finalizeStoppedAssistant(assistant) {
+  // newChat() may have cleared messages after aborting; ignore stale assistants.
+  if (!state.messages.includes(assistant)) return;
+  const partial = String(assistant.content || '').trim();
+  if (assistant.pending || !partial) {
+    assistant.pending = false;
+    assistant.content = '已停止生成';
+    assistant.payload = emptyAnswerPayload(assistant.content);
+  } else {
+    assistant.pending = false;
+    if (!assistant.payload) {
+      assistant.payload = emptyAnswerPayload(assistant.content);
+    }
+  }
+  state.lastPayload = assistant.payload;
+  renderChat();
+}
+
 async function askQuestion(question, meta = {}) {
   const q = String(question || '').trim();
   if (!q || state.isSubmitting) return;
   state.isSubmitting = true;
-  els.askBtn.disabled = true;
+  setAskBtnMode('stop');
   if (els.followUpInput) els.followUpInput.value = '';
   setComposerExpanded(false);
 
@@ -1108,20 +1157,18 @@ async function askQuestion(question, meta = {}) {
       finalizeAssistant(assistant, data);
     }
   } catch (err) {
-    if (err.name !== 'AbortError') {
+    if (err.name === 'AbortError') {
+      finalizeStoppedAssistant(assistant);
+    } else {
       assistant.pending = false;
       assistant.content = '请求失败，请稍后重试。';
-      assistant.payload = {
-        answer_markdown: assistant.content,
-        answer_paragraphs: [assistant.content],
-        sources: [], figures: [], attached_references: [], reference_links: {}, graph_triples: [],
-      };
+      assistant.payload = emptyAnswerPayload(assistant.content);
       state.lastPayload = assistant.payload;
       renderChat();
     }
   } finally {
     state.isSubmitting = false;
-    els.askBtn.disabled = false;
+    setAskBtnMode('send');
     persistChatState();
     if (state.user) await loadConversations();
     else renderHistory();
@@ -1301,10 +1348,17 @@ els.authForm?.addEventListener('submit', async (e) => {
   }
 });
 
-els.askBtn?.addEventListener('click', () => askQuestion(els.followUpInput.value));
+els.askBtn?.addEventListener('click', () => {
+  if (state.isSubmitting) {
+    stopGeneration();
+    return;
+  }
+  askQuestion(els.followUpInput.value);
+});
 els.followUpInput?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
+    if (state.isSubmitting) return;
     askQuestion(els.followUpInput.value);
   }
 });
