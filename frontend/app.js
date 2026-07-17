@@ -694,7 +694,7 @@ function renderFigureCard(fig, key) {
   return `
     <figure class="figure-card" data-fig-key="${escapeHtml(key)}">
       <div class="fig-head">
-        <span>${escapeHtml(label)}${fig.source_index ? ` · [S${fig.source_index}]` : ''}</span>
+        <span>${escapeHtml(label)}</span>
         <button type="button" class="btn ghost" data-fig-open="${escapeHtml(full || compact)}" data-fig-label="${escapeHtml(label)}">原图</button>
       </div>
       <img src="${escapeHtml(compact)}" alt="${escapeHtml(label)}" data-fig-open="${escapeHtml(full || compact)}" />
@@ -703,11 +703,14 @@ function renderFigureCard(fig, key) {
 }
 
 function decorateCitations(html, payload) {
+  const sources = payload.sources || [];
   const refs = payload.attached_references || [];
   return html
     .replace(/\[S(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
-      return `<button class="cite" data-cite="S" data-index="${idx}">S${n}</button>`;
+      const s = sources[idx] || {};
+      const label = s.citation_label || s.printed_page_code || `S${n}`;
+      return `<button class="cite" data-cite="S" data-index="${idx}" title="${escapeHtml(s.display_title || label)}">${escapeHtml(label)}</button>`;
     })
     .replace(/\[G(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
@@ -716,7 +719,8 @@ function decorateCitations(html, payload) {
     .replace(/\[(\d{1,3})\]/g, (m, n) => {
       const hit = refs.find((r) => String(r.ref_number) === String(n));
       if (!hit) return m;
-      return `<button class="cite" data-cite="R" data-ref="${escapeHtml(String(n))}">${n}</button>`;
+      const label = hit.author_year || hit.citation_label || n;
+      return `<button class="cite" data-cite="R" data-ref="${escapeHtml(String(n))}" title="${escapeHtml(hit.display_title || label)}">${escapeHtml(label)}</button>`;
     });
 }
 
@@ -732,26 +736,40 @@ function renderReferences(payload) {
   if (!sources.length && !refs.length) return '';
   const items = [];
   sources.forEach((s, i) => {
+    const metaParts = [s.subtitle, s.source_label, s.locator].filter(Boolean);
     items.push({
-      title: s.printed_page_code || s.source_id || `Source ${i + 1}`,
-      meta: `${s.page_type || 'source'}${s.section ? ` · ${s.section}` : ''}${s.pdf_page ? ` · p.${s.pdf_page}` : ''}`,
-      badge: s.page_type === 'clinical_guideline' ? 'Guideline' : (s.page_type || 'Source'),
+      title: s.display_title || s.printed_page_code || s.source_id || `Source ${i + 1}`,
+      meta: metaParts.join(' · ') || (s.page_type || 'source'),
+      badge: s.badge || (s.page_type === 'clinical_guideline' ? '指南' : (s.page_type || 'Source')),
     });
   });
   refs.forEach((r) => {
     items.push({
-      title: `[${r.ref_number}] ${(r.text || '').slice(0, 160)}`,
-      meta: [r.pmid ? `PMID ${r.pmid}` : '', r.doi ? `DOI ${r.doi}` : ''].filter(Boolean).join(' · ') || 'Reference',
-      badge: 'Reference',
+      title: r.display_title || r.paper_title || (r.text || '').replace(/\s+/g, ' ').trim(),
+      meta: r.source_label || [r.journal, r.year, r.authors].filter(Boolean).join('. ') || 'Literature',
+      badge: r.badge || '文献',
       url: r.url,
     });
   });
   return `
     <details class="refs-block" open>
-      <summary><span>References</span><span class="muted small">${items.length}</span></summary>
+      <summary>
+        <span class="refs-summary-left">
+          <svg class="refs-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <text x="1" y="5" font-size="5" fill="currentColor" font-family="sans-serif">1</text>
+            <line x1="7" y1="3.5" x2="15" y2="3.5" stroke="currentColor" stroke-width="1.2"/>
+            <text x="1" y="10" font-size="5" fill="currentColor" font-family="sans-serif">2</text>
+            <line x1="7" y1="8.5" x2="15" y2="8.5" stroke="currentColor" stroke-width="1.2"/>
+            <text x="1" y="15" font-size="5" fill="currentColor" font-family="sans-serif">3</text>
+            <line x1="7" y1="13.5" x2="15" y2="13.5" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+          <span>References</span>
+        </span>
+        <span class="muted small">${items.length}</span>
+      </summary>
       ${items.map((it, i) => `
         <div class="ref-item">
-          <div class="rtitle">${i + 1}. ${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>` : escapeHtml(it.title)}</div>
+          <div class="rtitle"><span class="rnum">${i + 1}.</span> ${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>` : escapeHtml(it.title)}</div>
           <div class="rmeta"><span>${escapeHtml(it.meta)}</span><span class="badge">${escapeHtml(it.badge)}</span></div>
         </div>`).join('')}
     </details>`;
@@ -813,10 +831,11 @@ function bindCitations() {
     let seeCount = (payload.sources || []).length + (payload.attached_references || []).length;
     if (type === 'S') {
       const s = (payload.sources || [])[Number(btn.dataset.index)] || {};
+      const metaLine = [s.subtitle, s.source_label, s.locator].filter(Boolean).join(' · ');
       html = `
         <div class="ref-head"><span class="k">Reference</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
-        <div class="ref-title">${escapeHtml(s.printed_page_code || s.source_id || 'Source')}</div>
-        <div class="ref-meta"><span>NCCN B-Cell Lymphomas</span><span class="badge">${escapeHtml(s.page_type || 'Guideline')}</span></div>
+        <div class="ref-title">${escapeHtml(s.display_title || s.printed_page_code || s.source_id || 'Source')}</div>
+        <div class="ref-meta"><span>${escapeHtml(metaLine || 'NCCN B-Cell Lymphomas')}</span><span class="badge">${escapeHtml(s.badge || (s.page_type === 'clinical_guideline' ? '指南' : (s.page_type || 'Guideline')))}</span></div>
         <div class="muted small" style="margin-top:8px">${escapeHtml((s.text || s.section || '').slice(0, 180))}</div>`;
     } else if (type === 'G') {
       const g = (payload.graph_triples || [])[Number(btn.dataset.index)] || {};
@@ -826,10 +845,11 @@ function bindCitations() {
         <div class="ref-meta"><span>confidence ${Number(g.confidence || 0).toFixed(2)}</span><span class="badge">${escapeHtml(g.validation_status || 'graph')}</span></div>`;
     } else {
       const r = (payload.attached_references || []).find((x) => String(x.ref_number) === String(btn.dataset.ref)) || {};
+      const metaLine = r.source_label || [r.journal, r.year, r.authors].filter(Boolean).join('. ') || (r.pmid ? `PMID ${r.pmid}` : 'Literature');
       html = `
         <div class="ref-head"><span class="k">Reference</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
-        <div class="ref-title">${escapeHtml(`[${r.ref_number || ''}] ${(r.text || '').slice(0, 120)}`)}</div>
-        <div class="ref-meta"><span>${escapeHtml(r.pmid ? `PMID ${r.pmid}` : 'Literature')}</span><span class="badge">Reference</span></div>`;
+        <div class="ref-title">${escapeHtml(r.display_title || (r.text || '').slice(0, 160))}</div>
+        <div class="ref-meta"><span>${escapeHtml(metaLine)}</span><span class="badge">${escapeHtml(r.badge || '文献')}</span></div>`;
     }
     pop.innerHTML = html;
     pop.hidden = false;
@@ -1213,12 +1233,18 @@ async function consumeSSE(resp, assistant) {
           detail: event.detail || {},
         });
         paintStatus();
+      } else if (event.type === 'cite_context') {
+        assistant.citePayload = {
+          sources: event.sources || [],
+          attached_references: event.attached_references || [],
+        };
       } else if (event.type === 'token') {
         answer += event.text || '';
         assistant.content = answer;
         assistant.pending = false;
         const el = answerEl();
-        if (el) el.innerHTML = decorateCitations(renderMarkdown(answer), state.lastPayload || {});
+        const citeCtx = assistant.citePayload || state.lastPayload || {};
+        if (el) el.innerHTML = decorateCitations(renderMarkdown(answer), citeCtx);
         else renderChat();
         els.chatLog.scrollTop = els.chatLog.scrollHeight;
       } else if (event.type === 'final') {
@@ -1257,8 +1283,9 @@ function openToolsDrawer(kind) {
     body = `<pre style="white-space:pre-wrap;font-size:12px">${escapeHtml(JSON.stringify(payload.trace || {}, null, 2))}</pre>`;
   } else if (kind === 'sources') {
     body = (payload.sources || []).map((s, i) => `
-      <div class="evidence-card"><strong>[S${i + 1}] ${escapeHtml(s.printed_page_code || s.source_id)}</strong>
-      <div class="muted small">${escapeHtml(s.page_type || '')} · ${escapeHtml(s.section || '')}</div>
+      <div class="evidence-card"><strong>${escapeHtml(s.citation_label || s.printed_page_code || s.source_id || `Source ${i + 1}`)}</strong>
+      <div class="muted small">${escapeHtml(s.source_label || s.page_type || '')}${s.locator ? ` · ${escapeHtml(s.locator)}` : ''}</div>
+      ${s.subtitle ? `<div class="muted small" style="margin-top:4px">${escapeHtml(s.subtitle)}</div>` : ''}
       <div style="margin-top:8px">${escapeHtml((s.text || '').slice(0, 400))}</div></div>`).join('') || '<div class="muted">无证据</div>';
   } else if (kind === 'graph') {
     body = (payload.graph_triples || []).map((g, i) => `

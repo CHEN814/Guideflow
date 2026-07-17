@@ -128,8 +128,9 @@ body{
 .msg-actions button.active:hover{background:rgba(229,111,61,.26)}
 .msg-actions button.active svg{stroke-width:2.2;fill:currentColor}
 .cite{
-  display:inline-flex;align-items:center;gap:4px;margin:0 2px;padding:1px 7px;border-radius:999px;
-  background:#f4f1ee;border:1px solid rgba(0,0,0,.06);color:#a44c28;font-size:12px;font-weight:700;cursor:pointer;vertical-align:baseline
+  display:inline-flex;align-items:center;gap:4px;margin:0 2px;padding:1px 8px;border-radius:999px;
+  background:#f4f1ee;border:1px solid rgba(0,0,0,.06);color:#a44c28;font-size:12px;font-weight:600;cursor:pointer;vertical-align:baseline;
+  max-width:11em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
 }
 .cite:hover{background:rgba(229,111,61,.12)}
 .cite-popover{
@@ -139,20 +140,28 @@ body{
 .cite-popover .ref-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .cite-popover .ref-head .k{font-size:12px;color:var(--muted);font-style:italic}
 .cite-popover .ref-head .see{
-  font-size:12px;font-weight:700;font-family:inherit;line-height:1.2;
+  font-size:12px;font-weight:600;font-family:inherit;line-height:1.2;
   color:var(--brand);border:0;background:transparent;cursor:pointer;padding:0;margin:0
 }
 .cite-popover .ref-head .see:hover{text-decoration:underline}
-.cite-popover .ref-title{color:var(--brand);font-weight:700;margin-bottom:6px}
-.cite-popover .ref-meta{font-size:13px;color:#453d38;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.badge{display:inline-flex;padding:2px 8px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:700}
+.cite-popover .ref-title{color:var(--brand);font-weight:600;font-size:14px;margin-bottom:6px;line-height:1.4}
+.cite-popover .ref-meta{font-size:12px;color:#5c534c;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.badge{display:inline-flex;padding:2px 8px;border-radius:999px;background:#ede9fe;color:#5b21b6;font-size:11px;font-weight:600}
 .refs-block{margin-top:18px;border-top:1px solid rgba(0,0,0,.06);padding-top:12px}
-.refs-block summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.refs-block summary{
+  cursor:pointer;font-weight:500;font-size:15px;list-style:none;
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--text)
+}
 .refs-block summary::-webkit-details-marker{display:none}
-.ref-item{padding:12px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.refs-summary-left{display:inline-flex;align-items:center;gap:8px}
+.refs-icon{color:var(--muted);flex-shrink:0}
+.ref-item{padding:14px 0;border-bottom:1px solid rgba(0,0,0,.05)}
 .ref-item:last-child{border-bottom:0}
-.ref-item .rtitle{color:var(--brand);font-weight:700;margin-bottom:4px}
-.ref-item .rmeta{font-size:13px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ref-item .rtitle{color:var(--brand);font-weight:500;font-size:14px;margin-bottom:6px;line-height:1.45}
+.ref-item .rtitle .rnum{color:var(--brand);font-weight:500;margin-right:4px}
+.ref-item .rtitle a{color:inherit;text-decoration:none}
+.ref-item .rtitle a:hover{text-decoration:underline}
+.ref-item .rmeta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center;line-height:1.45}
 .figure-card{margin:14px 0;border:1px solid rgba(0,0,0,.06);border-radius:16px;overflow:hidden;background:#fff}
 .figure-card .fig-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.05);font-size:13px;color:var(--muted)}
 .figure-card img{display:block;width:100%;max-height:320px;object-fit:contain;background:#f8f5f2;cursor:zoom-in}

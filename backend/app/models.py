@@ -427,6 +427,7 @@ class QAResult:
     def to_web_payload(self, image_url_prefix: str = "/api/images") -> Dict[str, Any]:
         """Stable data contract for Web UI (paragraphs + figures + metadata)."""
         from backend.app.services.figure_anchor import split_answer_paragraphs
+        from backend.app.services.source_display import enrich_reference_dict, enrich_source_dict
 
         figures_payload = []
         for fig in self.figures:
@@ -456,8 +457,8 @@ class QAResult:
             "standalone_question": self.standalone_question or self.question,
             "disease_scope": self.disease_scope,
             "figures": figures_payload,
-            "sources": [doc.to_dict() for doc in self.sources],
-            "attached_references": [ref.to_dict() for ref in self.attached_references],
+            "sources": [enrich_source_dict(doc) for doc in self.sources],
+            "attached_references": [enrich_reference_dict(ref) for ref in self.attached_references],
             "graph_triples": [triple.to_dict() for triple in self.graph_triples],
             "reference_links": self.reference_links,
             "verification": self.verification,

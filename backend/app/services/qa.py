@@ -20,6 +20,7 @@ from backend.app.services.figure_crop import (
     detect_figure_bbox_for_page,
     lookup_vlm_bbox,
 )
+from backend.app.services.citation_filter import filter_attached_references, filter_cited_hits
 from backend.app.services.figure_anchor import compute_anchors
 from backend.app.services.figure_selection import backfill_source_indices, prune_figures_by_answer
 from backend.app.services.graph_navigator import GraphNavigator
@@ -31,6 +32,7 @@ from backend.app.services.query_normalizer import normalize_query
 from backend.app.services.reference_resolver import ReferenceResolver
 from backend.app.services.reranker import load_reranker
 from backend.app.services.retrieval import Bm25Retriever
+from backend.app.services.source_display import build_cite_context_payload
 from backend.app.services.tracing import TraceLogger
 from backend.app.services.verifier import verify_answer
 
@@ -228,6 +230,12 @@ class QAService:
                     yield event
 
         yield status_event("generate", "生成回答中…")
+
+        # Provisional cite labels so streaming tokens can decorate [Sn] → page codes.
+        yield {
+            "type": "cite_context",
+            **build_cite_context_payload(ctx.hits, ctx.attached_references),
+        }
 
         if ctx.early_answer is not None:
             yield {"type": "token", "text": ctx.early_answer}
@@ -840,6 +848,24 @@ class QAService:
         structured_trace = ctx.structured_trace
         trace = ctx.trace
         question = ctx.question
+
+        # Keep only evidence actually cited via [Sn]; renumber and remap figures.
+        hits_before = len(hits)
+        answer, hits, figures, citation_remap = filter_cited_hits(answer, hits, figures)
+        attached_references, reference_links = filter_attached_references(
+            hits, attached_references, reference_links
+        )
+        if citation_remap or hits_before != len(hits):
+            trace.log(
+                "citations_filtered",
+                {
+                    "hits_before": hits_before,
+                    "hits_after": len(hits),
+                    "remap": {str(k): v for k, v in citation_remap.items()},
+                    "kept_source_ids": [hit.document.source_id for hit in hits],
+                    "attached_reference_count": len(attached_references),
+                },
+            )
 
         figures_before = len(figures)
         figures = prune_figures_by_answer(
