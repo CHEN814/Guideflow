@@ -55,7 +55,7 @@
       log.innerHTML=messages.map(m=>{
         if(m.role==='user') return `<div class="message user"><div class="tag">用户</div>${escapeHtml(m.content)}</div>`;
         const text=m.payload?.answer_markdown||m.content||'';
-        return `<div class="message assistant"><div class="tag">AI</div><div class="answer">${md(text)}</div></div>`;
+        return `<div class="message assistant"><div class="tag">AI</div><div class="answer">${md(text)}<p class="ai-disclaimer">本回答由 AI 生成，内容仅供参考，请仔细甄别</p></div></div>`;
       }).join('')||'<div class="muted">空对话</div>';
     }
     main();

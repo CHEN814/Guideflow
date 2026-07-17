@@ -47,6 +47,7 @@ const ICON = {
   share: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.4 13.3l7.2 4.4M15.6 6.3l-7.2 4.4"/></svg>`,
   shareChat: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v10"/><path d="M8 7l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>`,
   check: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`,
+  edit: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
 };
 
 const SUGGESTIONS = [
@@ -104,16 +105,138 @@ function saveLocalConversations(list) {
   } catch { /* ignore */ }
 }
 
+function snapshotAnswer(msg) {
+  return {
+    content: msg.content || '',
+    payload: msg.payload || null,
+    feedback: msg.feedback || null,
+    id: msg.id || null,
+  };
+}
+
+function applyAnswerSnapshot(asst, snap) {
+  if (!snap) return;
+  asst.content = snap.content || '';
+  asst.payload = snap.payload || null;
+  asst.feedback = snap.feedback || null;
+  asst.id = snap.id || null;
+  asst.pending = false;
+}
+
+function ensureUserVariants(userMsg) {
+  if (!userMsg || userMsg.role !== 'user') return userMsg;
+  if (!Array.isArray(userMsg.variants) || !userMsg.variants.length) {
+    userMsg.variants = [userMsg.content || ''];
+    userMsg.variantIndex = 0;
+  }
+  if (userMsg.variantIndex == null || userMsg.variantIndex < 0) userMsg.variantIndex = 0;
+  if (userMsg.variantIndex >= userMsg.variants.length) {
+    userMsg.variantIndex = userMsg.variants.length - 1;
+  }
+  return userMsg;
+}
+
+function ensureAssistantVariants(asst, userMsg) {
+  if (!asst || asst.role !== 'assistant') return asst;
+  const n = Math.max(
+    1,
+    (userMsg && Array.isArray(userMsg.variants) && userMsg.variants.length) || 1,
+  );
+  if (!Array.isArray(asst.variantAnswers)) asst.variantAnswers = [];
+  while (asst.variantAnswers.length < n) asst.variantAnswers.push([]);
+  if (asst.variantIndex == null) asst.variantIndex = userMsg?.variantIndex ?? 0;
+  if (asst.variantIndex < 0) asst.variantIndex = 0;
+  if (asst.variantIndex >= asst.variantAnswers.length) {
+    asst.variantIndex = asst.variantAnswers.length - 1;
+  }
+  const answers = asst.variantAnswers[asst.variantIndex] || [];
+  if (asst.answerIndex == null) {
+    asst.answerIndex = Math.max(0, answers.length - 1);
+  }
+  if (asst.answerIndex < 0) asst.answerIndex = 0;
+  if (answers.length && asst.answerIndex >= answers.length) {
+    asst.answerIndex = answers.length - 1;
+  }
+  return asst;
+}
+
+function storeCurrentAnswerSnapshot(asst, userMsg) {
+  if (!asst || asst.role !== 'assistant' || asst.pending) return;
+  if (!(asst.content || asst.payload)) return;
+  ensureAssistantVariants(asst, userMsg);
+  const vi = asst.variantIndex ?? userMsg?.variantIndex ?? 0;
+  if (!Array.isArray(asst.variantAnswers[vi])) asst.variantAnswers[vi] = [];
+  const answers = asst.variantAnswers[vi];
+  const snap = snapshotAnswer(asst);
+  const ai = asst.answerIndex;
+  if (ai != null && ai >= 0 && ai < answers.length) answers[ai] = snap;
+  else {
+    answers.push(snap);
+    asst.answerIndex = answers.length - 1;
+  }
+}
+
+function syncTurnView(userIdx) {
+  const user = state.messages[userIdx];
+  if (!user || user.role !== 'user') return;
+  ensureUserVariants(user);
+  user.content = user.variants[user.variantIndex] ?? user.content;
+  const asst = state.messages[userIdx + 1];
+  if (!asst || asst.role !== 'assistant') return;
+  ensureAssistantVariants(asst, user);
+  asst.variantIndex = user.variantIndex;
+  const answers = asst.variantAnswers[asst.variantIndex] || [];
+  if (!answers.length) return;
+  asst.answerIndex = answers.length - 1;
+  applyAnswerSnapshot(asst, answers[asst.answerIndex]);
+  if (asst.payload) state.lastPayload = asst.payload;
+}
+
+function normalizeMessageVersions(messages) {
+  for (let i = 0; i < (messages || []).length; i += 1) {
+    const m = messages[i];
+    if (m.role !== 'user') continue;
+    ensureUserVariants(m);
+    m.content = m.variants[m.variantIndex] ?? m.content;
+    const asst = messages[i + 1];
+    if (!asst || asst.role !== 'assistant') continue;
+    ensureAssistantVariants(asst, m);
+    asst.variantIndex = m.variantIndex;
+    const vi = asst.variantIndex;
+    if (!(asst.variantAnswers[vi] || []).length && (asst.content || asst.payload) && !asst.pending) {
+      asst.variantAnswers[vi] = [snapshotAnswer(asst)];
+      asst.answerIndex = 0;
+    } else if ((asst.variantAnswers[vi] || []).length) {
+      const answers = asst.variantAnswers[vi];
+      if (asst.answerIndex >= answers.length) asst.answerIndex = answers.length - 1;
+      applyAnswerSnapshot(asst, answers[asst.answerIndex]);
+    }
+  }
+  return messages;
+}
+
 function snapshotMessagesForStore(messages) {
   return (messages || [])
     .filter((m) => !m.pending)
-    .map((m) => ({
-      id: m.id || null,
-      role: m.role,
-      content: m.content,
-      payload: m.payload || null,
-      feedback: m.feedback || null,
-    }));
+    .map((m) => {
+      const base = {
+        id: m.id || null,
+        role: m.role,
+        content: m.content,
+        payload: m.payload || null,
+        feedback: m.feedback || null,
+      };
+      if (m.role === 'user' && Array.isArray(m.variants) && m.variants.length) {
+        base.variants = m.variants.slice();
+        base.variantIndex = m.variantIndex ?? 0;
+      }
+      if (m.role === 'assistant' && Array.isArray(m.variantAnswers) && m.variantAnswers.length) {
+        base.variantAnswers = m.variantAnswers.map((arr) => (arr || []).map((s) => ({ ...s })));
+        base.variantIndex = m.variantIndex ?? 0;
+        base.answerIndex = m.answerIndex ?? 0;
+      }
+      return base;
+    });
 }
 
 function conversationTitleFromMessages(messages) {
@@ -175,7 +298,7 @@ function openLocalConversation(id) {
   const conv = list.find((c) => c.id === id);
   if (!conv) return;
   state.activeConversationId = conv.id;
-  state.messages = (conv.messages || []).map((m) => ({ ...m }));
+  state.messages = normalizeMessageVersions((conv.messages || []).map((m) => ({ ...m })));
   state.lastPayload = conv.lastPayload || null;
   persistChatState();
   renderHistory();
@@ -261,7 +384,7 @@ async function restoreChatAfterLoad() {
   }
   state.activeConversationId = draft.conversationId || null;
   if (state.user) detachLocalActiveConversation();
-  state.messages = draft.messages;
+  state.messages = normalizeMessageVersions(draft.messages);
   state.lastPayload = draft.lastPayload || null;
   if (!state.user) upsertLocalConversationFromState();
   renderHistory();
@@ -557,13 +680,13 @@ async function openConversation(id) {
   if (!resp.ok) return;
   const data = await resp.json();
   state.activeConversationId = data.id;
-  state.messages = (data.messages || []).map((m) => ({
+  state.messages = normalizeMessageVersions((data.messages || []).map((m) => ({
     id: m.id,
     role: m.role,
     content: m.content,
     payload: m.payload,
     feedback: m.feedback,
-  }));
+  })));
   const lastAssistant = [...state.messages].reverse().find((m) => m.role === 'assistant');
   state.lastPayload = lastAssistant?.payload || null;
   persistChatState();
@@ -615,12 +738,63 @@ function renderChat() {
   bindCitations();
   bindFigures();
   updateShareChatBtn();
-  els.chatLog.scrollTop = els.chatLog.scrollHeight;
+  const editingInput = els.chatLog.querySelector('.user-edit-input');
+  if (editingInput) {
+    editingInput.focus();
+    editingInput.setSelectionRange(editingInput.value.length, editingInput.value.length);
+    editingInput.closest('.message')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    els.chatLog.scrollTop = els.chatLog.scrollHeight;
+  }
+}
+
+function renderVersionNav(current, total, prevAct, nextAct) {
+  if (total <= 1) return '';
+  return `
+    <span class="msg-version">
+      <button type="button" data-act="${prevAct}" ${current <= 0 ? 'disabled' : ''} title="上一版本" aria-label="上一版本">‹</button>
+      <span class="msg-version-label">${current + 1} / ${total}</span>
+      <button type="button" data-act="${nextAct}" ${current >= total - 1 ? 'disabled' : ''} title="下一版本" aria-label="下一版本">›</button>
+    </span>`;
 }
 
 function renderMessage(message, idx) {
   if (message.role === 'user') {
-    return `<div class="message user"><div class="tag">用户提问</div><div>${escapeHtml(message.content)}</div></div>`;
+    ensureUserVariants(message);
+    if (message.editing) {
+      return `
+        <div class="msg-row user editing" data-msg-idx="${idx}">
+          <div class="message user editing">
+            <div class="user-edit-box">
+              <textarea class="user-edit-input" rows="3" aria-label="编辑问题">${escapeHtml(message.content)}</textarea>
+              <div class="user-edit-actions">
+                <button type="button" class="btn ghost" data-act="edit-cancel">取消</button>
+                <button type="button" class="btn primary" data-act="edit-send">发送</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+    const vNav = renderVersionNav(
+      message.variantIndex ?? 0,
+      message.variants.length,
+      'prev-variant',
+      'next-variant',
+    );
+    return `
+      <div class="msg-row user" data-msg-idx="${idx}">
+        <div class="message user">
+          <div class="tag">用户提问</div>
+          <div class="user-content">${escapeHtml(message.content)}</div>
+        </div>
+        <div class="msg-actions msg-actions-user">
+          ${vNav}
+          <span class="msg-actions-icons">
+            <button type="button" data-act="copy-user" title="复制" aria-label="复制">${ICON.copy}</button>
+            <button type="button" data-act="edit" title="编辑" aria-label="编辑"${state.isSubmitting ? ' disabled' : ''}>${ICON.edit}</button>
+          </span>
+        </div>
+      </div>`;
   }
   if (message.pending) {
     const steps = Array.isArray(message.statusSteps) ? message.statusSteps : [];
@@ -632,14 +806,16 @@ function renderMessage(message, idx) {
       : '';
     const current = steps.length ? steps[steps.length - 1].label : '正在检索与生成回答…';
     return `
-      <div class="message assistant" data-msg-idx="${idx}">
-        <div class="tag">AI 回答</div>
-        <div class="answer">
-          <div class="typing-indicator">
-            <span class="spinner" aria-hidden="true"></span>
-            <span class="status-current">${escapeHtml(current)}</span>
+      <div class="msg-row assistant" data-msg-idx="${idx}">
+        <div class="message assistant">
+          <div class="tag">AI 回答</div>
+          <div class="answer">
+            <div class="typing-indicator">
+              <span class="spinner" aria-hidden="true"></span>
+              <span class="status-current">${escapeHtml(current)}</span>
+            </div>
+            ${stepsHtml}
           </div>
-          ${stepsHtml}
         </div>
       </div>`;
   }
@@ -647,16 +823,41 @@ function renderMessage(message, idx) {
   const body = renderAnswerBody(payload, message.content);
   const feedback = message.feedback || '';
   const tag = answerKindLabel(payload.answer_kind);
+  const userMsg = state.messages[idx - 1];
+  const pairedUser = userMsg?.role === 'user' ? userMsg : null;
+  if (pairedUser) ensureUserVariants(pairedUser);
+  ensureAssistantVariants(message, pairedUser);
+  const answers = message.variantAnswers?.[message.variantIndex] || [];
+  // Prefer question-variant nav after edit; else answer-version nav after regen.
+  const userVariants = pairedUser?.variants?.length || 0;
+  const aNav = userVariants > 1
+    ? renderVersionNav(
+      pairedUser.variantIndex ?? 0,
+      userVariants,
+      'prev-variant',
+      'next-variant',
+    )
+    : renderVersionNav(
+      message.answerIndex ?? 0,
+      answers.length,
+      'prev-answer',
+      'next-answer',
+    );
   return `
-    <div class="message assistant" data-msg-idx="${idx}" data-msg-id="${escapeHtml(message.id || '')}">
-      <div class="tag">${escapeHtml(tag)}</div>
-      <div class="answer">${body}</div>
+    <div class="msg-row assistant" data-msg-idx="${idx}" data-msg-id="${escapeHtml(message.id || '')}">
+      <div class="message assistant">
+        <div class="tag">${escapeHtml(tag)}</div>
+        <div class="answer">${body}</div>
+      </div>
       <div class="msg-actions">
-        <button type="button" data-act="copy" title="复制" aria-label="复制">${ICON.copy}</button>
-        <button type="button" data-act="regen" title="重说" aria-label="重说">${ICON.regen}</button>
-        <button type="button" data-act="up" class="${feedback === 'up' ? 'active' : ''}" title="点赞" aria-label="点赞">${ICON.up}</button>
-        <button type="button" data-act="down" class="${feedback === 'down' ? 'active' : ''}" title="点踩" aria-label="点踩">${ICON.down}</button>
-        <button type="button" data-act="share" title="分享此回答" aria-label="分享此回答">${ICON.share}</button>
+        ${aNav}
+        <span class="msg-actions-icons">
+          <button type="button" data-act="copy" title="复制" aria-label="复制">${ICON.copy}</button>
+          <button type="button" data-act="regen" title="重说" aria-label="重说"${state.isSubmitting ? ' disabled' : ''}>${ICON.regen}</button>
+          <button type="button" data-act="up" class="${feedback === 'up' ? 'active' : ''}" title="点赞" aria-label="点赞">${ICON.up}</button>
+          <button type="button" data-act="down" class="${feedback === 'down' ? 'active' : ''}" title="点踩" aria-label="点踩">${ICON.down}</button>
+          <button type="button" data-act="share" title="分享此回答" aria-label="分享此回答">${ICON.share}</button>
+        </span>
       </div>
     </div>`;
 }
@@ -682,6 +883,7 @@ function renderAnswerBody(payload, fallbackText) {
   if (unanchored.length) {
     html += `<div class="answer-block"><h3>相关流程图</h3>${unanchored.map((f, i) => renderFigureCard(f, `u-${i}`)).join('')}</div>`;
   }
+  html += `<p class="ai-disclaimer">本回答由 AI 生成，内容仅供参考，请仔细甄别</p>`;
   html += renderReferences(payload);
   return html;
 }
@@ -1022,13 +1224,68 @@ async function copyShareLink(url, btn, restoreHtml, restoreLabel = '分享') {
 }
 
 function bindMessageActions() {
-  els.chatLog.querySelectorAll('.message.assistant').forEach((node) => {
+  els.chatLog.querySelectorAll('.msg-row').forEach((node) => {
     const idx = Number(node.dataset.msgIdx);
     const msg = state.messages[idx];
     if (!msg) return;
+
     node.querySelectorAll('[data-act]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const act = btn.dataset.act;
+
+        if (msg.role === 'user') {
+          if (act === 'copy-user') {
+            try {
+              await copyTextToClipboard(msg.content || '');
+              flashActionIcon(btn, 'check', '已复制', ICON.copy, '复制', 1000);
+            } catch {
+              alert('复制失败，请手动选择文本复制');
+            }
+            return;
+          }
+          if (act === 'edit') {
+            if (state.isSubmitting) return;
+            state.messages.forEach((m) => { if (m.role === 'user') m.editing = false; });
+            msg.editing = true;
+            renderChat();
+            return;
+          }
+          if (act === 'edit-cancel') {
+            msg.editing = false;
+            renderChat();
+            return;
+          }
+          if (act === 'edit-send') {
+            const input = node.querySelector('.user-edit-input');
+            const next = String(input?.value || '').trim();
+            if (!next) return;
+            if (next === String(msg.content || '').trim()) {
+              msg.editing = false;
+              renderChat();
+              return;
+            }
+            askQuestion(next, { editFromIdx: idx });
+            return;
+          }
+          if (act === 'prev-variant' || act === 'next-variant') {
+            ensureUserVariants(msg);
+            const asst = state.messages[idx + 1];
+            if (asst?.role === 'assistant') {
+              storeCurrentAnswerSnapshot(asst, msg);
+            }
+            const delta = act === 'prev-variant' ? -1 : 1;
+            const nextIdx = (msg.variantIndex ?? 0) + delta;
+            if (nextIdx < 0 || nextIdx >= msg.variants.length) return;
+            msg.variantIndex = nextIdx;
+            syncTurnView(idx);
+            persistChatState();
+            renderChat();
+            return;
+          }
+          return;
+        }
+
+        // assistant
         if (act === 'copy') {
           const text = msg.payload?.answer_markdown || msg.content || '';
           try {
@@ -1038,11 +1295,41 @@ function bindMessageActions() {
             alert('复制失败，请手动选择文本复制');
           }
         } else if (act === 'regen') {
-          const userMsg = [...state.messages].slice(0, idx).reverse().find((m) => m.role === 'user');
-          if (userMsg) askQuestion(userMsg.content, { regenerate: true });
+          if (state.isSubmitting) return;
+          const userMsg = state.messages[idx - 1];
+          if (userMsg?.role === 'user') {
+            state.messages = state.messages.slice(0, idx + 1);
+            askQuestion(userMsg.content, { regenerate: true });
+          }
+        } else if (act === 'prev-variant' || act === 'next-variant') {
+          // Turn-level switch from assistant toolbar (synced with paired user).
+          const userIdx = idx - 1;
+          const userMsg = state.messages[userIdx];
+          if (!userMsg || userMsg.role !== 'user') return;
+          ensureUserVariants(userMsg);
+          storeCurrentAnswerSnapshot(msg, userMsg);
+          const delta = act === 'prev-variant' ? -1 : 1;
+          const nextIdx = (userMsg.variantIndex ?? 0) + delta;
+          if (nextIdx < 0 || nextIdx >= userMsg.variants.length) return;
+          userMsg.variantIndex = nextIdx;
+          syncTurnView(userIdx);
+          persistChatState();
+          renderChat();
+        } else if (act === 'prev-answer' || act === 'next-answer') {
+          const userMsg = state.messages[idx - 1];
+          ensureAssistantVariants(msg, userMsg?.role === 'user' ? userMsg : null);
+          storeCurrentAnswerSnapshot(msg, userMsg?.role === 'user' ? userMsg : null);
+          const answers = msg.variantAnswers[msg.variantIndex] || [];
+          const delta = act === 'prev-answer' ? -1 : 1;
+          const nextIdx = (msg.answerIndex ?? 0) + delta;
+          if (nextIdx < 0 || nextIdx >= answers.length) return;
+          msg.answerIndex = nextIdx;
+          applyAnswerSnapshot(msg, answers[nextIdx]);
+          if (msg.payload) state.lastPayload = msg.payload;
+          persistChatState();
+          renderChat();
         } else if (act === 'up' || act === 'down') {
           const value = msg.feedback === act ? null : act;
-          // 未登录也可本地点赞/点踩；已登录且消息已落库时同步到服务端
           if (state.user && msg.id) {
             const resp = await api(`/api/messages/${msg.id}/feedback`, {
               method: 'POST',
@@ -1054,6 +1341,8 @@ function bindMessageActions() {
             }
           }
           msg.feedback = value;
+          const userMsg = state.messages[idx - 1];
+          storeCurrentAnswerSnapshot(msg, userMsg?.role === 'user' ? userMsg : null);
           persistChatState();
           renderChat();
         } else if (act === 'share') {
@@ -1111,6 +1400,9 @@ function finalizeStoppedAssistant(assistant) {
       assistant.payload = emptyAnswerPayload(assistant.content);
     }
   }
+  const userIdx = state.messages.indexOf(assistant) - 1;
+  const userMsg = userIdx >= 0 ? state.messages[userIdx] : null;
+  storeCurrentAnswerSnapshot(assistant, userMsg?.role === 'user' ? userMsg : null);
   state.lastPayload = assistant.payload;
   renderChat();
 }
@@ -1123,21 +1415,89 @@ async function askQuestion(question, meta = {}) {
   if (els.followUpInput) els.followUpInput.value = '';
   setComposerExpanded(false);
 
-  if (!meta.regenerate) {
-    state.messages.push({ role: 'user', content: q });
+  let assistant;
+
+  if (typeof meta.editFromIdx === 'number') {
+    const userIdx = meta.editFromIdx;
+    const user = state.messages[userIdx];
+    if (!user || user.role !== 'user') {
+      state.isSubmitting = false;
+      setAskBtnMode('send');
+      return;
+    }
+    ensureUserVariants(user);
+    const oldAsst = state.messages[userIdx + 1]?.role === 'assistant'
+      ? state.messages[userIdx + 1]
+      : null;
+    let preserved = null;
+    if (oldAsst) {
+      ensureAssistantVariants(oldAsst, user);
+      storeCurrentAnswerSnapshot(oldAsst, user);
+      preserved = oldAsst.variantAnswers.map((arr) => (arr || []).map((s) => ({ ...s })));
+    }
+    state.messages = state.messages.slice(0, userIdx + 1);
+    user.variants.push(q);
+    user.variantIndex = user.variants.length - 1;
+    user.content = q;
+    user.editing = false;
+    const variantAnswers = preserved || user.variants.slice(0, -1).map(() => []);
+    while (variantAnswers.length < user.variants.length - 1) variantAnswers.push([]);
+    variantAnswers.push([]);
+    assistant = {
+      role: 'assistant',
+      content: '',
+      payload: null,
+      feedback: null,
+      pending: true,
+      statusSteps: [],
+      variantAnswers,
+      variantIndex: user.variantIndex,
+      answerIndex: 0,
+    };
+    state.messages.push(assistant);
+  } else if (meta.regenerate) {
+    const last = state.messages.at(-1);
+    if (!last || last.role !== 'assistant') {
+      state.isSubmitting = false;
+      setAskBtnMode('send');
+      return;
+    }
+    const user = state.messages.at(-2);
+    if (user?.role === 'user') ensureUserVariants(user);
+    ensureAssistantVariants(last, user?.role === 'user' ? user : null);
+    storeCurrentAnswerSnapshot(last, user?.role === 'user' ? user : null);
+    const vi = last.variantIndex ?? user?.variantIndex ?? 0;
+    if (!Array.isArray(last.variantAnswers[vi])) last.variantAnswers[vi] = [];
+    last.content = '';
+    last.payload = null;
+    last.feedback = null;
+    last.id = null;
+    last.pending = true;
+    last.statusSteps = [];
+    last.citePayload = null;
+    last.answerIndex = last.variantAnswers[vi].length;
+    assistant = last;
   } else {
-    // Drop trailing assistant message when regenerating.
-    if (state.messages.at(-1)?.role === 'assistant') state.messages.pop();
+    const user = {
+      role: 'user',
+      content: q,
+      variants: [q],
+      variantIndex: 0,
+    };
+    state.messages.push(user);
+    assistant = {
+      role: 'assistant',
+      content: '',
+      payload: null,
+      feedback: null,
+      pending: true,
+      statusSteps: [],
+      variantAnswers: [[]],
+      variantIndex: 0,
+      answerIndex: 0,
+    };
+    state.messages.push(assistant);
   }
-  const assistant = {
-    role: 'assistant',
-    content: '',
-    payload: null,
-    feedback: null,
-    pending: true,
-    statusSteps: [],
-  };
-  state.messages.push(assistant);
   renderChat();
 
   if (state.abortController) state.abortController.abort();
@@ -1182,6 +1542,9 @@ async function askQuestion(question, meta = {}) {
       assistant.pending = false;
       assistant.content = '请求失败，请稍后重试。';
       assistant.payload = emptyAnswerPayload(assistant.content);
+      const userIdx = state.messages.indexOf(assistant) - 1;
+      const userMsg = userIdx >= 0 ? state.messages[userIdx] : null;
+      storeCurrentAnswerSnapshot(assistant, userMsg?.role === 'user' ? userMsg : null);
       state.lastPayload = assistant.payload;
       renderChat();
     }
@@ -1199,8 +1562,8 @@ async function consumeSSE(resp, assistant) {
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
   let answer = '';
-  const answerEl = () => els.chatLog.querySelector('.message.assistant:last-of-type .answer');
-  const msgEl = () => els.chatLog.querySelector('.message.assistant:last-of-type');
+  const answerEl = () => els.chatLog.querySelector('.msg-row.assistant:last-of-type .answer');
+  const msgEl = () => els.chatLog.querySelector('.msg-row.assistant:last-of-type');
 
   const paintStatus = () => {
     if (!assistant.pending) return;
@@ -1268,6 +1631,9 @@ function finalizeAssistant(assistant, payload) {
       state.activeConversationId = state.activeConversationId || newLocalConversationId();
     }
   }
+  const userIdx = state.messages.indexOf(assistant) - 1;
+  const userMsg = userIdx >= 0 ? state.messages[userIdx] : null;
+  storeCurrentAnswerSnapshot(assistant, userMsg?.role === 'user' ? userMsg : null);
   state.lastPayload = payload;
   persistChatState();
   renderChat();
