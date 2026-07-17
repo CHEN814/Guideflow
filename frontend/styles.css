@@ -171,10 +171,10 @@ body{
 .circle-btn.is-stopping{background:linear-gradient(145deg,#b85a38,var(--brand-2));font-size:11px;box-shadow:0 8px 18px rgba(90,50,30,.28)}
 .composer-hint{max-width:920px;margin:8px auto 0;padding:0 4px}
 .muted{color:var(--muted)}.small{font-size:12px}
-.empty-state{margin:auto;text-align:center;padding:40px 20px;color:var(--muted);max-width:520px}
+.empty-state{margin:auto;text-align:center;padding:40px 20px;color:var(--muted);max-width:640px}
 .empty-state h2{color:var(--text);margin:0 0 10px}
 .template-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
-.template-pill{border:1px solid rgba(229,111,61,.2);background:#fff;border-radius:999px;padding:8px 12px;cursor:pointer;font-size:13px}
+.template-pill{border:1px solid rgba(229,111,61,.2);background:#fff;border-radius:999px;padding:8px 12px;cursor:pointer;font-size:13px;max-width:100%}
 .modal-overlay{position:fixed;inset:0;background:rgba(28,20,16,.4);display:grid;place-items:center;z-index:70;padding:16px}
 .modal-card{width:min(420px,100%);background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:18px}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}

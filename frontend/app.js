@@ -50,10 +50,10 @@ const ICON = {
 };
 
 const SUGGESTIONS = [
-  'DLBCL 一线治疗推荐？',
-  'GCB 与 ABC 亚型差异',
-  'TP53 对预后的影响',
-  '什么时候考虑 CNS prophylaxis？',
+  'DLBCL 一线治疗如何推荐？',
+  'DLBCL 中 GCB 与 ABC 有何差异？',
+  'TP53 对 DLBCL 预后有何影响？',
+  'DLBCL 何时考虑 CNS prophylaxis？',
 ];
 
 const state = {
@@ -691,12 +691,11 @@ function renderFigureCard(fig, key) {
   const full = resolveImageUrl(fig.full_image_url || fig.image_url);
   if (!compact) return '';
   const label = fig.page_code || `pdf_page=${fig.pdf_page}`;
-  const hasFull = full && full !== compact;
   return `
     <figure class="figure-card" data-fig-key="${escapeHtml(key)}">
       <div class="fig-head">
         <span>${escapeHtml(label)}${fig.source_index ? ` · [S${fig.source_index}]` : ''}</span>
-        <button type="button" class="btn ghost" data-fig-open="${escapeHtml(full || compact)}" data-fig-label="${escapeHtml(label)}">${hasFull ? '放大（含脚注）' : '放大'}</button>
+        <button type="button" class="btn ghost" data-fig-open="${escapeHtml(full || compact)}" data-fig-label="${escapeHtml(label)}">原图</button>
       </div>
       <img src="${escapeHtml(compact)}" alt="${escapeHtml(label)}" data-fig-open="${escapeHtml(full || compact)}" />
       ${fig.caption ? `<div class="fig-cap">${escapeHtml(fig.caption)}</div>` : ''}

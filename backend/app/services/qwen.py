@@ -275,7 +275,7 @@ class QwenClient:
         if not self.api_key:
             return (
                 "你好！我是 NCCN B 细胞淋巴瘤指南助手，可以帮你查询指南中的诊疗路径与证据。"
-                "直接提问即可，例如「DLBCL 一线治疗推荐？」",
+                "直接提问即可，例如「DLBCL 一线治疗如何推荐？」",
                 "qwen_api_unavailable",
             )
         try:

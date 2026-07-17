@@ -432,7 +432,7 @@ class QAResult:
         for fig in self.figures:
             data = fig.to_dict()
             display_path = fig.crop_image_path or fig.image_path
-            full_display_path = fig.crop_full_image_path or fig.image_path
+            full_display_path = fig.image_path
             if display_path:
                 from pathlib import Path
 
