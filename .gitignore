@@ -44,6 +44,9 @@ frontend/.vite/
 # Deployment artifacts（本地打包上传用，勿提交）
 *.tgz
 
+# Local-only ECS sync helper（个人部署用，勿提交 GitHub / 勿上云）
+ecs-deploy/
+
 # OS / IDE
 .DS_Store
 Thumbs.db

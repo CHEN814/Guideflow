@@ -1,5 +1,6 @@
 /* Guideflow frontend (two-column + auth + true SSE). */
-const API_BASE = window.API_BASE || 'http://127.0.0.1:8001';
+// Use ?? so API_BASE '' (same-origin under /app/) is not replaced by 127.0.0.1.
+const API_BASE = window.API_BASE ?? 'http://127.0.0.1:8001';
 
 const els = {
   appRoot: document.getElementById('appRoot'),
@@ -960,10 +961,9 @@ async function copyTextToClipboard(text) {
 
 function buildShareUrl(token, { messageId = null } = {}) {
   const base = `${location.origin}${location.pathname.replace(/index\.html.?$/, '')}share.html`;
-  const params = new URLSearchParams({
-    token,
-    api: API_BASE,
-  });
+  const params = new URLSearchParams({ token });
+  // Same-origin (''): omit api= so share page also auto-detects. Else pass absolute API.
+  if (API_BASE) params.set('api', API_BASE);
   if (messageId) params.set('message_id', messageId);
   return `${base}?${params.toString()}`;
 }

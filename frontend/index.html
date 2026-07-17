@@ -105,7 +105,14 @@
   </div>
 
   <script>
-    window.API_BASE = window.API_BASE || 'http://127.0.0.1:8001';
+    // /app/ (uvicorn 挂载或云上方案 A)：同源，勿写死 127.0.0.1（那是「本机」）。
+    // 本地 5173 静态页：仍默认连本机 8001。
+    function guideflowDefaultApiBase() {
+      var path = location.pathname || '';
+      if (path.indexOf('/app') === 0 || location.port === '8001') return '';
+      return 'http://127.0.0.1:8001';
+    }
+    window.API_BASE = window.API_BASE ?? guideflowDefaultApiBase();
   </script>
   <script src="./vendor/marked.min.js"></script>
   <script src="./vendor/purify.min.js"></script>

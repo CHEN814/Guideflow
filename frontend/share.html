@@ -20,7 +20,13 @@
     const params = new URLSearchParams(location.search);
     const token = params.get('token');
     const messageId = params.get('message_id');
-    const API_BASE = params.get('api') || window.API_BASE || 'http://127.0.0.1:8001';
+    function guideflowDefaultApiBase() {
+      var path = location.pathname || '';
+      if (path.indexOf('/app') === 0 || location.port === '8001') return '';
+      return 'http://127.0.0.1:8001';
+    }
+    // ?api= 优先；空字符串表示同源。勿用 ||，否则 '' 会被盖回 127.0.0.1。
+    const API_BASE = params.get('api') ?? window.API_BASE ?? guideflowDefaultApiBase();
     function escapeHtml(t){return String(t??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));}
     function md(raw){
       let html; try{html=marked.parse(String(raw||''),{breaks:true});}catch{html=escapeHtml(raw);}
