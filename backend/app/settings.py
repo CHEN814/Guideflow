@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
@@ -26,43 +26,42 @@ class Settings:
     pdf_path: Path
     knowledge_base_path: Path
     bm25_index_path: Path
-    vector_index_dir: Path
     logs_dir: Path
     qwen_api_key: Optional[str]
     qwen_base_url: str
     qwen_model: str
-    embedding_model: str
     reranker_model: str
     bm25_top_k: int
-    vector_top_k: int
     rerank_top_k: int
     final_top_k: int
-    # ── retrieval mode ───────────────────────────────────────────────────
-    retrieval_mode: str            # "bm25" (default, fast) | "hybrid" (bm25+vector+RRF)
+    max_attached_refs: int
     # ── query-time multimodal (VLM) ──────────────────────────────────────
     vlm_api_key: Optional[str]
     vlm_base_url: str
     vlm_model: str
-    page_image_dir: Path           # on-demand rendered page-image cache
+    page_image_dir: Path
     page_image_dpi: int
-    summary_cache_path: Path       # first-hit page summary cache
-    # ── controlled graph-navigation budgets ──────────────────────────────
-    max_images: int                # hard cap on images sent to the VLM per query
-    graph_fanout: int              # max flow edges followed from the top hit
-    graph_depth: int               # hop depth for graph expansion
-    graph_reserve: int             # images reserved for downstream graph neighbours
-    enable_evidence_gating: bool   # cheap Qwen pre-filter before VLM
+    summary_cache_path: Path
+    # ── agent / figure budgets ───────────────────────────────────────────
+    max_images: int
+    figure_ceiling: int
+    routing_mode: str              # "agentic" | "linear"
+    agent_max_steps: int
+    graph_fanout: int
+    graph_depth: int
+    graph_reserve: int
+    enable_evidence_gating: bool
     # ── figure crop (display) ────────────────────────────────────────────
     crop_enabled: bool
-    crop_dpi: Optional[int]        # None => inherit page_image_dpi
-    crop_padding: float            # normalized margin around bbox
-    crop_min_area: float           # min area ratio for PyMuPDF detection
-    crop_prefer: str               # "auto" | "vlm" | "detect"
-    display_max_figures: int       # max figures shown to user after prune
-    crop_vlm_max_area: float        # reject VLM bbox if area ratio exceeds this
-    crop_vlm_dedup_guard: bool      # reject VLM bbox if all pages share same box
+    crop_dpi: Optional[int]
+    crop_padding: float
+    crop_min_area: float
+    crop_prefer: str
+    display_max_figures: int
+    crop_vlm_max_area: float
+    crop_vlm_dedup_guard: bool
     # ── knowledge graph ──────────────────────────────────────────────────
-    knowledge_graph_path: Path     # validated KG bundle (ontology + trusted triples)
+    knowledge_graph_path: Path
     neo4j_uri: str
     neo4j_user: str
     neo4j_password: Optional[str]
@@ -76,38 +75,6 @@ def _first_pdf(root_dir: Path) -> Path:
     if not pdfs:
         return root_dir / "NCCN_B_Cell_Lymphomas.pdf"
     return pdfs[0]
-
-
-# Each profile bundles an embedding model, its matching reranker and a dedicated
-# vector index directory. The key is the embedding name so adding a new model is
-# just one more entry plus building its index once.
-EMBEDDING_PROFILES: dict[str, dict[str, object]] = {
-    "hash": {
-        "embedding_model": "hash",
-        "reranker_model": "lexical",
-        "vector_index_dir": ROOT_DIR / "data" / "indexes" / "vector-hash",
-    },
-    "bge-m3": {
-        "embedding_model": "./models/bge-m3",
-        "reranker_model": "./models/bge-reranker-v2-m3",
-        "vector_index_dir": ROOT_DIR / "data" / "indexes" / "vector",
-    },
-}
-
-
-def apply_profile(settings: "Settings", name: str) -> "Settings":
-    """Return a copy of settings overridden by the named embedding profile."""
-    if name not in EMBEDDING_PROFILES:
-        available = ", ".join(sorted(EMBEDDING_PROFILES))
-        raise SystemExit(f"Unknown embedding profile {name!r}. Available: {available}")
-    profile = EMBEDDING_PROFILES[name]
-    return replace(
-        settings,
-        embedding_model=str(profile["embedding_model"]),
-        reranker_model=str(profile["reranker_model"]),
-        vector_index_dir=Path(profile["vector_index_dir"]),
-        retrieval_mode="hybrid",
-    )
 
 
 def _load_config_yaml(path: Path = CONFIG_PATH) -> dict[str, Any]:
@@ -163,7 +130,6 @@ def _bridge_config_to_env(cfg: dict[str, Any]) -> None:
         ("NCCN_PDF_PATH", ("paths", "pdf"), None),
         ("KNOWLEDGE_BASE_PATH", ("paths", "knowledge_base"), None),
         ("BM25_INDEX_PATH", ("paths", "bm25_index"), None),
-        ("VECTOR_INDEX_DIR", ("paths", "vector_index"), None),
         ("TRACE_LOG_DIR", ("paths", "logs"), None),
         ("PAGE_IMAGE_DIR", ("paths", "page_images"), None),
         ("SUMMARY_CACHE_PATH", ("paths", "summary_cache"), None),
@@ -172,15 +138,16 @@ def _bridge_config_to_env(cfg: dict[str, Any]) -> None:
         ("QWEN_MODEL", ("qwen", "model"), None),
         ("VLM_BASE_URL", ("vlm", "base_url"), None),
         ("VLM_MODEL", ("vlm", "model"), None),
-        ("EMBEDDING_MODEL", ("embedding", "model"), None),
         ("RERANKER_MODEL", ("reranker", "model"), None),
-        ("RETRIEVAL_MODE", ("retrieval", "mode"), None),
         ("BM25_TOP_K", ("retrieval", "bm25_top_k"), None),
-        ("VECTOR_TOP_K", ("retrieval", "vector_top_k"), None),
         ("RERANK_TOP_K", ("retrieval", "rerank_top_k"), None),
         ("FINAL_TOP_K", ("retrieval", "final_top_k"), None),
         ("TARGET_DISEASE_SCOPE", ("disease_scope",), None),
+        ("MAX_ATTACHED_REFS", ("retrieval", "max_attached_refs"), None),
         ("MAX_IMAGES", ("max_images",), None),
+        ("FIGURE_CEILING", ("figure_ceiling",), None),
+        ("ROUTING_MODE", ("routing_mode",), None),
+        ("AGENT_MAX_STEPS", ("agent_max_steps",), None),
         ("GRAPH_FANOUT", ("graph", "fanout"), None),
         ("GRAPH_DEPTH", ("graph", "depth"), None),
         ("GRAPH_RESERVE", ("graph", "reserve"), None),
@@ -249,16 +216,6 @@ def load_settings() -> Settings:
             ),
             ROOT_DIR,
         ),
-        vector_index_dir=_resolve_path(
-            _cfg_or_env(
-                cfg,
-                "VECTOR_INDEX_DIR",
-                ROOT_DIR / "data" / "indexes" / "vector",
-                "paths",
-                "vector_index",
-            ),
-            ROOT_DIR,
-        ),
         logs_dir=_resolve_path(
             _cfg_or_env(cfg, "TRACE_LOG_DIR", ROOT_DIR / "logs" / "runs", "paths", "logs"),
             ROOT_DIR,
@@ -287,13 +244,13 @@ def load_settings() -> Settings:
                 "model",
             )
         ),
-        embedding_model=str(_cfg_or_env(cfg, "EMBEDDING_MODEL", "hash", "embedding", "model")),
         reranker_model=str(_cfg_or_env(cfg, "RERANKER_MODEL", "lexical", "reranker", "model")),
         bm25_top_k=int(_cfg_or_env(cfg, "BM25_TOP_K", "40", "retrieval", "bm25_top_k")),
-        vector_top_k=int(_cfg_or_env(cfg, "VECTOR_TOP_K", "12", "retrieval", "vector_top_k")),
-        rerank_top_k=int(_cfg_or_env(cfg, "RERANK_TOP_K", "30", "retrieval", "rerank_top_k")),
+        rerank_top_k=int(_cfg_or_env(cfg, "RERANK_TOP_K", "16", "retrieval", "rerank_top_k")),
         final_top_k=int(_cfg_or_env(cfg, "FINAL_TOP_K", "6", "retrieval", "final_top_k")),
-        retrieval_mode=str(_cfg_or_env(cfg, "RETRIEVAL_MODE", "bm25", "retrieval", "mode")).strip().lower(),
+        max_attached_refs=int(
+            _cfg_or_env(cfg, "MAX_ATTACHED_REFS", "6", "retrieval", "max_attached_refs")
+        ),
         vlm_api_key=os.getenv("VLM_API_KEY") or os.getenv("DASHSCOPE_API_KEY"),
         vlm_base_url=str(
             _cfg_or_env(
@@ -326,7 +283,26 @@ def load_settings() -> Settings:
             ),
             ROOT_DIR,
         ),
-        max_images=int(_cfg_or_env(cfg, "MAX_IMAGES", "1", "max_images")),
+        max_images=int(
+            _cfg_or_env(
+                cfg,
+                "MAX_IMAGES",
+                _cfg_or_env(cfg, "FIGURE_CEILING", "4", "figure_ceiling"),
+                "max_images",
+            )
+        ),
+        figure_ceiling=int(
+            _cfg_or_env(
+                cfg,
+                "FIGURE_CEILING",
+                _cfg_or_env(cfg, "MAX_IMAGES", "4", "max_images"),
+                "figure_ceiling",
+            )
+        ),
+        routing_mode=str(
+            _cfg_or_env(cfg, "ROUTING_MODE", "agentic", "routing_mode")
+        ).strip().lower(),
+        agent_max_steps=int(_cfg_or_env(cfg, "AGENT_MAX_STEPS", "4", "agent_max_steps")),
         graph_fanout=int(_cfg_or_env(cfg, "GRAPH_FANOUT", "3", "graph", "fanout")),
         graph_depth=int(_cfg_or_env(cfg, "GRAPH_DEPTH", "1", "graph", "depth")),
         graph_reserve=int(_cfg_or_env(cfg, "GRAPH_RESERVE", "2", "graph", "reserve")),
@@ -339,7 +315,7 @@ def load_settings() -> Settings:
         crop_padding=float(_cfg_or_env(cfg, "CROP_PADDING", "0.02", "crop", "padding")),
         crop_min_area=float(_cfg_or_env(cfg, "CROP_MIN_AREA", "0.05", "crop", "min_area")),
         crop_prefer=str(_cfg_or_env(cfg, "CROP_PREFER", "auto", "crop", "prefer")).strip().lower(),
-        display_max_figures=int(_cfg_or_env(cfg, "DISPLAY_MAX_FIGURES", "2", "display_max_figures")),
+        display_max_figures=int(_cfg_or_env(cfg, "DISPLAY_MAX_FIGURES", "4", "display_max_figures")),
         crop_vlm_max_area=float(_cfg_or_env(cfg, "CROP_VLM_MAX_AREA", "0.8", "crop", "vlm_max_area")),
         crop_vlm_dedup_guard=_as_bool(
             _cfg_or_env(cfg, "CROP_VLM_DEDUP_GUARD", "true", "crop", "vlm_dedup_guard"),

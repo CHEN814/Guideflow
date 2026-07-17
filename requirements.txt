@@ -15,13 +15,5 @@ email-validator>=2.0.0
 pydantic[email]>=2.0.0
 httpx>=0.27.0
 
-# Embedding / reranker / vector store（可选，重型）。缺失时自动回退 hash 向量 + 词法重排。
-# 资源充足（更大 CPU/内存/磁盘）时可取消注释以提升检索质量：
-# torch>=2.1.0
-# sentence-transformers>=3.0.0,<6
-# transformers>=4.41.0,<5
-# scikit-learn>=1.3.0
-# chromadb>=0.5.0
-
 # Optional: Neo4j import for knowledge-graph visualization / export
 # neo4j>=5.20.0

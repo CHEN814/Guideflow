@@ -5,7 +5,6 @@ paths:
   pdf: "（2026.V3）NCCN临床 实践指南：B细胞淋巴瘤.pdf"
   knowledge_base: data/processed/dlbcl_knowledge_base.json
   bm25_index: data/indexes/bm25_index.pkl
-  vector_index: data/indexes/vector
   knowledge_graph: data/processed/knowledge_graph.json
   page_images: data/cache/page_images
   summary_cache: data/cache/page_summaries.json
@@ -19,30 +18,33 @@ vlm:
   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
   model: qwen-vl-max
 
-embedding:
-  model: hash
-
 reranker:
   model: lexical
 
 retrieval:
-  mode: bm25
   bm25_top_k: 40
-  vector_top_k: 12
   rerank_top_k: 16
   final_top_k: 6
+  max_attached_refs: 6
 
-# 疾病范围 key，注册表见 backend/app/services/disease_scope.py
-disease_scope: dlbcl
+# 疾病范围：auto=按问题自动识别（未命中则全库）；也可指定 dlbcl/fl/mcl/.../all
+# 注册表见 backend/app/services/disease_scope.py
+disease_scope: auto
 
 graph:
   fanout: 3
   depth: 1
   reserve: 2
 
-# 送入 VLM 的图片硬顶（选图预算）；可按延迟/质量权衡调整
-max_images: 1
-display_max_figures: 2
+# 路由模式：agentic=工具调用智能体 | linear=旧线性流程（回退）
+routing_mode: agentic
+# 智能体工具循环最大步数
+agent_max_steps: 4
+
+# 送入 VLM 的图片安全上限（按需点名，不再写死“必须送几张”）
+figure_ceiling: 4
+max_images: 4
+display_max_figures: 4
 page_image_dpi: 150
 enable_evidence_gating: true
 

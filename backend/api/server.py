@@ -21,7 +21,7 @@ from backend.app.db import get_db, get_session_factory, init_db
 from backend.app.models_db import Conversation, Message, User
 from backend.app.services.auth import get_optional_user
 from backend.app.services.qa import QAService
-from backend.app.settings import EMBEDDING_PROFILES, ROOT_DIR, apply_profile, load_settings
+from backend.app.settings import ROOT_DIR, load_settings
 from backend.app.web_config import load_web_config
 
 UTF8_JSON_HEADERS = {"Content-Type": "application/json; charset=utf-8"}
@@ -159,12 +159,17 @@ def _sse_queue_bridge(sync_gen: Iterator[dict]) -> AsyncGenerator[bytes, None]:
     return agen()
 
 
+class HistoryTurn(BaseModel):
+    role: str = Field(..., pattern="^(user|assistant)$")
+    content: str = Field(..., min_length=0, max_length=8000)
+
+
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=4000)
-    embedding: Optional[str] = None
     trace: bool = True
     stream: bool = True
     conversation_id: Optional[str] = None
+    history: Optional[list[HistoryTurn]] = None
 
 
 def create_app() -> FastAPI:
@@ -200,18 +205,22 @@ def create_app() -> FastAPI:
         db: Session = Depends(get_db),
         user: Optional[User] = Depends(get_optional_user),
     ) -> Any:
-        nonlocal qa_service, settings
-        current_settings = settings
+        nonlocal qa_service
         service = qa_service
-        if body.embedding:
-            if body.embedding not in EMBEDDING_PROFILES:
-                raise HTTPException(status_code=400, detail=f"Unknown embedding {body.embedding!r}")
-            current_settings = apply_profile(settings, body.embedding)
-            service = QAService(current_settings)
+
+        history_payload = [
+            {"role": turn.role, "content": turn.content}
+            for turn in (body.history or [])
+            if turn.content.strip()
+        ][-8:]
 
         if not body.stream:
             try:
-                result = service.ask(body.question, trace_enabled=body.trace)
+                result = service.ask(
+                    body.question,
+                    trace_enabled=body.trace,
+                    history=history_payload,
+                )
                 payload_obj = result.to_web_payload()
             except Exception as exc:  # pragma: no cover
                 payload_obj = _fallback_payload(body.question, str(exc))
@@ -229,7 +238,11 @@ def create_app() -> FastAPI:
         def event_gen() -> Iterator[dict]:
             try:
                 final_payload: Optional[dict] = None
-                for event in service.ask_stream(body.question, trace_enabled=body.trace):
+                for event in service.ask_stream(
+                    body.question,
+                    trace_enabled=body.trace,
+                    history=history_payload,
+                ):
                     if event.get("type") == "final":
                         final_payload = event.get("payload") or {}
                         ids = _persist_qa_turn(

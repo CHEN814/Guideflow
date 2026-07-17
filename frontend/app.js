@@ -33,6 +33,7 @@ const els = {
   citePopover: document.getElementById('citePopover'),
   toolsBtn: document.getElementById('toolsBtn'),
   toolsMenu: document.getElementById('toolsMenu'),
+  shareChatBtn: document.getElementById('shareChatBtn'),
   composerBox: document.getElementById('composerBox'),
   expandInputBtn: document.getElementById('expandInputBtn'),
 };
@@ -43,6 +44,7 @@ const ICON = {
   up: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11v10"/><path d="M15 21H9a2 2 0 0 1-2-2v-7l5.2-8.1a1.6 1.6 0 0 1 2.9 1.2L14 10h5.4a2 2 0 0 1 1.9 2.6l-1.5 6A2 2 0 0 1 17.9 21H15z"/></svg>`,
   down: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 13V3"/><path d="M9 3h6a2 2 0 0 1 2 2v7l-5.2 8.1a1.6 1.6 0 0 1-2.9-1.2L10 14H4.6a2 2 0 0 1-1.9-2.6l1.5-6A2 2 0 0 1 6.1 3H9z"/></svg>`,
   share: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.4 13.3l7.2 4.4M15.6 6.3l-7.2 4.4"/></svg>`,
+  shareChat: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v10"/><path d="M8 7l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>`,
   check: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`,
 };
 
@@ -64,33 +66,159 @@ const state = {
   composerExpanded: false,
   authOverlayDown: false,
   citeHideTimer: null,
+  citePinned: false,
   sidebarCollapsed: localStorage.getItem('gf_sidebar_collapsed') === '1',
   abortController: null,
 };
 
 const ACTIVE_CONV_KEY = 'gf_active_conversation_id';
 const DRAFT_KEY = 'gf_chat_draft';
+const LOCAL_CONV_KEY = 'gf_local_conversations';
 const ICON_EYE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>`;
 const ICON_EYE_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 10.6a2.5 2.5 0 0 0 3.5 3.5"/><path d="M9.9 5.2A11.3 11.3 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-4.1 4.8"/><path d="M6.1 6.1C3.9 7.8 2 12 2 12s3.5 6 10 6c1.3 0 2.5-.2 3.6-.6"/></svg>`;
 
+function isLocalConversationId(id) {
+  return typeof id === 'string' && id.startsWith('local-');
+}
+
+function newLocalConversationId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `local-${crypto.randomUUID()}`;
+  }
+  return `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function loadLocalConversations() {
+  try {
+    const list = JSON.parse(sessionStorage.getItem(LOCAL_CONV_KEY) || '[]');
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalConversations(list) {
+  try {
+    sessionStorage.setItem(LOCAL_CONV_KEY, JSON.stringify(list));
+  } catch { /* ignore */ }
+}
+
+function snapshotMessagesForStore(messages) {
+  return (messages || [])
+    .filter((m) => !m.pending)
+    .map((m) => ({
+      id: m.id || null,
+      role: m.role,
+      content: m.content,
+      payload: m.payload || null,
+      feedback: m.feedback || null,
+    }));
+}
+
+function conversationTitleFromMessages(messages) {
+  const firstUser = (messages || []).find((m) => m.role === 'user' && m.content);
+  const raw = String(firstUser?.content || '新对话').trim().replace(/\s+/g, ' ');
+  return (raw.slice(0, 40) || '新对话');
+}
+
+function localConversationsAsSummaries(list) {
+  return (list || []).map((c) => ({
+    id: c.id,
+    title: c.title || '新对话',
+    updated_at: c.updated_at,
+    created_at: c.updated_at,
+    message_count: (c.messages || []).length,
+  }));
+}
+
+function syncLocalConversationsToState() {
+  const list = loadLocalConversations();
+  list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  state.conversations = localConversationsAsSummaries(list);
+}
+
+function upsertLocalConversationFromState() {
+  if (state.user) return;
+  const messages = snapshotMessagesForStore(state.messages);
+  if (!messages.length) return;
+
+  let id = state.activeConversationId;
+  if (!isLocalConversationId(id)) {
+    id = newLocalConversationId();
+    state.activeConversationId = id;
+  }
+
+  const list = loadLocalConversations();
+  const prev = list.find((c) => c.id === id);
+  const autoTitle = conversationTitleFromMessages(messages);
+  const prevAuto = conversationTitleFromMessages(prev?.messages || []);
+  const keepRename = Boolean(prev?.title && prev.title !== '新对话' && prev.title !== prevAuto);
+  const entry = {
+    id,
+    title: keepRename ? prev.title : autoTitle,
+    updated_at: new Date().toISOString(),
+    messages,
+    lastPayload: state.lastPayload,
+  };
+  const idx = list.findIndex((c) => c.id === id);
+  if (idx >= 0) list[idx] = entry;
+  else list.unshift(entry);
+
+  list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  saveLocalConversations(list);
+  state.conversations = localConversationsAsSummaries(list);
+}
+
+function openLocalConversation(id) {
+  const list = loadLocalConversations();
+  const conv = list.find((c) => c.id === id);
+  if (!conv) return;
+  state.activeConversationId = conv.id;
+  state.messages = (conv.messages || []).map((m) => ({ ...m }));
+  state.lastPayload = conv.lastPayload || null;
+  persistChatState();
+  renderHistory();
+  renderChat();
+}
+
+function renameLocalConversation(id, title) {
+  const trimmed = String(title || '').trim().slice(0, 200);
+  if (!trimmed) return;
+  const list = loadLocalConversations();
+  const conv = list.find((c) => c.id === id);
+  if (!conv) return;
+  conv.title = trimmed;
+  conv.updated_at = new Date().toISOString();
+  saveLocalConversations(list);
+  syncLocalConversationsToState();
+  renderHistory();
+}
+
+function deleteLocalConversation(id) {
+  const list = loadLocalConversations().filter((c) => c.id !== id);
+  saveLocalConversations(list);
+  syncLocalConversationsToState();
+  if (state.activeConversationId === id) newChat({ skipSave: true });
+  else renderHistory();
+}
+
+function detachLocalActiveConversation() {
+  if (isLocalConversationId(state.activeConversationId)) {
+    state.activeConversationId = null;
+  }
+}
+
 function persistChatState() {
   try {
-    if (state.activeConversationId) {
+    if (!state.user) upsertLocalConversationFromState();
+    if (state.activeConversationId && !isLocalConversationId(state.activeConversationId)) {
       localStorage.setItem(ACTIVE_CONV_KEY, state.activeConversationId);
     } else {
       localStorage.removeItem(ACTIVE_CONV_KEY);
     }
     const draft = {
       conversationId: state.activeConversationId,
-      messages: state.messages
-        .filter((m) => !m.pending)
-        .map((m) => ({
-          id: m.id || null,
-          role: m.role,
-          content: m.content,
-          payload: m.payload || null,
-          feedback: m.feedback || null,
-        })),
+      messages: snapshotMessagesForStore(state.messages),
       lastPayload: state.lastPayload,
     };
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -107,7 +235,7 @@ function loadDraft() {
 
 async function restoreChatAfterLoad() {
   const savedId = localStorage.getItem(ACTIVE_CONV_KEY);
-  if (state.user && savedId) {
+  if (state.user && savedId && !isLocalConversationId(savedId)) {
     const exists = state.conversations.some((c) => c.id === savedId);
     if (exists) {
       await openConversation(savedId);
@@ -116,8 +244,14 @@ async function restoreChatAfterLoad() {
     localStorage.removeItem(ACTIVE_CONV_KEY);
   }
   const draft = loadDraft();
-  if (!draft?.messages?.length) return;
-  if (draft.conversationId && state.user) {
+  if (!draft?.messages?.length) {
+    if (!state.user) {
+      syncLocalConversationsToState();
+      renderHistory();
+    }
+    return;
+  }
+  if (draft.conversationId && state.user && !isLocalConversationId(draft.conversationId)) {
     const exists = state.conversations.some((c) => c.id === draft.conversationId);
     if (exists) {
       await openConversation(draft.conversationId);
@@ -125,8 +259,10 @@ async function restoreChatAfterLoad() {
     }
   }
   state.activeConversationId = draft.conversationId || null;
+  if (state.user) detachLocalActiveConversation();
   state.messages = draft.messages;
   state.lastPayload = draft.lastPayload || null;
+  if (!state.user) upsertLocalConversationFromState();
   renderHistory();
   renderChat();
 }
@@ -178,6 +314,7 @@ function setSidebarCollapsed(collapsed, { persist = true } = {}) {
   if (persist) {
     localStorage.setItem('gf_sidebar_collapsed', collapsed ? '1' : '0');
   }
+  if (!collapsed) requestAnimationFrame(updateHistoryScrollFade);
 }
 
 function closeSidebarOnMobile() {
@@ -245,9 +382,11 @@ async function refreshMe() {
     state.user = null;
   }
   renderUserArea();
-  if (state.user) await loadConversations();
-  else {
-    state.conversations = [];
+  if (state.user) {
+    detachLocalActiveConversation();
+    await loadConversations();
+  } else {
+    syncLocalConversationsToState();
     renderHistory();
   }
   await restoreChatAfterLoad();
@@ -261,17 +400,19 @@ function renderUserArea() {
         <span class="sub">点击退出登录</span>
       </div>`;
     document.getElementById('userMenuBtn')?.addEventListener('click', async () => {
+      if (!confirm('确定要退出登录吗？')) return;
       await api('/api/auth/logout', { method: 'POST', body: '{}' });
       state.user = null;
-      state.conversations = [];
       state.activeConversationId = null;
       state.messages = [];
       state.lastPayload = null;
       localStorage.removeItem(ACTIVE_CONV_KEY);
       sessionStorage.removeItem(DRAFT_KEY);
+      syncLocalConversationsToState();
       renderUserArea();
       renderHistory();
       renderChat();
+      openAuthModal('login');
     });
   } else {
     els.userArea.innerHTML = `<button class="user-chip" id="loginOpenBtn">登录 / 注册</button>`;
@@ -306,7 +447,8 @@ async function loadConversations() {
     if (resp.status === 401) {
       state.user = null;
       renderUserArea();
-      els.historyList.innerHTML = `<div class="muted small" style="padding:10px">登录已失效，请重新登录</div>`;
+      syncLocalConversationsToState();
+      renderHistory();
       return;
     }
     if (!resp.ok) {
@@ -320,13 +462,27 @@ async function loadConversations() {
   }
 }
 
+function updateHistoryScrollFade() {
+  const wrap = els.historyList?.closest('.history-wrap');
+  const list = els.historyList;
+  if (!wrap || !list) return;
+  const canScroll = list.scrollHeight > list.clientHeight + 2;
+  const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 4;
+  wrap.classList.toggle('can-scroll-more', canScroll && !atBottom);
+}
+
+function bindHistoryScrollFade() {
+  const list = els.historyList;
+  if (!list || list.dataset.scrollFadeBound) return;
+  list.dataset.scrollFadeBound = '1';
+  list.addEventListener('scroll', updateHistoryScrollFade, { passive: true });
+  window.addEventListener('resize', updateHistoryScrollFade);
+}
+
 function renderHistory() {
-  if (!state.user) {
-    els.historyList.innerHTML = `<div class="muted small" style="padding:10px">登录后可同步历史记录</div>`;
-    return;
-  }
   if (!state.conversations.length) {
     els.historyList.innerHTML = `<div class="muted small" style="padding:10px">暂无历史对话</div>`;
+    updateHistoryScrollFade();
     return;
   }
   const groups = groupConversations(state.conversations);
@@ -352,6 +508,8 @@ function renderHistory() {
       openHistoryMenu(btn.dataset.more, e.clientX, e.clientY);
     });
   });
+  bindHistoryScrollFade();
+  requestAnimationFrame(updateHistoryScrollFade);
 }
 
 function openHistoryMenu(id, x, y) {
@@ -370,18 +528,30 @@ function openHistoryMenu(id, x, y) {
   menu.querySelector('[data-act="rename"]').onclick = async () => {
     const title = prompt('新标题');
     if (!title?.trim()) return;
+    if (isLocalConversationId(id)) {
+      renameLocalConversation(id, title);
+      return;
+    }
     await api(`/api/conversations/${id}`, { method: 'PATCH', body: JSON.stringify({ title: title.trim() }) });
     await loadConversations();
   };
   menu.querySelector('[data-act="delete"]').onclick = async () => {
     if (!confirm('确认删除该对话？')) return;
+    if (isLocalConversationId(id)) {
+      deleteLocalConversation(id);
+      return;
+    }
     await api(`/api/conversations/${id}`, { method: 'DELETE' });
-    if (state.activeConversationId === id) newChat();
+    if (state.activeConversationId === id) newChat({ skipSave: true });
     await loadConversations();
   };
 }
 
 async function openConversation(id) {
+  if (isLocalConversationId(id)) {
+    openLocalConversation(id);
+    return;
+  }
   const resp = await api(`/api/conversations/${id}`);
   if (!resp.ok) return;
   const data = await resp.json();
@@ -400,17 +570,27 @@ async function openConversation(id) {
   renderChat();
 }
 
-function newChat() {
+function newChat({ skipSave = false } = {}) {
+  if (!skipSave && !state.user) {
+    upsertLocalConversationFromState();
+  }
   state.activeConversationId = null;
   state.messages = [];
   state.lastPayload = null;
   if (state.abortController) state.abortController.abort();
   localStorage.removeItem(ACTIVE_CONV_KEY);
   sessionStorage.removeItem(DRAFT_KEY);
+  if (!state.user) syncLocalConversationsToState();
   renderHistory();
   renderChat();
   closeSidebarOnMobile();
   els.followUpInput.focus();
+}
+
+function updateShareChatBtn() {
+  if (!els.shareChatBtn) return;
+  const hasAssistant = state.messages.some((m) => m.role === 'assistant' && !m.pending);
+  els.shareChatBtn.hidden = !hasAssistant;
 }
 
 function renderChat() {
@@ -426,12 +606,14 @@ function renderChat() {
     els.chatLog.querySelectorAll('[data-q]').forEach((btn) => {
       btn.addEventListener('click', () => askQuestion(btn.dataset.q));
     });
+    updateShareChatBtn();
     return;
   }
   els.chatLog.innerHTML = state.messages.map((m, idx) => renderMessage(m, idx)).join('');
   bindMessageActions();
   bindCitations();
   bindFigures();
+  updateShareChatBtn();
   els.chatLog.scrollTop = els.chatLog.scrollHeight;
 }
 
@@ -440,27 +622,40 @@ function renderMessage(message, idx) {
     return `<div class="message user"><div class="tag">用户提问</div><div>${escapeHtml(message.content)}</div></div>`;
   }
   if (message.pending) {
+    const steps = Array.isArray(message.statusSteps) ? message.statusSteps : [];
+    const stepsHtml = steps.length
+      ? `<ul class="status-steps">${steps.map((s, i) => {
+          const done = i < steps.length - 1;
+          return `<li class="${done ? 'done' : 'active'}"><span class="dot"></span><span>${escapeHtml(s.label || s.stage || '')}</span></li>`;
+        }).join('')}</ul>`
+      : '';
+    const current = steps.length ? steps[steps.length - 1].label : '正在检索与生成回答…';
     return `
       <div class="message assistant" data-msg-idx="${idx}">
-        <div class="tag">AI 回答 · 证据约束</div>
+        <div class="tag">AI 回答</div>
         <div class="answer">
-          <div class="typing-indicator"><span class="spinner" aria-hidden="true"></span>正在检索与生成回答…</div>
+          <div class="typing-indicator">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="status-current">${escapeHtml(current)}</span>
+          </div>
+          ${stepsHtml}
         </div>
       </div>`;
   }
   const payload = message.payload || state.lastPayload || {};
   const body = renderAnswerBody(payload, message.content);
   const feedback = message.feedback || '';
+  const tag = answerKindLabel(payload.answer_kind);
   return `
     <div class="message assistant" data-msg-idx="${idx}" data-msg-id="${escapeHtml(message.id || '')}">
-      <div class="tag">AI 回答 · 证据约束</div>
+      <div class="tag">${escapeHtml(tag)}</div>
       <div class="answer">${body}</div>
       <div class="msg-actions">
         <button type="button" data-act="copy" title="复制" aria-label="复制">${ICON.copy}</button>
         <button type="button" data-act="regen" title="重说" aria-label="重说">${ICON.regen}</button>
         <button type="button" data-act="up" class="${feedback === 'up' ? 'active' : ''}" title="点赞" aria-label="点赞">${ICON.up}</button>
         <button type="button" data-act="down" class="${feedback === 'down' ? 'active' : ''}" title="点踩" aria-label="点踩">${ICON.down}</button>
-        <button type="button" data-act="share" title="分享" aria-label="分享">${ICON.share}</button>
+        <button type="button" data-act="share" title="分享此回答" aria-label="分享此回答">${ICON.share}</button>
       </div>
     </div>`;
 }
@@ -525,6 +720,12 @@ function decorateCitations(html, payload) {
     });
 }
 
+function answerKindLabel(kind) {
+  if (kind === 'chitchat') return 'AI 回答 · 闲聊';
+  if (kind === 'general_medical') return 'AI 回答 · 非指南内容';
+  return 'AI 回答 · 证据约束';
+}
+
 function renderReferences(payload) {
   const sources = payload.sources || [];
   const refs = payload.attached_references || [];
@@ -546,7 +747,7 @@ function renderReferences(payload) {
     });
   });
   return `
-    <details class="refs-block" open>
+    <details class="refs-block">
       <summary><span>References</span><span class="muted small">${items.length}</span></summary>
       ${items.map((it, i) => `
         <div class="ref-item">
@@ -584,7 +785,13 @@ function bindCitations() {
       state.citeHideTimer = null;
     }
   };
+  const hidePopover = () => {
+    clearHide();
+    pop.hidden = true;
+    state.citePinned = false;
+  };
   const scheduleHide = () => {
+    if (state.citePinned) return;
     clearHide();
     state.citeHideTimer = setTimeout(() => {
       pop.hidden = true;
@@ -592,14 +799,16 @@ function bindCitations() {
     }, 160);
   };
   const scrollToRefs = () => {
-    clearHide();
-    pop.hidden = true;
+    hidePopover();
     document.querySelector('.refs-block')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const showFor = (btn) => {
+  const showFor = (btn, { pin = false } = {}) => {
     clearHide();
+    state.citePinned = !!pin;
     const type = btn.dataset.cite;
+    const citeKey = `${type}:${btn.dataset.index ?? ''}:${btn.dataset.ref ?? ''}`;
+    pop.dataset.citeKey = citeKey;
     let html = '';
     let seeCount = (payload.sources || []).length + (payload.attached_references || []).length;
     if (type === 'S') {
@@ -640,15 +849,31 @@ function bindCitations() {
     pop.dataset.bound = '1';
     pop.addEventListener('mouseenter', clearHide);
     pop.addEventListener('mouseleave', scheduleHide);
+    document.addEventListener('pointerdown', (e) => {
+      if (pop.hidden) return;
+      const t = e.target;
+      if (pop.contains(t) || (t instanceof Element && t.closest('.cite'))) return;
+      hidePopover();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !pop.hidden) hidePopover();
+    });
   }
 
   els.chatLog.querySelectorAll('.cite').forEach((btn) => {
-    btn.addEventListener('mouseenter', () => showFor(btn));
+    btn.addEventListener('mouseenter', () => {
+      if (!state.citePinned) showFor(btn, { pin: false });
+    });
     btn.addEventListener('mouseleave', scheduleHide);
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      if (pop.hidden) showFor(btn);
-      else scrollToRefs();
+      e.stopPropagation();
+      const citeKey = `${btn.dataset.cite}:${btn.dataset.index ?? ''}:${btn.dataset.ref ?? ''}`;
+      if (!pop.hidden && state.citePinned && pop.dataset.citeKey === citeKey) {
+        hidePopover();
+        return;
+      }
+      showFor(btn, { pin: true });
     });
   });
 }
@@ -707,6 +932,76 @@ function flashActionIcon(btn, tempKey, tempLabel, restoreHtml, restoreLabel, ms)
   }, ms);
 }
 
+/** Clipboard API 仅在安全上下文（HTTPS / localhost）可用；HTTP 部署用 execCommand 回退。 */
+async function copyTextToClipboard(text) {
+  const value = String(text ?? '');
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return true;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = value;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch {
+    ok = false;
+  }
+  document.body.removeChild(ta);
+  if (!ok) throw new Error('clipboard unavailable');
+  return true;
+}
+
+function buildShareUrl(token, { messageId = null } = {}) {
+  const base = `${location.origin}${location.pathname.replace(/index\.html.?$/, '')}share.html`;
+  const params = new URLSearchParams({
+    token,
+    api: API_BASE,
+  });
+  if (messageId) params.set('message_id', messageId);
+  return `${base}?${params.toString()}`;
+}
+
+async function createShareLink({ messageId = null } = {}) {
+  if (!state.user) {
+    openAuthModal('login');
+    return null;
+  }
+  let convId = state.activeConversationId;
+  if (!convId) {
+    alert('当前对话尚未保存到云端。请确认已登录，并在登录后重新提问一次，再分享。');
+    return null;
+  }
+  const resp = await api(`/api/conversations/${convId}/share`, { method: 'POST', body: '{}' });
+  if (resp.status === 401) {
+    state.user = null;
+    renderUserArea();
+    openAuthModal('login');
+    return null;
+  }
+  if (!resp.ok) {
+    alert('分享失败');
+    return null;
+  }
+  const data = await resp.json();
+  return buildShareUrl(data.token, { messageId });
+}
+
+async function copyShareLink(url, btn, restoreHtml, restoreLabel = '分享') {
+  try {
+    await copyTextToClipboard(url);
+    if (btn) flashActionIcon(btn, 'check', '已复制链接', restoreHtml, restoreLabel, 1200);
+  } catch {
+    prompt('分享链接（请手动复制）:', url);
+  }
+}
+
 function bindMessageActions() {
   els.chatLog.querySelectorAll('.message.assistant').forEach((node) => {
     const idx = Number(node.dataset.msgIdx);
@@ -717,42 +1012,35 @@ function bindMessageActions() {
         const act = btn.dataset.act;
         if (act === 'copy') {
           const text = msg.payload?.answer_markdown || msg.content || '';
-          await navigator.clipboard.writeText(text);
-          flashActionIcon(btn, 'check', '已复制', ICON.copy, '复制', 1000);
+          try {
+            await copyTextToClipboard(text);
+            flashActionIcon(btn, 'check', '已复制', ICON.copy, '复制', 1000);
+          } catch {
+            alert('复制失败，请手动选择文本复制');
+          }
         } else if (act === 'regen') {
           const userMsg = [...state.messages].slice(0, idx).reverse().find((m) => m.role === 'user');
           if (userMsg) askQuestion(userMsg.content, { regenerate: true });
         } else if (act === 'up' || act === 'down') {
-          if (!state.user) { openAuthModal('login'); return; }
-          if (!msg.id) { alert('请先登录并完成一次问答以保存消息'); return; }
           const value = msg.feedback === act ? null : act;
-          const resp = await api(`/api/messages/${msg.id}/feedback`, {
-            method: 'POST',
-            body: JSON.stringify({ value }),
-          });
-          if (resp.ok) {
-            msg.feedback = value;
-            renderChat();
+          // 未登录也可本地点赞/点踩；已登录且消息已落库时同步到服务端
+          if (state.user && msg.id) {
+            const resp = await api(`/api/messages/${msg.id}/feedback`, {
+              method: 'POST',
+              body: JSON.stringify({ value }),
+            });
+            if (!resp.ok) {
+              alert('反馈提交失败，请稍后重试');
+              return;
+            }
           }
+          msg.feedback = value;
+          persistChatState();
+          renderChat();
         } else if (act === 'share') {
-          if (!state.user) { openAuthModal('login'); return; }
-          let convId = state.activeConversationId;
-          if (!convId) {
-            alert('当前对话尚未保存到云端。请确认已登录，并在登录后重新提问一次，再分享。');
-            return;
-          }
-          const resp = await api(`/api/conversations/${convId}/share`, { method: 'POST', body: '{}' });
-          if (resp.status === 401) {
-            state.user = null;
-            renderUserArea();
-            openAuthModal('login');
-            return;
-          }
-          if (!resp.ok) { alert('分享失败'); return; }
-          const data = await resp.json();
-          const url = `${location.origin}${location.pathname.replace(/index\.html.?$/, '')}share.html?token=${encodeURIComponent(data.token)}&api=${encodeURIComponent(API_BASE)}`;
-          await navigator.clipboard.writeText(url);
-          flashActionIcon(btn, 'check', '已复制链接', ICON.share, '分享', 1200);
+          const url = await createShareLink({ messageId: msg.id || null });
+          if (!url) return;
+          await copyShareLink(url, btn, ICON.share, '分享此回答');
         }
       });
     });
@@ -764,6 +1052,8 @@ async function askQuestion(question, meta = {}) {
   if (!q || state.isSubmitting) return;
   state.isSubmitting = true;
   els.askBtn.disabled = true;
+  if (els.followUpInput) els.followUpInput.value = '';
+  setComposerExpanded(false);
 
   if (!meta.regenerate) {
     state.messages.push({ role: 'user', content: q });
@@ -771,7 +1061,14 @@ async function askQuestion(question, meta = {}) {
     // Drop trailing assistant message when regenerating.
     if (state.messages.at(-1)?.role === 'assistant') state.messages.pop();
   }
-  const assistant = { role: 'assistant', content: '', payload: null, feedback: null, pending: true };
+  const assistant = {
+    role: 'assistant',
+    content: '',
+    payload: null,
+    feedback: null,
+    pending: true,
+    statusSteps: [],
+  };
   state.messages.push(assistant);
   renderChat();
 
@@ -779,13 +1076,26 @@ async function askQuestion(question, meta = {}) {
   state.abortController = new AbortController();
 
   try {
+    const history = state.messages
+      .filter((m) => m.role === 'user' || (m.role === 'assistant' && !m.pending))
+      .slice(0, -2) // exclude the just-appended user + pending assistant
+      .slice(-6)
+      .map((m) => ({
+        role: m.role,
+        content: (m.content || m.payload?.answer_markdown || '').slice(0, 1200),
+      }))
+      .filter((m) => m.content && m.content.trim());
+    const conversationId = isLocalConversationId(state.activeConversationId)
+      ? null
+      : (state.activeConversationId || null);
     const resp = await api('/api/ask', {
       method: 'POST',
       body: JSON.stringify({
         question: q,
         stream: true,
         trace: true,
-        conversation_id: state.activeConversationId || null,
+        conversation_id: conversationId,
+        history,
       }),
       signal: state.abortController.signal,
     });
@@ -812,10 +1122,9 @@ async function askQuestion(question, meta = {}) {
   } finally {
     state.isSubmitting = false;
     els.askBtn.disabled = false;
-    els.followUpInput.value = '';
-    setComposerExpanded(false);
     persistChatState();
     if (state.user) await loadConversations();
+    else renderHistory();
   }
 }
 
@@ -825,6 +1134,19 @@ async function consumeSSE(resp, assistant) {
   let buffer = '';
   let answer = '';
   const answerEl = () => els.chatLog.querySelector('.message.assistant:last-of-type .answer');
+  const msgEl = () => els.chatLog.querySelector('.message.assistant:last-of-type');
+
+  const paintStatus = () => {
+    if (!assistant.pending) return;
+    const el = msgEl();
+    if (!el) return;
+    // Re-render only this pending bubble for live status steps.
+    const idx = Number(el.dataset.msgIdx);
+    if (Number.isFinite(idx)) {
+      el.outerHTML = renderMessage(assistant, idx);
+      els.chatLog.scrollTop = els.chatLog.scrollHeight;
+    }
+  };
 
   while (true) {
     const { done, value } = await reader.read();
@@ -837,12 +1159,21 @@ async function consumeSSE(resp, assistant) {
       if (!line) continue;
       let event;
       try { event = JSON.parse(line.slice(6)); } catch { continue; }
-      if (event.type === 'token') {
+      if (event.type === 'status') {
+        if (!Array.isArray(assistant.statusSteps)) assistant.statusSteps = [];
+        assistant.statusSteps.push({
+          stage: event.stage || '',
+          label: event.label || event.stage || '处理中…',
+          detail: event.detail || {},
+        });
+        paintStatus();
+      } else if (event.type === 'token') {
         answer += event.text || '';
         assistant.content = answer;
         assistant.pending = false;
         const el = answerEl();
         if (el) el.innerHTML = decorateCitations(renderMarkdown(answer), state.lastPayload || {});
+        else renderChat();
         els.chatLog.scrollTop = els.chatLog.scrollHeight;
       } else if (event.type === 'final') {
         finalizeAssistant(assistant, event.payload || {});
@@ -857,7 +1188,14 @@ function finalizeAssistant(assistant, payload) {
   assistant.payload = payload;
   assistant.content = payload.answer_markdown || assistant.content || '';
   assistant.id = payload.assistant_message_id || assistant.id;
-  if (payload.conversation_id) state.activeConversationId = payload.conversation_id;
+  if (payload.conversation_id) {
+    if (state.user) {
+      state.activeConversationId = payload.conversation_id;
+    } else if (!isLocalConversationId(state.activeConversationId)) {
+      // Guests keep local-* ids; ignore server ids if any.
+      state.activeConversationId = state.activeConversationId || newLocalConversationId();
+    }
+  }
   state.lastPayload = payload;
   persistChatState();
   renderChat();
@@ -953,6 +1291,7 @@ els.authForm?.addEventListener('submit', async (e) => {
       return;
     }
     state.user = data;
+    detachLocalActiveConversation();
     closeAuthModal();
     renderUserArea();
     await loadConversations();
@@ -981,6 +1320,15 @@ els.toolsMenu?.addEventListener('click', (e) => {
   els.toolsMenu.hidden = true;
   openToolsDrawer(btn.dataset.tool);
 });
+
+if (els.shareChatBtn) {
+  els.shareChatBtn.innerHTML = ICON.shareChat;
+  els.shareChatBtn.addEventListener('click', async () => {
+    const url = await createShareLink();
+    if (!url) return;
+    await copyShareLink(url, els.shareChatBtn, ICON.shareChat, '分享聊天');
+  });
+}
 
 if (isMobileLayout()) {
   setSidebarCollapsed(true, { persist: false });

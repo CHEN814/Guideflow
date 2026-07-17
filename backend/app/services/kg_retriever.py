@@ -3,9 +3,10 @@ from __future__ import annotations
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from backend.app.models import GraphTriple
+from backend.app.services.figure_selection import tokenize
 from backend.app.services.knowledge_graph import KnowledgeGraphBundle, MedicalOntology, load_knowledge_graph_bundle
 
 
@@ -15,6 +16,18 @@ class KGHit:
     score: float
     reason: str
     components: Dict[str, float]
+
+
+_THERAPY_MARKERS = (
+    "一线", "二线", "治疗", "方案", "推荐", "复发", "难治", "therapy", "treatment",
+    "regimen", "first-line", "second-line", "r-chop", "pola", "car-t", "chop",
+)
+_THERAPY_RELATIONS = {"RECOMMENDS", "TREATS", "PREFERRED", "INDICATED_FOR", "USES"}
+_THERAPY_OBJECT_HINTS = (
+    "therapy", "treatment", "regimen", "chop", "rituximab", "pola", "car-t", "cart",
+    "chemotherapy", "immunotherapy", "transplant", "radiation", "rt", "mini-chop",
+    "epoch", "治疗", "方案", "化疗", "免疫",
+)
 
 
 class KnowledgeGraphRetriever:
@@ -50,10 +63,27 @@ class KnowledgeGraphRetriever:
                     terms.append((concept.canonical_id, concept.name))
         return self._unique(terms)
 
-    def retrieve(self, query: str, top_k: int = 8, hops: int = 1) -> List[KGHit]:
+    def retrieve(
+        self,
+        query: str,
+        top_k: int = 8,
+        hops: int = 1,
+        relation: Optional[str] = None,
+        min_relevance: float = 0.12,
+    ) -> List[KGHit]:
         seeds = self.resolve_query_entities(query)
+        therapy_query = self._is_therapy_query(query)
+        preferred_relations = self._preferred_relations(query, relation)
         if not seeds:
-            return self._fallback_retrieve(query, top_k=top_k)
+            hits = self._fallback_retrieve(query, top_k=top_k * 3)
+            return self._filter_by_relevance(
+                hits,
+                query,
+                preferred_relations=preferred_relations,
+                therapy_query=therapy_query,
+                top_k=top_k,
+                min_relevance=min_relevance,
+            )
 
         scored: Dict[str, KGHit] = {}
         frontier = deque([(entity_id, 0) for entity_id, _ in seeds])
@@ -65,16 +95,30 @@ class KnowledgeGraphRetriever:
             visited.add(entity_id)
             for triple in self._entity_to_triples.get(entity_id, []):
                 score, components = self._score_triple(triple, {seed_id for seed_id, _ in seeds}, depth)
+                relevance = self._query_relevance(triple, query, preferred_relations, therapy_query)
+                components = dict(components)
+                components["query_relevance"] = round(relevance, 4)
+                score = min(1.0, score * 0.65 + relevance * 0.55)
+                components["final"] = round(score, 4)
                 reason = f"seed:{entity_id} depth:{depth}"
                 current = scored.get(triple.triple_id)
                 if current is None or score > current.score:
-                    scored[triple.triple_id] = KGHit(triple=triple, score=score, reason=reason, components=components)
+                    scored[triple.triple_id] = KGHit(
+                        triple=triple, score=score, reason=reason, components=components
+                    )
                 other = triple.object_id if triple.subject_id == entity_id else triple.subject_id
                 if other and other not in visited:
                     frontier.append((other, depth + 1))
 
         results = sorted(scored.values(), key=lambda hit: (hit.score, hit.triple.confidence), reverse=True)
-        return results[:top_k]
+        return self._filter_by_relevance(
+            results,
+            query,
+            preferred_relations=preferred_relations,
+            therapy_query=therapy_query,
+            top_k=top_k,
+            min_relevance=min_relevance,
+        )
 
     def expand_subgraph(self, entity_ids: Sequence[str], hops: int = 1, top_k: int = 20) -> List[GraphTriple]:
         frontier = deque([(entity_id, 0) for entity_id in entity_ids])
@@ -108,6 +152,80 @@ class KnowledgeGraphRetriever:
                 hits.append(KGHit(triple=triple, score=score, reason="lexical", components={"base": triple.confidence, "lexical_fallback": 0.2}))
         hits.sort(key=lambda hit: (hit.score, hit.triple.confidence), reverse=True)
         return hits[:top_k]
+
+    @staticmethod
+    def _is_therapy_query(query: str) -> bool:
+        lowered = (query or "").lower()
+        return any(marker in lowered for marker in _THERAPY_MARKERS)
+
+    @staticmethod
+    def _preferred_relations(query: str, relation: Optional[str]) -> Set[str]:
+        if relation:
+            return {relation.strip().upper()}
+        if KnowledgeGraphRetriever._is_therapy_query(query):
+            return set(_THERAPY_RELATIONS)
+        return set()
+
+    @staticmethod
+    def _query_relevance(
+        triple: GraphTriple,
+        query: str,
+        preferred_relations: Set[str],
+        therapy_query: bool,
+    ) -> float:
+        q_tokens = tokenize(query)
+        blob = " ".join(
+            [
+                triple.subject_name or "",
+                triple.relation or "",
+                triple.object_name or "",
+                triple.object_type or "",
+                triple.evidence_text or "",
+            ]
+        ).lower()
+        t_tokens = tokenize(blob)
+        overlap = (len(q_tokens & t_tokens) / len(q_tokens)) if q_tokens else 0.0
+        rel = (triple.relation or "").upper()
+        relation_bonus = 0.25 if preferred_relations and rel in preferred_relations else 0.0
+        object_bonus = 0.0
+        looks_like_therapy = any(hint in blob for hint in _THERAPY_OBJECT_HINTS) or any(
+            hint in (triple.object_name or "").lower() for hint in _THERAPY_OBJECT_HINTS
+        )
+        if therapy_query and not looks_like_therapy:
+            # Hard-drop generic DLBCL→Biopsy / LDH style edges for therapy questions.
+            return 0.0
+        if therapy_query and looks_like_therapy:
+            object_bonus = 0.3
+        # Prefer evidence text that mentions regimen / first-line cues.
+        if any(m in blob for m in ("first-line", "一线", "r-chop", "pola-r-chp", "preferred")):
+            object_bonus += 0.15
+        return max(0.0, min(1.0, overlap + relation_bonus + object_bonus))
+
+    @staticmethod
+    def _filter_by_relevance(
+        hits: Sequence[KGHit],
+        query: str,
+        *,
+        preferred_relations: Set[str],
+        therapy_query: bool,
+        top_k: int,
+        min_relevance: float,
+    ) -> List[KGHit]:
+        kept: List[KGHit] = []
+        for hit in hits:
+            relevance = float(hit.components.get("query_relevance", 0.0))
+            if "query_relevance" not in hit.components:
+                relevance = KnowledgeGraphRetriever._query_relevance(
+                    hit.triple, query, preferred_relations, therapy_query
+                )
+            if relevance < min_relevance and therapy_query:
+                continue
+            if relevance < min_relevance * 0.5 and not therapy_query:
+                continue
+            kept.append(hit)
+            if len(kept) >= top_k:
+                break
+        return kept
 
     @staticmethod
     def _score_triple(triple: GraphTriple, seed_ids: set[str], depth: int) -> Tuple[float, Dict[str, float]]:

@@ -16,9 +16,11 @@ def verify_answer(
     answer: str,
     hits: List[RetrievalHit],
     figures: Optional[Sequence[FigureReference]] = None,
+    answer_kind: str = "guideline",
 ) -> Dict[str, object]:
     figures = list(figures or [])
     image_grounded = bool(figures)
+    kind = (answer_kind or "guideline").strip().lower()
 
     citations = SOURCE_CITATION_RE.findall(answer)
     unique_citations = sorted(set(citations), key=lambda item: int(item[2:-1]))
@@ -36,14 +38,18 @@ def verify_answer(
     requires_boundary_statement = bool(uncovered_entities) and not image_grounded
 
     issues = []
-    if not unique_citations:
-        issues.append("answer_missing_source_citations")
-    if requires_boundary_statement and not mentions_not_direct:
-        issues.append("uncovered_entities_without_boundary_statement")
-    if not hits and not figures:
-        issues.append("no_retrieved_evidence")
-    if INLINE_SOURCE_SECTION_RE.search(answer):
-        issues.append("answer_contains_inline_sources")
+    if kind == "guideline":
+        if not unique_citations:
+            issues.append("answer_missing_source_citations")
+        if requires_boundary_statement and not mentions_not_direct:
+            issues.append("uncovered_entities_without_boundary_statement")
+        if not hits and not figures:
+            issues.append("no_retrieved_evidence")
+        if INLINE_SOURCE_SECTION_RE.search(answer):
+            issues.append("answer_contains_inline_sources")
+    else:
+        # Chitchat / general medical answers are not evidence-constrained.
+        requires_boundary_statement = False
 
     return {
         "ok": not issues,
@@ -53,7 +59,8 @@ def verify_answer(
         "retrieved_source_count": len(hits),
         "figure_count": len(figures),
         "image_grounded": image_grounded,
+        "answer_kind": kind,
         "question_entities": entities,
-        "uncovered_entities": uncovered_entities,
+        "uncovered_entities": uncovered_entities if kind == "guideline" else [],
         "requires_boundary_statement": requires_boundary_statement,
     }

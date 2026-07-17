@@ -19,11 +19,22 @@
   <script>
     const params = new URLSearchParams(location.search);
     const token = params.get('token');
+    const messageId = params.get('message_id');
     const API_BASE = params.get('api') || window.API_BASE || 'http://127.0.0.1:8001';
     function escapeHtml(t){return String(t??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));}
     function md(raw){
       let html; try{html=marked.parse(String(raw||''),{breaks:true});}catch{html=escapeHtml(raw);}
       return DOMPurify?DOMPurify.sanitize(html):html;
+    }
+    function pickMessages(messages, focusId){
+      if(!focusId) return messages||[];
+      const list = messages||[];
+      const idx = list.findIndex((m) => String(m.id) === String(focusId));
+      if(idx < 0) return list;
+      const out = [];
+      if(idx > 0 && list[idx-1]?.role === 'user') out.push(list[idx-1]);
+      out.push(list[idx]);
+      return out;
     }
     async function main(){
       const log=document.getElementById('chatLog');
@@ -31,8 +42,11 @@
       const resp=await fetch(`${API_BASE}/api/shared/${encodeURIComponent(token)}`);
       if(!resp.ok){log.innerHTML='<div class="muted" style="padding:20px">分享不存在或已失效</div>';return;}
       const data=await resp.json();
-      document.querySelector('h1').textContent=data.title||'分享的对话';
-      log.innerHTML=(data.messages||[]).map(m=>{
+      const messages = pickMessages(data.messages, messageId);
+      document.querySelector('h1').textContent = messageId
+        ? (data.title ? `${data.title} · 单条回答` : '分享的回答')
+        : (data.title || '分享的对话');
+      log.innerHTML=messages.map(m=>{
         if(m.role==='user') return `<div class="message user"><div class="tag">用户</div>${escapeHtml(m.content)}</div>`;
         const text=m.payload?.answer_markdown||m.content||'';
         return `<div class="message assistant"><div class="tag">AI</div><div class="answer">${md(text)}</div></div>`;

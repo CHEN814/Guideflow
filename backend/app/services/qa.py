@@ -6,12 +6,14 @@ from typing import Dict, Generator, List, Optional, Tuple
 
 from backend.app.models import EvidenceBundle, FigureReference, NormalizedQuery, QAResult, RetrievalHit
 from backend.app.settings import Settings
+from backend.app.services.agent_orchestrator import AgentOrchestrator
+from backend.app.services.agent_tools import status_event
 from backend.app.services.answer_formatter import format_answer
 from backend.app.services.bm25_store import BM25Store
+from backend.app.services.disease_scope import DiseaseScope, detect_disease_scope
 from backend.app.services.qwen import QwenClient
 from backend.app.prompts import PAGE_SUMMARY_MARKER, build_evidence_prompt
-from backend.app.services.dlbcl_flow_map import normalize_page_code
-from backend.app.services.embeddings import load_embedding_model
+from backend.app.services.dlbcl_flow_map import is_decision_flow_page, normalize_page_code
 from backend.app.services.figure_crop import (
     assess_vlm_bbox_quality,
     detect_display_bboxes_for_page,
@@ -28,15 +30,19 @@ from backend.app.services.page_summary_cache import PageSummaryCache
 from backend.app.services.query_normalizer import normalize_query
 from backend.app.services.reference_resolver import ReferenceResolver
 from backend.app.services.reranker import load_reranker
-from backend.app.services.retrieval import HybridRetriever
+from backend.app.services.retrieval import Bm25Retriever
 from backend.app.services.tracing import TraceLogger
-from backend.app.services.vector_store import create_vector_store
 from backend.app.services.verifier import verify_answer
 
 
 @dataclass
 class _AskContext:
     question: str
+    standalone_question: str
+    history: List[dict]
+    answer_kind: str
+    disease_scope: DiseaseScope
+    topic_shift: bool
     trace: TraceLogger
     normalized: NormalizedQuery
     hits: List[RetrievalHit]
@@ -54,6 +60,10 @@ class _AskContext:
     bundle: EvidenceBundle
     use_vlm: bool
     structured_trace: dict
+    early_answer: Optional[str] = None
+    early_degraded: Optional[str] = None
+    agent_steps: List[dict] = field(default_factory=list)
+    status_events: List[dict] = field(default_factory=list)
 
 
 class QAService:
@@ -64,24 +74,18 @@ class QAService:
         # previously-summarised flowchart pages become more findable.
         self.summary_cache = PageSummaryCache(settings.summary_cache_path)
         self._rebuild_bm25_with_summaries()
-        # BM25-only is the default fast path: skip embedding-model load and the
-        # vector index entirely (this is the bulk of cold-start latency).
-        self.vector_store = None
-        if settings.retrieval_mode == "hybrid":
-            embedding_model = load_embedding_model(settings.embedding_model)
-            self.vector_store = create_vector_store(settings.vector_index_dir, embedding_model)
-            self.vector_store.load()
         self.reranker = load_reranker(settings.reranker_model)
-        self.retriever = HybridRetriever(
+        self.retriever = Bm25Retriever(
             bm25=self.bm25,
-            vector_store=self.vector_store,
             reranker=self.reranker,
             bm25_top_k=settings.bm25_top_k,
-            vector_top_k=settings.vector_top_k,
             rerank_top_k=settings.rerank_top_k,
             final_top_k=settings.final_top_k,
         )
-        self.reference_resolver = ReferenceResolver.from_path(settings.knowledge_base_path)
+        self.reference_resolver = ReferenceResolver.from_path(
+            settings.knowledge_base_path,
+            max_attached_refs=settings.max_attached_refs,
+        )
         self.graph_navigator = GraphNavigator.from_path(settings.knowledge_base_path)
         self.kg_retriever = KnowledgeGraphRetriever.from_path(settings.knowledge_graph_path)
         self.qwen = QwenClient(
@@ -100,11 +104,24 @@ class QAService:
             dpi=settings.page_image_dpi,
         )
 
-    def ask(self, question: str, trace_enabled: bool = True) -> QAResult:
-        ctx = self._prepare_ask(question, trace_enabled=trace_enabled)
+    def ask(
+        self,
+        question: str,
+        trace_enabled: bool = True,
+        history: Optional[List[dict]] = None,
+    ) -> QAResult:
+        ctx = self._prepare_ask(question, trace_enabled=trace_enabled, history=history)
+        if ctx.early_answer is not None:
+            return self._finalize_ask(
+                ctx,
+                answer=ctx.early_answer,
+                generation_mode="text",
+                generation_degraded=ctx.early_degraded,
+                page_bboxes={},
+            )
         if ctx.use_vlm:
             answer, generation_degraded, page_summaries, page_bboxes = self.vlm.generate(
-                question, ctx.bundle, route=ctx.route
+                ctx.standalone_question, ctx.bundle, route=ctx.route
             )
             generation_mode = "multimodal"
             self._apply_summaries(page_summaries, ctx.trace)
@@ -121,7 +138,12 @@ class QAService:
                 },
             )
         else:
-            answer, generation_degraded = self.qwen.generate(question, ctx.bundle, route=ctx.route)
+            answer, generation_degraded = self.qwen.generate(
+                ctx.standalone_question,
+                ctx.bundle,
+                route=ctx.route,
+                history=None if ctx.topic_shift else ctx.history,
+            )
             generation_mode = "text"
             page_bboxes = {}
         return self._finalize_ask(
@@ -133,17 +155,91 @@ class QAService:
         )
 
     def ask_stream(
-        self, question: str, trace_enabled: bool = True
+        self,
+        question: str,
+        trace_enabled: bool = True,
+        history: Optional[List[dict]] = None,
     ) -> Generator[dict, None, None]:
-        """True streaming: yield meta → token* → final(payload)."""
-        ctx = self._prepare_ask(question, trace_enabled=trace_enabled)
+        """True streaming: yield meta → status* → token* → final(payload)."""
+        history = list(history or [])
+        trace = TraceLogger(self.settings.logs_dir, enabled=trace_enabled)
+        trace.log("query_received", {"question": question, "history_turns": len(history)})
+
+        standalone, topic_shift, condense_degraded = self.qwen.condense_question(question, history)
+        if topic_shift:
+            history = []
+        disease_scope = detect_disease_scope(standalone)
+        routing_mode = str(getattr(self.settings, "routing_mode", "agentic") or "agentic").lower()
+
         yield {
             "type": "meta",
-            "route": ctx.route,
-            "generation_mode": "multimodal" if ctx.use_vlm else "text",
-            "sources": [hit.document.to_dict() for hit in ctx.hits],
-            "run_id": ctx.trace.run_id,
+            "route": "agent" if routing_mode == "agentic" else "pending",
+            "generation_mode": "text",
+            "answer_kind": "guideline",
+            "disease_scope": disease_scope.key,
+            "sources": [],
+            "run_id": trace.run_id,
+            "routing_mode": routing_mode,
         }
+
+        status_events: List[dict] = []
+        if routing_mode == "agentic":
+            orch = AgentOrchestrator(self)
+            gen = orch.run_streaming(
+                question=question,
+                standalone=standalone,
+                history=history,
+                disease_scope=disease_scope,
+                trace=trace,
+            )
+            agent_state = None
+            while True:
+                try:
+                    event = next(gen)
+                except StopIteration as stop:
+                    agent_state = stop.value
+                    break
+                if event.get("type") == "status":
+                    status_events.append(event)
+                    yield event
+            ctx = self._context_from_agent_state(
+                question=question,
+                standalone=standalone,
+                history=history,
+                topic_shift=topic_shift,
+                disease_scope=disease_scope,
+                trace=trace,
+                condense_degraded=condense_degraded,
+                agent_state=agent_state,
+                status_events=status_events,
+            )
+        else:
+            ctx = self._prepare_ask_linear(
+                question=question,
+                standalone=standalone,
+                history=history,
+                topic_shift=topic_shift,
+                disease_scope=disease_scope,
+                trace=trace,
+                condense_degraded=condense_degraded,
+            )
+            for event in ctx.status_events:
+                if event.get("type") == "status":
+                    yield event
+
+        yield status_event("generate", "生成回答中…")
+
+        if ctx.early_answer is not None:
+            yield {"type": "token", "text": ctx.early_answer}
+            result = self._finalize_ask(
+                ctx,
+                answer=ctx.early_answer,
+                generation_mode="text",
+                generation_degraded=ctx.early_degraded,
+                page_bboxes={},
+            )
+            yield {"type": "final", "payload": result.to_web_payload()}
+            return
 
         raw_parts: List[str] = []
         generation_degraded: Optional[str] = None
@@ -161,7 +257,9 @@ class QAService:
                 buffer = ""
                 marker_hit = False
                 try:
-                    for delta in self.vlm.generate_stream(question, ctx.bundle, route=ctx.route):
+                    for delta in self.vlm.generate_stream(
+                        ctx.standalone_question, ctx.bundle, route=ctx.route
+                    ):
                         raw_parts.append(delta)
                         if marker_hit:
                             continue
@@ -184,7 +282,7 @@ class QAService:
                         yield {"type": "token", "text": buffer}
                 except Exception as exc:  # pragma: no cover
                     generation_degraded = f"vlm_stream_failed:{type(exc).__name__}"
-                    fallback = self.vlm._fallback(question, ctx.bundle)
+                    fallback = self.vlm._fallback(ctx.standalone_question, ctx.bundle)
                     raw_parts = [fallback]
                     yield {"type": "token", "text": fallback}
             raw_text = "".join(raw_parts)
@@ -204,13 +302,24 @@ class QAService:
             )
         else:
             generation_mode = "text"
+            gen_history = None if ctx.topic_shift else ctx.history
             try:
-                for delta in self.qwen.generate_stream(question, ctx.bundle, route=ctx.route):
+                for delta in self.qwen.generate_stream(
+                    ctx.standalone_question,
+                    ctx.bundle,
+                    route=ctx.route,
+                    history=gen_history,
+                ):
                     raw_parts.append(delta)
                     yield {"type": "token", "text": delta}
             except Exception as exc:  # pragma: no cover
                 generation_degraded = f"qwen_stream_failed:{type(exc).__name__}"
-                fallback = self.qwen._fallback_answer(question, ctx.bundle, reason="request_failed", detail=str(exc))
+                fallback = self.qwen._fallback_answer(
+                    ctx.standalone_question,
+                    ctx.bundle,
+                    reason="request_failed",
+                    detail=str(exc),
+                )
                 raw_parts = [fallback]
                 yield {"type": "token", "text": fallback}
             answer = "".join(raw_parts)
@@ -226,11 +335,347 @@ class QAService:
         )
         yield {"type": "final", "payload": result.to_web_payload()}
 
-    def _prepare_ask(self, question: str, trace_enabled: bool = True) -> _AskContext:
+    def _prepare_ask(
+        self,
+        question: str,
+        trace_enabled: bool = True,
+        history: Optional[List[dict]] = None,
+    ) -> _AskContext:
+        history = list(history or [])
         trace = TraceLogger(self.settings.logs_dir, enabled=trace_enabled)
-        trace.log("query_received", {"question": question})
+        trace.log("query_received", {"question": question, "history_turns": len(history)})
 
-        normalized = normalize_query(question)
+        standalone, topic_shift, condense_degraded = self.qwen.condense_question(question, history)
+        if topic_shift:
+            history = []
+        disease_scope = detect_disease_scope(standalone)
+        routing_mode = str(getattr(self.settings, "routing_mode", "agentic") or "agentic").lower()
+        if routing_mode == "agentic":
+            orch = AgentOrchestrator(self)
+            status_events: List[dict] = []
+            agent_state = orch.run(
+                question=question,
+                standalone=standalone,
+                history=history,
+                disease_scope=disease_scope,
+                trace=trace,
+                on_status=lambda e: status_events.append(e),
+            )
+            return self._context_from_agent_state(
+                question=question,
+                standalone=standalone,
+                history=history,
+                topic_shift=topic_shift,
+                disease_scope=disease_scope,
+                trace=trace,
+                condense_degraded=condense_degraded,
+                agent_state=agent_state,
+                status_events=status_events,
+            )
+        return self._prepare_ask_linear(
+            question=question,
+            standalone=standalone,
+            history=history,
+            topic_shift=topic_shift,
+            disease_scope=disease_scope,
+            trace=trace,
+            condense_degraded=condense_degraded,
+        )
+
+    def _context_from_agent_state(
+        self,
+        *,
+        question: str,
+        standalone: str,
+        history: List[dict],
+        topic_shift: bool,
+        disease_scope: DiseaseScope,
+        trace: TraceLogger,
+        condense_degraded: Optional[str],
+        agent_state,
+        status_events: List[dict],
+    ) -> _AskContext:
+        trace.log(
+            "query_condensed",
+            {
+                "original": question,
+                "standalone_question": standalone,
+                "topic_shift": topic_shift,
+                "degraded": condense_degraded,
+            },
+        )
+        trace.log(
+            "agent_finished",
+            {
+                "steps": agent_state.steps,
+                "route": agent_state.route,
+                "answer_kind": agent_state.answer_kind,
+                "figure_count": len(agent_state.figures),
+                "hit_count": len(agent_state.hits),
+            },
+        )
+
+        if agent_state.early_answer is not None:
+            empty_normalized = normalize_query(standalone)
+            structured_trace = {
+                "question": question,
+                "standalone_question": standalone,
+                "route": "none",
+                "answer_kind": agent_state.answer_kind,
+                "disease_scope": disease_scope.key,
+                "retrieval_stages": [],
+                "evidence_hits": [],
+                "graph_steps": [],
+                "agent_steps": agent_state.steps,
+                "verification": {},
+                "panel_hint": {"mode": "agent_direct", "evidence_count": 0, "graph_count": 0},
+            }
+            return _AskContext(
+                question=question,
+                standalone_question=standalone,
+                history=history,
+                answer_kind=agent_state.answer_kind,
+                disease_scope=disease_scope,
+                topic_shift=topic_shift,
+                trace=trace,
+                normalized=empty_normalized,
+                hits=[],
+                diagnostics={
+                    "route": "none",
+                    "triggers": [],
+                    "disease_scope": disease_scope.key,
+                    "retrieval_mode": "skipped",
+                    "filters": {},
+                    "degraded": [
+                        d
+                        for d in [
+                            condense_degraded,
+                            agent_state.early_degraded,
+                            *list((agent_state.diagnostics or {}).get("degraded") or []),
+                        ]
+                        if d
+                    ],
+                },
+                route="none",
+                gate_degraded=None,
+                attached_references=[],
+                reference_links={},
+                graph_hits=[],
+                graph_triples=[],
+                graph_context=[],
+                figures=[],
+                seed_page_code=None,
+                seed_meta={"seed_page_code": None, "seed_source": "none"},
+                bundle=EvidenceBundle(primary_hits=[]),
+                use_vlm=False,
+                structured_trace=structured_trace,
+                early_answer=agent_state.early_answer,
+                early_degraded=agent_state.early_degraded,
+                agent_steps=list(agent_state.steps),
+                status_events=status_events,
+            )
+
+        hits = list(agent_state.hits)
+        normalized = normalize_query(standalone)
+        route = str(agent_state.route or "evidence")
+        diagnostics = dict(agent_state.diagnostics or {})
+        diagnostics["route"] = route
+        diagnostics["disease_scope"] = disease_scope.key
+        diagnostics["degraded"] = list(diagnostics.get("degraded") or [])
+        if condense_degraded:
+            diagnostics["degraded"].append(condense_degraded)
+        if agent_state.gate_degraded:
+            diagnostics["degraded"].append(agent_state.gate_degraded)
+
+        attached_references, reference_links = self.reference_resolver.resolve_references(
+            hits, question=standalone
+        )
+        graph_hits = list(agent_state.graph_hits)
+        graph_triples = []
+        for hit in graph_hits:
+            triple = hit.triple
+            triple.score_components = getattr(hit, "components", {})
+            graph_triples.append(triple)
+        graph_context = self._graph_context(graph_hits)
+        figures = list(agent_state.figures)
+        seed_meta = dict(agent_state.seed_meta or {})
+        seed_page_code = agent_state.seed_page_code or seed_meta.get("seed_page_code")
+
+        # If agent never called view_pages but route is flowchart, gather deterministically.
+        if not figures and route in ("flowchart", "hybrid"):
+            figures, seed_meta = self._gather_figures(
+                hits=hits,
+                route=route,
+                question=standalone,
+                normalized=normalized,
+                trace=trace,
+            )
+            seed_page_code = seed_meta.get("seed_page_code")
+
+        bundle = EvidenceBundle(
+            primary_hits=hits,
+            attached_references=attached_references,
+            reference_links=reference_links,
+            figures=figures,
+            graph_triples=graph_triples,
+            graph_context=graph_context,
+        )
+        use_vlm = bool(figures) and self.vlm.available
+        trace.log(
+            "multimodal_decision",
+            {
+                "use_vlm": use_vlm,
+                "vlm_available": self.vlm.available,
+                "figure_count": len(figures),
+                "figures": [fig.to_dict() for fig in figures],
+                "seed": seed_meta,
+            },
+        )
+        structured_trace = self._build_structured_trace(
+            question,
+            normalized.search_queries,
+            hits,
+            graph_hits,
+            diagnostics,
+            bundle,
+        )
+        structured_trace["standalone_question"] = standalone
+        structured_trace["answer_kind"] = "guideline"
+        structured_trace["disease_scope"] = disease_scope.key
+        structured_trace["agent_steps"] = list(agent_state.steps)
+        prompt_text = build_evidence_prompt(standalone, bundle, route=route)
+        trace.log(
+            "prompt_built",
+            {
+                "evidence_source_ids": [hit.document.source_id for hit in hits],
+                "evidence_count": len(hits),
+                "attached_reference_count": len(attached_references),
+                "graph_triple_count": len(graph_triples),
+                "prompt_char_count": len(prompt_text),
+                "routing_mode": "agentic",
+            },
+        )
+        trace.log("reasoning_path", structured_trace)
+        return _AskContext(
+            question=question,
+            standalone_question=standalone,
+            history=history,
+            answer_kind="guideline",
+            disease_scope=disease_scope,
+            topic_shift=topic_shift,
+            trace=trace,
+            normalized=normalized,
+            hits=hits,
+            diagnostics=diagnostics,
+            route=route,
+            gate_degraded=agent_state.gate_degraded,
+            attached_references=attached_references,
+            reference_links=reference_links,
+            graph_hits=graph_hits,
+            graph_triples=graph_triples,
+            graph_context=graph_context,
+            figures=figures,
+            seed_page_code=seed_page_code,
+            seed_meta=seed_meta,
+            bundle=bundle,
+            use_vlm=use_vlm,
+            structured_trace=structured_trace,
+            agent_steps=list(agent_state.steps),
+            status_events=status_events,
+        )
+
+    def _prepare_ask_linear(
+        self,
+        *,
+        question: str,
+        standalone: str,
+        history: List[dict],
+        topic_shift: bool,
+        disease_scope: DiseaseScope,
+        trace: TraceLogger,
+        condense_degraded: Optional[str],
+    ) -> _AskContext:
+        effective_history = history
+        trace.log(
+            "query_condensed",
+            {
+                "original": question,
+                "standalone_question": standalone,
+                "topic_shift": topic_shift,
+                "degraded": condense_degraded,
+            },
+        )
+
+        intent, intent_degraded = self.qwen.classify_intent(standalone, effective_history)
+        trace.log(
+            "intent_classified",
+            {
+                "intent": intent,
+                "degraded": intent_degraded,
+                "disease_scope": disease_scope.key,
+                "article_ids": list(disease_scope.article_ids),
+                "module_codes": list(disease_scope.module_codes),
+            },
+        )
+
+        empty_normalized = normalize_query(standalone)
+        empty_bundle = EvidenceBundle(primary_hits=[])
+        empty_diagnostics = {
+            "route": "none",
+            "triggers": [],
+            "disease_scope": disease_scope.key,
+            "retrieval_mode": "skipped",
+            "filters": {},
+            "degraded": [d for d in [condense_degraded, intent_degraded] if d],
+        }
+
+        if intent in ("chitchat", "general_medical"):
+            if intent == "chitchat":
+                early_answer, early_degraded = self.qwen.generate_chitchat(question)
+            else:
+                early_answer, early_degraded = self.qwen.generate_general_medical(standalone)
+            structured_trace = {
+                "question": question,
+                "standalone_question": standalone,
+                "route": "none",
+                "answer_kind": intent,
+                "disease_scope": disease_scope.key,
+                "retrieval_stages": [],
+                "evidence_hits": [],
+                "graph_steps": [],
+                "verification": {},
+                "panel_hint": {"mode": "skipped", "evidence_count": 0, "graph_count": 0},
+            }
+            trace.log("early_answer", {"answer_kind": intent, "degraded": early_degraded})
+            return _AskContext(
+                question=question,
+                standalone_question=standalone,
+                history=effective_history,
+                answer_kind=intent,
+                disease_scope=disease_scope,
+                topic_shift=topic_shift,
+                trace=trace,
+                normalized=empty_normalized,
+                hits=[],
+                diagnostics=empty_diagnostics,
+                route="none",
+                gate_degraded=None,
+                attached_references=[],
+                reference_links={},
+                graph_hits=[],
+                graph_triples=[],
+                graph_context=[],
+                figures=[],
+                seed_page_code=None,
+                seed_meta={"seed_page_code": None, "seed_source": "none"},
+                bundle=empty_bundle,
+                use_vlm=False,
+                structured_trace=structured_trace,
+                early_answer=early_answer,
+                early_degraded=early_degraded,
+            )
+
+        normalized = normalize_query(standalone)
         trace.log(
             "query_normalized",
             {
@@ -241,13 +686,23 @@ class QAService:
             },
         )
 
-        hits, diagnostics = self.retriever.retrieve(normalized, trace)
+        hits, diagnostics = self.retriever.retrieve(
+            normalized, trace, disease_scope=disease_scope
+        )
         route = str(diagnostics.get("route", "evidence"))
+        diagnostics["degraded"] = list(diagnostics.get("degraded") or [])
+        for extra in (condense_degraded, intent_degraded):
+            if extra:
+                diagnostics["degraded"].append(extra)
 
         gate_degraded: Optional[str] = None
         gated_indices: List[int] = list(range(1, len(hits) + 1))
         if self.settings.enable_evidence_gating and hits:
-            hits, gate_degraded, gated_indices = self.qwen.gate_evidence(question, hits)
+            hits, gate_degraded, gated_indices = self.qwen.gate_evidence(
+                standalone,
+                hits,
+                protect_decision_pages=route in ("flowchart", "hybrid"),
+            )
             trace.log(
                 "evidence_gated",
                 {
@@ -255,15 +710,18 @@ class QAService:
                     "kept_indices": gated_indices,
                     "kept_count": len(hits),
                     "degraded": gate_degraded,
+                    "protect_decision_pages": route in ("flowchart", "hybrid"),
                 },
             )
         else:
             trace.log("evidence_gated", {"enabled": False, "kept_count": len(hits)})
 
-        attached_references, reference_links = self.reference_resolver.resolve_references(hits)
+        attached_references, reference_links = self.reference_resolver.resolve_references(
+            hits, question=standalone
+        )
 
         graph_hits = self.kg_retriever.retrieve(
-            question,
+            standalone,
             top_k=self.settings.final_top_k,
             hops=self.settings.graph_depth,
         )
@@ -277,7 +735,7 @@ class QAService:
         figures, seed_meta = self._gather_figures(
             hits=hits,
             route=route,
-            question=question,
+            question=standalone,
             normalized=normalized,
             trace=trace,
         )
@@ -310,7 +768,7 @@ class QAService:
                 "reference_links": reference_links,
             },
         )
-        prompt_text = build_evidence_prompt(question, bundle, route=route)
+        prompt_text = build_evidence_prompt(standalone, bundle, route=route)
         structured_trace = self._build_structured_trace(
             question,
             normalized.search_queries,
@@ -319,6 +777,9 @@ class QAService:
             diagnostics,
             bundle,
         )
+        structured_trace["standalone_question"] = standalone
+        structured_trace["answer_kind"] = "guideline"
+        structured_trace["disease_scope"] = disease_scope.key
         trace.log(
             "prompt_built",
             {
@@ -333,6 +794,11 @@ class QAService:
 
         return _AskContext(
             question=question,
+            standalone_question=standalone,
+            history=effective_history,
+            answer_kind="guideline",
+            disease_scope=disease_scope,
+            topic_shift=topic_shift,
             trace=trace,
             normalized=normalized,
             hits=hits,
@@ -381,7 +847,10 @@ class QAService:
             figures,
             hits,
             seed_page_code=seed_page_code,
-            display_max=self.settings.display_max_figures,
+            display_max=max(
+                self.settings.display_max_figures,
+                self._figure_ceiling(),
+            ),
         )
         figures = compute_anchors(answer, figures, hits)
         figures.sort(
@@ -428,7 +897,13 @@ class QAService:
         }
         trace.log("answer_generated", structured_trace["answer_generated"])
 
-        verification = verify_answer(question, answer, hits, figures=figures)
+        verification = verify_answer(
+            question,
+            answer,
+            hits,
+            figures=figures,
+            answer_kind=ctx.answer_kind,
+        )
         structured_trace["verification_result"] = verification
         structured_trace["verification"] = verification
         trace.log("verification_result", verification)
@@ -446,6 +921,9 @@ class QAService:
             figures=figures,
             graph_triples=graph_triples,
             generation_mode=generation_mode,
+            answer_kind=ctx.answer_kind,
+            standalone_question=ctx.standalone_question,
+            disease_scope=ctx.disease_scope.key,
             trace=structured_trace,
         )
 
@@ -530,6 +1008,7 @@ class QAService:
                 "evidence_count": len(hits),
                 "graph_count": len(graph_steps),
             },
+            "agent_steps": [],
         }
 
     def _best_sentence(self, text: str, keywords: List[str]) -> str:
@@ -587,6 +1066,13 @@ class QAService:
                 return idx
         return None
 
+    def _figure_ceiling(self) -> int:
+        return int(
+            getattr(self.settings, "figure_ceiling", None)
+            or getattr(self.settings, "max_images", 4)
+            or 4
+        )
+
     def _gather_figures(
         self,
         hits: List[RetrievalHit],
@@ -595,7 +1081,7 @@ class QAService:
         normalized: NormalizedQuery,
         trace: TraceLogger,
     ) -> Tuple[List[FigureReference], Dict[str, object]]:
-        """Render flowchart images: evidence hits first, then seed, then neighbours."""
+        """Render flowchart images: seed decision page first, then hits, then neighbours."""
         empty_meta: Dict[str, object] = {"seed_page_code": None, "seed_source": "none"}
         if route not in ("flowchart", "hybrid"):
             return [], empty_meta
@@ -606,7 +1092,7 @@ class QAService:
         if not seed_code:
             return [], empty_meta
 
-        budget = self.settings.max_images
+        budget = self._figure_ceiling()
         figures: List[FigureReference] = []
         seen_pages: set[int] = set()
         page_summaries = self.summary_cache.all_summaries()
@@ -634,11 +1120,35 @@ class QAService:
             )
             return True
 
-        # Phase 1: gated clinical guideline hits (evidence pages, especially S1)
-        for hit in hits:
+        # Phase 1: seed decision page (must not be crowded out by regimen tables)
+        seed_page = self.graph_navigator.get_page(seed_code)
+        seed_hit_index: Optional[int] = None
+        if seed_page:
+            for hit in hits:
+                if normalize_page_code(hit.document.printed_page_code) == seed_code:
+                    seed_hit_index = self._index_for_hit(hits, hit)
+                    break
+            _add(
+                seed_page.pdf_page,
+                seed_page.printed_page_code or seed_code,
+                seed_page.printed_page_code or seed_code,
+                seed_hit_index,
+            )
+
+        # Phase 2: clinical guideline hits — prefer decision pages, then tables
+        ordered_hits = sorted(
+            [
+                h
+                for h in hits
+                if h.document.page_type == "clinical_guideline"
+            ],
+            key=lambda h: (
+                0 if is_decision_flow_page(h.document.printed_page_code) else 1,
+                h.rank or 999,
+            ),
+        )
+        for hit in ordered_hits:
             doc = hit.document
-            if doc.page_type != "clinical_guideline":
-                continue
             if doc.pdf_page in seen_pages:
                 continue
             idx = self._index_for_hit(hits, hit)
@@ -650,22 +1160,6 @@ class QAService:
             )
             if len(figures) >= budget:
                 break
-
-        # Phase 2: seed decision page
-        seed_page = self.graph_navigator.get_page(seed_code)
-        seed_hit_index: Optional[int] = None
-        if seed_page and len(figures) < budget:
-            for hit in hits:
-                if normalize_page_code(hit.document.printed_page_code) == seed_code:
-                    seed_hit_index = self._index_for_hit(hits, hit)
-                    break
-            if seed_page.pdf_page not in seen_pages:
-                _add(
-                    seed_page.pdf_page,
-                    seed_page.printed_page_code or seed_code,
-                    seed_page.printed_page_code or seed_code,
-                    seed_hit_index,
-                )
 
         # Phase 3: graph neighbours
         neighbours: List[tuple[int, str]] = []

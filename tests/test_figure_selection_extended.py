@@ -48,8 +48,13 @@ def test_prune_fallback_prefers_cited_hit_over_seed() -> None:
     pruned = prune_figures_by_answer(
         answer, figures, hits, seed_page_code="BCEL-3", display_max=2
     )
-    assert len(pruned) == 1
+    # Cited [S1] must come first; seed decision page may be kept as secondary.
     assert pruned[0].page_code == "BCEL-C 1 OF 7"
+    assert any(fig.page_code == "BCEL-C 1 OF 7" for fig in pruned)
+    codes = [fig.page_code for fig in pruned]
+    assert codes[0] == "BCEL-C 1 OF 7"
+    if len(pruned) > 1:
+        assert "BCEL-3" in codes
 
 
 def test_prune_secondary_next_step_respects_display_max() -> None:

@@ -29,17 +29,37 @@ body{
   border-right:1px solid var(--line);
   background:rgba(255,255,255,.5);
   backdrop-filter:blur(18px);
-  display:flex;flex-direction:column;gap:14px;min-width:0;transition:opacity .2s;
+  display:flex;flex-direction:column;gap:14px;min-width:0;min-height:0;overflow:hidden;transition:opacity .2s;
 }
-.sidebar-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.sidebar-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-shrink:0}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 8px}
 .brand-badge{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--brand),#ff9b6a);box-shadow:0 10px 25px rgba(229,111,61,.35);font-weight:700}
 .brand-title{font-weight:700;font-size:16px}
 .icon-btn{border:1px solid var(--line);background:#fff;border-radius:12px;width:36px;height:36px;cursor:pointer;color:var(--text)}
-.new-chat-btn{width:100%;border-radius:999px;padding:12px 14px;font-weight:700}
-.history-wrap{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
-.history-label{padding:12px 14px 6px;font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
-.history-list{overflow:auto;padding:6px 8px 12px;display:flex;flex-direction:column;gap:4px}
+.new-chat-btn{width:100%;border-radius:999px;padding:12px 14px;font-weight:700;flex-shrink:0}
+.history-wrap{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.history-wrap::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:48px;pointer-events:none;z-index:2;
+  background:linear-gradient(to top,#fff 0%,rgba(255,255,255,.85) 28%,rgba(255,255,255,0) 100%);
+  opacity:0;transition:opacity .2s ease;border-radius:0 0 18px 18px
+}
+.history-wrap.can-scroll-more::after{opacity:1}
+.history-label{flex-shrink:0;padding:12px 14px 6px;font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.history-list{
+  flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:6px 8px 20px;display:flex;flex-direction:column;gap:4px;
+  scrollbar-width:none
+}
+.history-wrap:hover .history-list{scrollbar-width:thin;scrollbar-color:rgba(140,130,120,.22) transparent}
+.history-list::-webkit-scrollbar{width:0;height:0}
+.history-wrap:hover .history-list::-webkit-scrollbar{width:4px}
+.history-list::-webkit-scrollbar-track{background:transparent}
+.history-list::-webkit-scrollbar-thumb{
+  background:transparent;border-radius:999px
+}
+.history-wrap:hover .history-list::-webkit-scrollbar-thumb{background:rgba(140,130,120,.22)}
+.history-wrap:hover .history-list::-webkit-scrollbar-thumb:hover{background:rgba(140,130,120,.36)}
+.history-list::-webkit-scrollbar-button{display:none;width:0;height:0}
 .history-group{font-size:12px;color:var(--muted);padding:10px 8px 4px}
 .history-item{display:flex;align-items:center;gap:6px;padding:10px 10px;border-radius:12px;cursor:pointer;border:1px solid transparent}
 .history-item:hover,.history-item.active{background:rgba(229,111,61,.08);border-color:rgba(229,111,61,.16)}
@@ -47,7 +67,7 @@ body{
 .history-item .more{opacity:.55;border:0;background:transparent;cursor:pointer;color:var(--muted);padding:2px 6px;border-radius:8px}
 .history-item:hover .more,.history-item.active .more{opacity:1}
 .history-item .more:hover{background:rgba(0,0,0,.05)}
-.sidebar-footer{padding:4px}
+.sidebar-footer{padding:4px;flex-shrink:0}
 .user-chip{width:100%;text-align:left;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:600}
 .user-chip .email{display:block;font-size:13px}
 .user-chip .sub{display:block;font-size:11px;color:var(--muted);margin-top:2px}
@@ -58,7 +78,14 @@ body{
 .header{display:flex;justify-content:space-between;align-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 22px 8px;gap:12px}
 .app.collapsed .header{padding-left:56px}
 .header h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.02em}
-.header-actions{display:flex;gap:8px}
+.header-actions{display:flex;gap:8px;align-items:center}
+.header-share-btn{width:40px;height:40px;display:grid;place-items:center;padding:0}
+.header-share-btn svg{display:block;pointer-events:none}
+.header-share-btn:hover{color:var(--brand-2);border-color:rgba(229,111,61,.28)}
+.icon-btn#collapseSidebarBtn,
+.sidebar-expand{
+  font-size:22px;line-height:1;font-weight:600;display:grid;place-items:center;padding:0
+}
 .btn{border:1px solid var(--line);background:var(--panel-strong);border-radius:14px;padding:10px 14px;font-weight:600;color:var(--text);cursor:pointer;box-shadow:0 8px 24px rgba(72,48,31,.06)}
 .btn.primary{background:linear-gradient(145deg,var(--brand),var(--brand-2));color:#fff;border-color:transparent}
 .btn.ghost{background:rgba(255,255,255,.7)}
@@ -78,8 +105,11 @@ body{
 .msg-actions{display:flex;gap:2px;margin-top:10px;flex-wrap:wrap;align-items:center}
 .msg-actions button{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;line-height:0}
 .msg-actions button svg{display:block;pointer-events:none}
-.msg-actions button:hover,.msg-actions button.active{background:rgba(229,111,61,.1);color:var(--brand-2)}
-.msg-actions button.active svg{stroke-width:2.1}
+/* hover 与 active 必须区分：取消点赞时鼠标仍在按钮上，若样式相同会误以为未生效 */
+.msg-actions button:hover{background:rgba(229,111,61,.08);color:var(--brand-2)}
+.msg-actions button.active{background:rgba(229,111,61,.2);color:var(--brand-2)}
+.msg-actions button.active:hover{background:rgba(229,111,61,.26)}
+.msg-actions button.active svg{stroke-width:2.2;fill:currentColor}
 .cite{
   display:inline-flex;align-items:center;gap:4px;margin:0 2px;padding:1px 7px;border-radius:999px;
   background:#f4f1ee;border:1px solid rgba(0,0,0,.06);color:#a44c28;font-size:12px;font-weight:700;cursor:pointer;vertical-align:baseline
@@ -149,8 +179,16 @@ body{
 .link-btn{border:0;background:transparent;color:var(--brand);cursor:pointer;font:inherit;font-size:13px;padding:4px 0;text-align:left}
 .link-btn:hover{text-decoration:underline}
 .typing-indicator{display:inline-flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;padding:4px 0}
-.spinner{width:18px;height:18px;border:2px solid rgba(229,111,61,.2);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite}
+.typing-indicator .status-current{font-weight:600;color:var(--text)}
+.spinner{width:18px;height:18px;border:2px solid rgba(229,111,61,.2);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
+.status-steps{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.status-steps li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.status-steps li.active{color:var(--text);font-weight:600}
+.status-steps li.done{opacity:.72}
+.status-steps .dot{width:7px;height:7px;border-radius:50%;background:rgba(229,111,61,.35);flex-shrink:0}
+.status-steps li.active .dot{background:var(--brand);box-shadow:0 0 0 3px rgba(229,111,61,.18)}
+.status-steps li.done .dot{background:rgba(116,107,100,.45)}
 .tools-menu{position:fixed;right:24px;top:64px;z-index:60;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column;min-width:160px}
 .tools-menu button{border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}
 .tools-menu button:hover{background:rgba(229,111,61,.08)}
@@ -164,7 +202,9 @@ body{
 .context-menu button:hover{background:rgba(229,111,61,.08)}
 .sidebar-backdrop{display:none}
 @media (max-width:900px){
-  .app{grid-template-columns:1fr}
+  /* Must beat .app.collapsed{grid-template-columns:0 ...} or main lands in a 0-width column */
+  .app,
+  .app.collapsed{grid-template-columns:1fr}
   .sidebar{
     position:fixed;inset:0 auto 0 0;width:min(280px,86vw);z-index:50;
     padding-top:calc(16px + env(safe-area-inset-top,0px));

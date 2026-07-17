@@ -147,6 +147,16 @@ def prune_figures_by_answer(
                 break
             kept.append(fig)
 
+    # Keep the intent seed decision page when display budget allows more than one.
+    seed_norm = normalize_page_code(seed_page_code)
+    if seed_norm and display_max > 1 and len(kept) < display_max:
+        already = {normalize_page_code(f.page_code) for f in kept}
+        if seed_norm not in already:
+            for fig in figures:
+                if normalize_page_code(fig.page_code) == seed_norm:
+                    kept.append(fig)
+                    break
+
     if len(kept) > display_max:
         kept = kept[:display_max]
     return kept

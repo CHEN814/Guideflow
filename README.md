@@ -59,11 +59,39 @@ python -m uvicorn backend.api.server:app --reload --host 127.0.0.1 --port 8001
 
 # 终端 B — 前端静态服务 (:5173)
 python -m http.server 5173 -d frontend --bind 127.0.0.1
+# 或在 frontend/ 目录：npx --yes serve -l 5173
 ```
 
 浏览器打开 http://127.0.0.1:5173/ ，或 http://127.0.0.1:8001/app/ 。
 
 Web UI 功能、API 端点与验收清单见 **[前端开发指南](frontend/开发指南.md)**。
+
+#### 本机预览手机端（不必打包上云）
+
+前端无构建步骤，改完 `frontend/` 下 CSS/JS 后硬刷新即可；用 Chrome 设备模式在电脑上模拟手机布局。
+
+1. **起前端**（任选其一，端口保持 `5173`）：
+
+   ```bash
+   # 项目根目录
+   python -m http.server 5173 -d frontend --bind 127.0.0.1
+
+   # 或进入 frontend/ 目录
+   cd frontend
+   npx --yes serve -l 5173
+   ```
+
+2. 浏览器打开 http://127.0.0.1:5173/ 。只验布局/遮挡时可不启后端；要联调问答则先起终端 A 的 API。
+
+3. **Chrome 模拟手机**：
+   - 按 `F12` 打开开发者工具
+   - 再按 `Ctrl+Shift+M`（Mac：`Cmd+Shift+M`）打开设备工具栏，或点工具栏上的手机/平板图标
+   - 顶部选 `iPhone` / `Pixel` 等预设，或 Dimensions 选 **Responsive** 后把宽度拖到 **&lt;900px**（本项目移动断点）
+   - 改样式后用 `Ctrl+Shift+R` 硬刷新
+
+4. **建议核对**：首次进入侧栏默认收起、主聊天区完整；点展开出现抽屉与遮罩；点遮罩 / 选历史 / 新建对话后侧栏收起；底部输入框始终可见。
+
+> 可选：本机与手机同一 Wi‑Fi 时，用 `python -m http.server 5173 -d frontend --bind 0.0.0.0`，手机浏览器访问 `http://<电脑局域网IP>:5173`。布局类问题本地定版后，再一次性同步到服务器即可。
 
 > **默认检索为 BM25-only**（单次问答 ≤30s 预算考虑）。向量 + RRF 融合代码保留，仅在召回不足时按需启用，见 [环境配置 · 向量检索](docs/环境配置.md)。
 

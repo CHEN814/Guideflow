@@ -36,7 +36,9 @@ DOCUMENT_PROFILES: Dict[str, DocumentProfile] = {
         key="nccn-bcell-v3-2026",
         label="NCCN Clinical Practice Guidelines in Oncology: B-Cell Lymphomas, v3.2026",
         page_ranges=PageRanges(),
-        disease_scope_keys=["dlbcl"],
+        disease_scope_keys=[
+            "dlbcl", "fl", "mcl", "mzl", "pmbl", "hgbl", "burkitt", "ptld", "hiv", "transform", "all",
+        ],
     ),
 }
 

@@ -22,18 +22,13 @@ from backend.app.services.knowledge_graph import (
 )
 from backend.app.services.neo4j_importer import import_knowledge_graph_to_neo4j
 from backend.app.services.qa import QAService
-from backend.app.settings import EMBEDDING_PROFILES, apply_profile, load_settings
+from backend.app.settings import load_settings
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ask the DLBCL CLI RAG Agent.")
     parser.add_argument("question", nargs="?", help="Question to ask.")
     parser.add_argument("--trace", action="store_true", help="Print trace path and retrieved sources.")
-    parser.add_argument(
-        "--embedding",
-        choices=sorted(EMBEDDING_PROFILES),
-        help="Embedding profile to use (overrides .env). e.g. hash (fast) or bge-m3 (quality).",
-    )
     parser.add_argument(
         "--build-kg",
         action="store_true",
@@ -59,8 +54,6 @@ def main() -> None:
     args = parser.parse_args()
 
     settings = load_settings()
-    if args.embedding:
-        settings = apply_profile(settings, args.embedding)
 
     kg_ops = any(
         [
@@ -236,12 +229,6 @@ def _ensure_indexes(settings) -> None:
         missing.append("python scripts/build_knowledge_base.py")
     if not settings.bm25_index_path.exists():
         missing.append("python scripts/build_bm25_index.py")
-    # The vector index is only needed in hybrid mode; BM25-only skips it.
-    if settings.retrieval_mode == "hybrid" and not (
-        (settings.vector_index_dir / "vectors.json").exists()
-        or (settings.vector_index_dir / "backend.txt").exists()
-    ):
-        missing.append("python scripts/build_vector_index.py --embedding bge-m3")
     if missing:
         commands = "\n".join(f"  {command}" for command in missing)
         raise SystemExit(f"Indexes are not ready. Run:\n{commands}")

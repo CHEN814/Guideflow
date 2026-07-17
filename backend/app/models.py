@@ -4,11 +4,11 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
 
-# ── Search-time unit (BM25 / vector / retrieval) ──────────────────────────
+# ── Search-time unit (BM25 / retrieval) ───────────────────────────────────
 
 @dataclass
 class SearchDocument:
-    """Flat unit used by BM25, vector index and retrieval pipeline.
+    """Flat unit used by BM25 and the retrieval pipeline.
 
     Generated from GuidelinePage, DiscussionChunk or ReferenceEntry.
     """
@@ -230,15 +230,14 @@ class StructuredKnowledgeBase:
         )
 
     def to_search_documents(self) -> List[SearchDocument]:
-        """Generate flat search units for BM25 / vector indexing.
+        """Generate flat search units for BM25 indexing.
 
         Only clinical_guideline pages and discussion chunks are indexed.
         Reference entries are intentionally excluded: every retrieval route
         filters them out, and they are attached at answer time via
         ReferenceResolver (which reads the knowledge base directly). Indexing
         them only wastes space and risks duplicate-id collisions.
-        A defensive dedup on source_id guards the vector store against
-        duplicate ids.
+        A defensive dedup on source_id guards against duplicate ids.
         """
         docs: List[SearchDocument] = []
         seen_ids: set = set()
@@ -420,6 +419,9 @@ class QAResult:
     figures: List[FigureReference] = field(default_factory=list)
     graph_triples: List[GraphTriple] = field(default_factory=list)
     generation_mode: str = "text"          # "text" (Qwen) | "multimodal" (VLM)
+    answer_kind: str = "guideline"         # guideline | general_medical | chitchat
+    standalone_question: Optional[str] = None
+    disease_scope: Optional[str] = None
     trace: Dict[str, Any] = field(default_factory=dict)
 
     def to_web_payload(self, image_url_prefix: str = "/api/images") -> Dict[str, Any]:
@@ -450,6 +452,9 @@ class QAResult:
             "answer_markdown": self.answer,
             "answer_paragraphs": split_answer_paragraphs(self.answer),
             "generation_mode": self.generation_mode,
+            "answer_kind": self.answer_kind,
+            "standalone_question": self.standalone_question or self.question,
+            "disease_scope": self.disease_scope,
             "figures": figures_payload,
             "sources": [doc.to_dict() for doc in self.sources],
             "attached_references": [ref.to_dict() for ref in self.attached_references],
