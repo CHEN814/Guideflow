@@ -158,3 +158,102 @@ def test_share_public(client: TestClient):
     pub = client.get(f"/api/shared/{token}")
     assert pub.status_code == 200
     assert pub.json()["id"] == conv_id
+
+
+def _ask(client: TestClient, question: str, **extra) -> dict:
+    resp = client.post(
+        "/api/ask",
+        json={"question": question, "stream": False, "trace": False, **extra},
+    )
+    assert resp.status_code == 200
+    return resp.json()
+
+
+def test_message_tree_followup_and_regen(client: TestClient):
+    client.post("/api/auth/register", json={"email": "tree@example.com", "password": "password123"})
+    first = _ask(client, "第一问")
+    conv_id = first["conversation_id"]
+    user1 = first["user_message_id"]
+    asst1 = first["assistant_message_id"]
+    assert user1 and asst1
+
+    detail = client.get(f"/api/conversations/{conv_id}").json()
+    assert detail["active_root_id"] == user1
+    assert len(detail["messages"]) == 2
+    by_id = {m["id"]: m for m in detail["messages"]}
+    assert by_id[user1]["parent_id"] is None
+    assert by_id[asst1]["parent_id"] == user1
+    assert by_id[user1]["active_child_id"] == asst1
+
+    # Follow-up under assistant leaf
+    second = _ask(client, "第二问", conversation_id=conv_id, parent_message_id=asst1)
+    user2 = second["user_message_id"]
+    asst2 = second["assistant_message_id"]
+
+    # Regenerate under first user → sibling assistant
+    regen = _ask(
+        client,
+        "第一问",
+        conversation_id=conv_id,
+        parent_message_id=user1,
+        regenerate=True,
+    )
+    asst1b = regen["assistant_message_id"]
+    assert regen["user_message_id"] == user1
+    assert asst1b != asst1
+
+    detail = client.get(f"/api/conversations/{conv_id}").json()
+    assert len(detail["messages"]) == 5  # u1,a1,u2,a2,a1b
+    by_id = {m["id"]: m for m in detail["messages"]}
+    assert by_id[user1]["active_child_id"] == asst1b
+    kids = [m["id"] for m in detail["messages"] if m["parent_id"] == user1]
+    assert set(kids) == {asst1, asst1b}
+
+    # Switch active branch back to asst1
+    sw = client.post(
+        f"/api/conversations/{conv_id}/active-branch",
+        json={"message_id": asst1},
+    )
+    assert sw.status_code == 200
+    detail = client.get(f"/api/conversations/{conv_id}").json()
+    by_id = {m["id"]: m for m in detail["messages"]}
+    assert by_id[user1]["active_child_id"] == asst1
+
+    # Shared view is linearized active path (u1 -> asst1 -> u2 -> asst2)
+    token = client.post(f"/api/conversations/{conv_id}/share").json()["token"]
+    shared = client.get(f"/api/shared/{token}").json()
+    shared_ids = [m["id"] for m in shared["messages"]]
+    assert shared_ids == [user1, asst1, user2, asst2]
+
+
+def test_delete_message_branch(client: TestClient):
+    client.post("/api/auth/register", json={"email": "del@example.com", "password": "password123"})
+    first = _ask(client, "根问题")
+    conv_id = first["conversation_id"]
+    user1 = first["user_message_id"]
+    asst1 = first["assistant_message_id"]
+
+    # Edit-style sibling root question
+    second = _ask(client, "根问题改写", conversation_id=conv_id, parent_message_id=None)
+    user2 = second["user_message_id"]
+    asst2 = second["assistant_message_id"]
+    # Second ask with null parent creates another root; point active root to user2 happens automatically
+    detail = client.get(f"/api/conversations/{conv_id}").json()
+    assert detail["active_root_id"] == user2
+
+    # Follow-up on second branch
+    _ask(client, "分支追问", conversation_id=conv_id, parent_message_id=asst2)
+
+    # Delete second root branch — should keep first branch and retarget active_root
+    deleted = client.delete(f"/api/messages/{user2}")
+    assert deleted.status_code == 200
+    body = deleted.json()
+    assert user2 in body["deleted"]
+    assert asst2 in body["deleted"]
+    assert body["fallback_id"] == user1
+
+    detail = client.get(f"/api/conversations/{conv_id}").json()
+    ids = {m["id"] for m in detail["messages"]}
+    assert user1 in ids and asst1 in ids
+    assert user2 not in ids and asst2 not in ids
+    assert detail["active_root_id"] == user1

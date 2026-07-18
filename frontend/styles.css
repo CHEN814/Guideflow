@@ -137,6 +137,7 @@ body{
 .msg-version{display:inline-flex;align-items:center;gap:2px;margin-right:4px;color:var(--muted);font-size:13px;user-select:none}
 .msg-version-label{min-width:3.2em;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .msg-version button{font-size:16px;line-height:1;padding:4px 8px;font-weight:600}
+.msg-actions button.btn-del-branch:hover{background:rgba(180,40,40,.1);color:#b42828}
 .message.user .user-content{white-space:pre-wrap;word-break:break-word}
 .msg-row.user.editing,.message.user.editing{align-self:stretch;max-width:920px;width:100%}
 .message.user.editing{padding:14px 16px;background:rgba(255,255,255,.98);border-color:rgba(229,111,61,.35)}

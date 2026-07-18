@@ -51,6 +51,8 @@ class Conversation(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True)
     title: Mapped[str] = mapped_column(String(200), default="新对话", nullable=False)
+    # Active root message for the conversation tree (null until first message / after migration).
+    active_root_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
@@ -70,6 +72,10 @@ class Message(Base):
     conversation_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("conversations.id", ondelete="CASCADE"), index=True
     )
+    # Tree parent (no DB FK — subtree delete handled in Python). Null = root user message.
+    parent_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    # Active child along the current branch (sibling selection for n/m).
+    active_child_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False)  # user | assistant
     content: Mapped[str] = mapped_column(Text, default="", nullable=False)
     payload_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

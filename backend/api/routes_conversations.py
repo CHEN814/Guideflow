@@ -1,4 +1,4 @@
-"""Conversation history, share links, and message feedback."""
+"""Conversation history, share links, message feedback, and tree branch ops."""
 from __future__ import annotations
 
 import json
@@ -40,6 +40,8 @@ class MessageOut(BaseModel):
     content: str
     payload: Optional[dict[str, Any]] = None
     feedback: Optional[str] = None
+    parent_id: Optional[str] = None
+    active_child_id: Optional[str] = None
     created_at: datetime
 
 
@@ -48,6 +50,7 @@ class ConversationDetail(BaseModel):
     title: str
     created_at: datetime
     updated_at: datetime
+    active_root_id: Optional[str] = None
     messages: List[MessageOut]
 
 
@@ -58,6 +61,10 @@ class FeedbackBody(BaseModel):
 class ShareOut(BaseModel):
     token: str
     url_path: str
+
+
+class ActiveBranchBody(BaseModel):
+    message_id: str = Field(..., min_length=1, max_length=36)
 
 
 def _utcnow() -> datetime:
@@ -84,8 +91,70 @@ def _message_out(msg: Message) -> MessageOut:
         content=msg.content,
         payload=payload,
         feedback=msg.feedback,
+        parent_id=msg.parent_id,
+        active_child_id=msg.active_child_id,
         created_at=msg.created_at,
     )
+
+
+def _children_map(messages: list[Message]) -> dict[Optional[str], list[Message]]:
+    by_parent: dict[Optional[str], list[Message]] = {}
+    for m in messages:
+        by_parent.setdefault(m.parent_id, []).append(m)
+    for kids in by_parent.values():
+        kids.sort(key=lambda x: (x.created_at, x.id))
+    return by_parent
+
+
+def _linearize_active_path(
+    messages: list[Message],
+    active_root_id: Optional[str],
+) -> list[Message]:
+    """Walk active_child_id from root; fall back to last child when unset."""
+    if not messages:
+        return []
+    by_id = {m.id: m for m in messages}
+    by_parent = _children_map(messages)
+    roots = by_parent.get(None, [])
+    if not roots:
+        # Orphaned / legacy: fall back to chronological order
+        return sorted(messages, key=lambda m: (m.created_at, m.id))
+
+    start: Optional[Message] = None
+    if active_root_id and active_root_id in by_id and by_id[active_root_id].parent_id is None:
+        start = by_id[active_root_id]
+    if start is None:
+        start = roots[-1]
+
+    path: list[Message] = []
+    cur: Optional[Message] = start
+    seen: set[str] = set()
+    while cur is not None and cur.id not in seen:
+        seen.add(cur.id)
+        path.append(cur)
+        kids = by_parent.get(cur.id, [])
+        nxt: Optional[Message] = None
+        if cur.active_child_id and cur.active_child_id in by_id:
+            cand = by_id[cur.active_child_id]
+            if cand.parent_id == cur.id:
+                nxt = cand
+        if nxt is None and kids:
+            nxt = kids[-1]
+        cur = nxt
+    return path
+
+
+def _collect_subtree_ids(root_id: str, by_parent: dict[Optional[str], list[Message]]) -> list[str]:
+    """DFS collect root + all descendants (post-order for safe delete)."""
+    out: list[str] = []
+
+    def walk(mid: str) -> None:
+        for child in by_parent.get(mid, []):
+            walk(child.id)
+        out.append(mid)
+
+    walk(root_id)
+    return out
 
 
 @router.get("/api/conversations", response_model=List[ConversationSummary])
@@ -149,6 +218,7 @@ def get_conversation(
         title=conv.title,
         created_at=conv.created_at,
         updated_at=conv.updated_at,
+        active_root_id=conv.active_root_id,
         messages=[_message_out(m) for m in conv.messages],
     )
 
@@ -186,6 +256,36 @@ def delete_conversation(
     return {"ok": True}
 
 
+@router.post("/api/conversations/{conversation_id}/active-branch")
+def set_active_branch(
+    conversation_id: str,
+    body: ActiveBranchBody,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_user),
+) -> dict:
+    """Point the parent's active_child_id (or conversation active_root_id) at message_id."""
+    conv = db.scalar(
+        select(Conversation)
+        .where(Conversation.id == conversation_id)
+        .options(selectinload(Conversation.messages))
+    )
+    if not conv or conv.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    msg = db.get(Message, body.message_id)
+    if not msg or msg.conversation_id != conv.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
+    if msg.parent_id is None:
+        conv.active_root_id = msg.id
+    else:
+        parent = db.get(Message, msg.parent_id)
+        if not parent or parent.conversation_id != conv.id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid parent")
+        parent.active_child_id = msg.id
+    conv.updated_at = _utcnow()
+    db.commit()
+    return {"ok": True, "active_root_id": conv.active_root_id, "message_id": msg.id}
+
+
 @router.post("/api/conversations/{conversation_id}/share", response_model=ShareOut)
 def share_conversation(
     conversation_id: str,
@@ -212,12 +312,15 @@ def get_shared(token: str, db: Session = Depends(get_db)) -> ConversationDetail:
     )
     if not conv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    # Share page expects a linear active path only.
+    path = _linearize_active_path(list(conv.messages), conv.active_root_id)
     return ConversationDetail(
         id=conv.id,
         title=conv.title,
         created_at=conv.created_at,
         updated_at=conv.updated_at,
-        messages=[_message_out(m) for m in conv.messages],
+        active_root_id=conv.active_root_id,
+        messages=[_message_out(m) for m in path],
     )
 
 
@@ -241,3 +344,65 @@ def set_feedback(
     msg.feedback = body.value
     db.commit()
     return {"ok": True, "feedback": msg.feedback}
+
+
+@router.delete("/api/messages/{message_id}")
+def delete_message_branch(
+    message_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_user),
+) -> dict:
+    """Delete a message and its entire subtree; retarget sibling activation."""
+    msg = db.get(Message, message_id)
+    if not msg:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
+    conv = db.scalar(
+        select(Conversation)
+        .where(Conversation.id == msg.conversation_id)
+        .options(selectinload(Conversation.messages))
+    )
+    if not conv or conv.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
+
+    all_msgs = list(conv.messages)
+    by_parent = _children_map(all_msgs)
+    siblings = by_parent.get(msg.parent_id, [])
+    sib_ids = [s.id for s in siblings]
+    if msg.id not in sib_ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inconsistent tree")
+
+    idx = sib_ids.index(msg.id)
+    # Prefer previous sibling, else next.
+    if idx > 0:
+        fallback = sib_ids[idx - 1]
+    elif idx + 1 < len(sib_ids):
+        fallback = sib_ids[idx + 1]
+    else:
+        fallback = None
+
+    to_delete = _collect_subtree_ids(msg.id, by_parent)
+    delete_set = set(to_delete)
+
+    if msg.parent_id is None:
+        if conv.active_root_id == msg.id or conv.active_root_id in delete_set:
+            conv.active_root_id = fallback
+    else:
+        parent = db.get(Message, msg.parent_id)
+        if parent and (parent.active_child_id == msg.id or parent.active_child_id in delete_set):
+            parent.active_child_id = fallback
+
+    # Clear active_child_id pointers into the deleted set from survivors.
+    for m in all_msgs:
+        if m.id in delete_set:
+            continue
+        if m.active_child_id in delete_set:
+            m.active_child_id = None
+
+    for mid in to_delete:
+        row = db.get(Message, mid)
+        if row:
+            db.delete(row)
+
+    conv.updated_at = _utcnow()
+    db.commit()
+    return {"ok": True, "deleted": to_delete, "fallback_id": fallback}

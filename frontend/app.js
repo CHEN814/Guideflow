@@ -48,6 +48,7 @@ const ICON = {
   shareChat: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v10"/><path d="M8 7l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>`,
   check: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`,
   edit: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+  trash: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
 };
 
 const SUGGESTIONS = [
@@ -61,7 +62,14 @@ const state = {
   user: null,
   conversations: [],
   activeConversationId: null,
-  messages: [], // {id, role, content, payload, feedback}
+  /** Active path for rendering (derived from tree). */
+  messages: [],
+  /** Conversation message tree (DeepSeek-style branches). */
+  tree: {
+    nodesById: {},
+    rootIds: [],
+    activeRootId: null,
+  },
   lastPayload: null,
   isSubmitting: false,
   authMode: 'login', // login | register | reset
@@ -105,143 +113,342 @@ function saveLocalConversations(list) {
   } catch { /* ignore */ }
 }
 
-function snapshotAnswer(msg) {
-  return {
-    content: msg.content || '',
-    payload: msg.payload || null,
-    feedback: msg.feedback || null,
-    id: msg.id || null,
+function newNodeId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `n-${crypto.randomUUID()}`;
+  }
+  return `n-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function emptyTree() {
+  return { nodesById: {}, rootIds: [], activeRootId: null };
+}
+
+function resetTree() {
+  state.tree = emptyTree();
+  state.messages = [];
+}
+
+function getNode(id) {
+  return id ? state.tree.nodesById[id] || null : null;
+}
+
+function createNode({
+  role,
+  content = '',
+  parentId = null,
+  serverId = null,
+  payload = null,
+  feedback = null,
+  pending = false,
+  id = null,
+}) {
+  const node = {
+    id: id || newNodeId(),
+    serverId: serverId || null,
+    role,
+    content,
+    payload,
+    feedback,
+    parentId,
+    childIds: [],
+    activeChildId: null,
+    pending: Boolean(pending),
+    statusSteps: [],
+    editing: false,
+    citePayload: null,
   };
+  state.tree.nodesById[node.id] = node;
+  if (parentId) {
+    const parent = getNode(parentId);
+    if (parent) {
+      if (!parent.childIds.includes(node.id)) parent.childIds.push(node.id);
+      parent.activeChildId = node.id;
+    }
+  } else {
+    if (!state.tree.rootIds.includes(node.id)) state.tree.rootIds.push(node.id);
+    state.tree.activeRootId = node.id;
+  }
+  return node;
 }
 
-function applyAnswerSnapshot(asst, snap) {
-  if (!snap) return;
-  asst.content = snap.content || '';
-  asst.payload = snap.payload || null;
-  asst.feedback = snap.feedback || null;
-  asst.id = snap.id || null;
-  asst.pending = false;
+function siblingsOf(node) {
+  if (!node) return [];
+  if (!node.parentId) {
+    return state.tree.rootIds.map((id) => getNode(id)).filter(Boolean);
+  }
+  const parent = getNode(node.parentId);
+  if (!parent) return [node];
+  return parent.childIds.map((id) => getNode(id)).filter(Boolean);
 }
 
-function ensureUserVariants(userMsg) {
-  if (!userMsg || userMsg.role !== 'user') return userMsg;
-  if (!Array.isArray(userMsg.variants) || !userMsg.variants.length) {
-    userMsg.variants = [userMsg.content || ''];
-    userMsg.variantIndex = 0;
-  }
-  if (userMsg.variantIndex == null || userMsg.variantIndex < 0) userMsg.variantIndex = 0;
-  if (userMsg.variantIndex >= userMsg.variants.length) {
-    userMsg.variantIndex = userMsg.variants.length - 1;
-  }
-  return userMsg;
+function siblingIndex(node) {
+  const sibs = siblingsOf(node);
+  return Math.max(0, sibs.findIndex((s) => s.id === node.id));
 }
 
-function ensureAssistantVariants(asst, userMsg) {
-  if (!asst || asst.role !== 'assistant') return asst;
-  const n = Math.max(
-    1,
-    (userMsg && Array.isArray(userMsg.variants) && userMsg.variants.length) || 1,
-  );
-  if (!Array.isArray(asst.variantAnswers)) asst.variantAnswers = [];
-  while (asst.variantAnswers.length < n) asst.variantAnswers.push([]);
-  if (asst.variantIndex == null) asst.variantIndex = userMsg?.variantIndex ?? 0;
-  if (asst.variantIndex < 0) asst.variantIndex = 0;
-  if (asst.variantIndex >= asst.variantAnswers.length) {
-    asst.variantIndex = asst.variantAnswers.length - 1;
+function activeChildOf(node) {
+  if (!node) return null;
+  if (node.activeChildId && getNode(node.activeChildId)) {
+    return getNode(node.activeChildId);
   }
-  const answers = asst.variantAnswers[asst.variantIndex] || [];
-  if (asst.answerIndex == null) {
-    asst.answerIndex = Math.max(0, answers.length - 1);
+  if (node.childIds.length) {
+    return getNode(node.childIds[node.childIds.length - 1]);
   }
-  if (asst.answerIndex < 0) asst.answerIndex = 0;
-  if (answers.length && asst.answerIndex >= answers.length) {
-    asst.answerIndex = answers.length - 1;
-  }
-  return asst;
+  return null;
 }
 
-function storeCurrentAnswerSnapshot(asst, userMsg) {
-  if (!asst || asst.role !== 'assistant' || asst.pending) return;
-  if (!(asst.content || asst.payload)) return;
-  ensureAssistantVariants(asst, userMsg);
-  const vi = asst.variantIndex ?? userMsg?.variantIndex ?? 0;
-  if (!Array.isArray(asst.variantAnswers[vi])) asst.variantAnswers[vi] = [];
-  const answers = asst.variantAnswers[vi];
-  const snap = snapshotAnswer(asst);
-  const ai = asst.answerIndex;
-  if (ai != null && ai >= 0 && ai < answers.length) answers[ai] = snap;
-  else {
-    answers.push(snap);
-    asst.answerIndex = answers.length - 1;
+function rebuildActivePath() {
+  const path = [];
+  let cur = null;
+  if (state.tree.activeRootId && getNode(state.tree.activeRootId)) {
+    cur = getNode(state.tree.activeRootId);
+  } else if (state.tree.rootIds.length) {
+    cur = getNode(state.tree.rootIds[state.tree.rootIds.length - 1]);
+    state.tree.activeRootId = cur?.id || null;
+  }
+  const seen = new Set();
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    path.push(cur);
+    cur = activeChildOf(cur);
+  }
+  state.messages = path;
+  const lastAsst = [...path].reverse().find((m) => m.role === 'assistant' && !m.pending);
+  if (lastAsst?.payload) state.lastPayload = lastAsst.payload;
+  return path;
+}
+
+function collectSubtreeIds(rootId) {
+  const out = [];
+  const walk = (id) => {
+    const n = getNode(id);
+    if (!n) return;
+    for (const cid of n.childIds) walk(cid);
+    out.push(id);
+  };
+  walk(rootId);
+  return out;
+}
+
+function setActiveSibling(node) {
+  if (!node) return;
+  if (!node.parentId) {
+    state.tree.activeRootId = node.id;
+  } else {
+    const parent = getNode(node.parentId);
+    if (parent) parent.activeChildId = node.id;
   }
 }
 
-function syncTurnView(userIdx) {
-  const user = state.messages[userIdx];
-  if (!user || user.role !== 'user') return;
-  ensureUserVariants(user);
-  user.content = user.variants[user.variantIndex] ?? user.content;
-  const asst = state.messages[userIdx + 1];
-  if (!asst || asst.role !== 'assistant') return;
-  ensureAssistantVariants(asst, user);
-  asst.variantIndex = user.variantIndex;
-  const answers = asst.variantAnswers[asst.variantIndex] || [];
-  if (!answers.length) return;
-  asst.answerIndex = answers.length - 1;
-  applyAnswerSnapshot(asst, answers[asst.answerIndex]);
-  if (asst.payload) state.lastPayload = asst.payload;
+async function syncActiveBranchToServer(node) {
+  if (!state.user || !node?.serverId) return;
+  const convId = state.activeConversationId;
+  if (!convId || isLocalConversationId(convId)) return;
+  try {
+    const resp = await api(`/api/conversations/${convId}/active-branch`, {
+      method: 'POST',
+      body: JSON.stringify({ message_id: node.serverId }),
+    });
+    if (!resp.ok) throw new Error('active-branch failed');
+  } catch {
+    await openConversation(convId);
+  }
 }
 
-function normalizeMessageVersions(messages) {
-  for (let i = 0; i < (messages || []).length; i += 1) {
-    const m = messages[i];
-    if (m.role !== 'user') continue;
-    ensureUserVariants(m);
-    m.content = m.variants[m.variantIndex] ?? m.content;
-    const asst = messages[i + 1];
-    if (!asst || asst.role !== 'assistant') continue;
-    ensureAssistantVariants(asst, m);
-    asst.variantIndex = m.variantIndex;
-    const vi = asst.variantIndex;
-    if (!(asst.variantAnswers[vi] || []).length && (asst.content || asst.payload) && !asst.pending) {
-      asst.variantAnswers[vi] = [snapshotAnswer(asst)];
-      asst.answerIndex = 0;
-    } else if ((asst.variantAnswers[vi] || []).length) {
-      const answers = asst.variantAnswers[vi];
-      if (asst.answerIndex >= answers.length) asst.answerIndex = answers.length - 1;
-      applyAnswerSnapshot(asst, answers[asst.answerIndex]);
+async function switchBranch(node, delta) {
+  const sibs = siblingsOf(node);
+  const idx = siblingIndex(node);
+  const next = idx + delta;
+  if (next < 0 || next >= sibs.length) return;
+  setActiveSibling(sibs[next]);
+  rebuildActivePath();
+  persistChatState();
+  renderChat();
+  await syncActiveBranchToServer(sibs[next]);
+}
+
+async function deleteBranch(node) {
+  if (!node) return;
+  const sibs = siblingsOf(node);
+  const idx = siblingIndex(node);
+  const fallback = idx > 0 ? sibs[idx - 1] : (idx + 1 < sibs.length ? sibs[idx + 1] : null);
+  const toDelete = collectSubtreeIds(node.id);
+  const deleteSet = new Set(toDelete);
+
+  if (node.serverId && state.user && state.activeConversationId
+      && !isLocalConversationId(state.activeConversationId)) {
+    try {
+      const resp = await api(`/api/messages/${node.serverId}`, { method: 'DELETE' });
+      if (!resp.ok) throw new Error('delete failed');
+    } catch {
+      await openConversation(state.activeConversationId);
+      return;
     }
   }
-  return messages;
+
+  if (!node.parentId) {
+    state.tree.rootIds = state.tree.rootIds.filter((id) => !deleteSet.has(id));
+    if (state.tree.activeRootId === node.id || deleteSet.has(state.tree.activeRootId)) {
+      state.tree.activeRootId = fallback?.id || state.tree.rootIds[0] || null;
+    }
+  } else {
+    const parent = getNode(node.parentId);
+    if (parent) {
+      parent.childIds = parent.childIds.filter((id) => !deleteSet.has(id));
+      if (parent.activeChildId === node.id || deleteSet.has(parent.activeChildId)) {
+        parent.activeChildId = fallback?.id || parent.childIds[parent.childIds.length - 1] || null;
+      }
+    }
+  }
+  for (const id of Object.keys(state.tree.nodesById)) {
+    const n = state.tree.nodesById[id];
+    if (deleteSet.has(n.activeChildId)) n.activeChildId = null;
+  }
+  for (const id of toDelete) delete state.tree.nodesById[id];
+
+  rebuildActivePath();
+  persistChatState();
+  renderChat();
+  if (state.user) await loadConversations();
+  else renderHistory();
 }
 
-function snapshotMessagesForStore(messages) {
-  return (messages || [])
-    .filter((m) => !m.pending)
-    .map((m) => {
-      const base = {
-        id: m.id || null,
+/**
+ * Build tree from server messages (with parent_id) or legacy linear / old variant drafts.
+ */
+function buildTreeFromMessages(list, activeRootId = null) {
+  resetTree();
+  const raw = Array.isArray(list) ? list : [];
+  if (!raw.length) {
+    rebuildActivePath();
+    return;
+  }
+
+  // Tree format: nodes with parentId / parent_id (server always sends parent_id after migration)
+  const looksLikeTree = raw.some((m) => (
+    Object.prototype.hasOwnProperty.call(m, 'parent_id')
+    || Object.prototype.hasOwnProperty.call(m, 'parentId')
+    || (Array.isArray(m.childIds) && m.childIds.length)
+  ));
+  if (looksLikeTree) {
+    const idMap = {}; // server/local id -> local node id
+    for (const m of raw) {
+      const srcId = m.id || m.serverId || newNodeId();
+      const node = {
+        id: srcId,
+        serverId: m.serverId || m.id || null,
         role: m.role,
-        content: m.content,
+        content: m.content || '',
         payload: m.payload || null,
         feedback: m.feedback || null,
+        parentId: null, // wired in second pass
+        childIds: [],
+        activeChildId: null,
+        pending: false,
+        statusSteps: [],
+        editing: false,
+        citePayload: null,
+        _rawParent: m.parent_id ?? m.parentId ?? null,
+        _rawActiveChild: m.active_child_id ?? m.activeChildId ?? null,
       };
-      if (m.role === 'user' && Array.isArray(m.variants) && m.variants.length) {
-        base.variants = m.variants.slice();
-        base.variantIndex = m.variantIndex ?? 0;
+      state.tree.nodesById[node.id] = node;
+      idMap[srcId] = node.id;
+      if (m.serverId && m.serverId !== srcId) idMap[m.serverId] = node.id;
+    }
+    for (const node of Object.values(state.tree.nodesById)) {
+      const pid = node._rawParent;
+      if (pid && idMap[pid]) {
+        node.parentId = idMap[pid];
+        const parent = getNode(node.parentId);
+        if (parent && !parent.childIds.includes(node.id)) parent.childIds.push(node.id);
+      } else {
+        if (!state.tree.rootIds.includes(node.id)) state.tree.rootIds.push(node.id);
       }
-      if (m.role === 'assistant' && Array.isArray(m.variantAnswers) && m.variantAnswers.length) {
-        base.variantAnswers = m.variantAnswers.map((arr) => (arr || []).map((s) => ({ ...s })));
-        base.variantIndex = m.variantIndex ?? 0;
-        base.answerIndex = m.answerIndex ?? 0;
-      }
-      return base;
+      delete node._rawParent;
+    }
+    // Preserve creation order in childIds / rootIds by original list order
+    state.tree.rootIds = raw
+      .filter((m) => !(m.parent_id ?? m.parentId))
+      .map((m) => idMap[m.id || m.serverId])
+      .filter(Boolean);
+    for (const node of Object.values(state.tree.nodesById)) {
+      const kids = raw
+        .filter((m) => (m.parent_id ?? m.parentId) === (node.serverId || node.id)
+          || (m.parent_id ?? m.parentId) === node.id)
+        .map((m) => idMap[m.id || m.serverId])
+        .filter(Boolean);
+      if (kids.length) node.childIds = kids;
+    }
+    for (const node of Object.values(state.tree.nodesById)) {
+      const ac = node._rawActiveChild;
+      if (ac && idMap[ac]) node.activeChildId = idMap[ac];
+      else if (node.childIds.length) node.activeChildId = node.childIds[node.childIds.length - 1];
+      delete node._rawActiveChild;
+    }
+    if (activeRootId && idMap[activeRootId]) state.tree.activeRootId = idMap[activeRootId];
+    else if (state.tree.rootIds.length) {
+      state.tree.activeRootId = state.tree.rootIds[state.tree.rootIds.length - 1];
+    }
+    rebuildActivePath();
+    return;
+  }
+
+  // Legacy flat list (ignore old variants — keep linear active path only)
+  let prevId = null;
+  for (const m of raw) {
+    if (m.pending) continue;
+    const node = createNode({
+      role: m.role,
+      content: m.content || '',
+      parentId: prevId,
+      serverId: m.id || m.serverId || null,
+      payload: m.payload || null,
+      feedback: m.feedback || null,
+      id: m.id || undefined,
     });
+    // createNode already appends; for linear chain fix roots when not first
+    if (prevId) {
+      state.tree.rootIds = state.tree.rootIds.filter((id) => id !== node.id);
+      state.tree.activeRootId = state.tree.rootIds[0] || state.tree.activeRootId;
+      const parent = getNode(prevId);
+      if (parent) parent.activeChildId = node.id;
+    }
+    prevId = node.id;
+  }
+  if (state.tree.rootIds.length) {
+    state.tree.activeRootId = state.tree.rootIds[0];
+  }
+  rebuildActivePath();
+}
+
+function snapshotTreeForStore() {
+  const nodes = Object.values(state.tree.nodesById).filter((n) => !n.pending);
+  return {
+    activeRootId: state.tree.activeRootId,
+    messages: nodes.map((n) => ({
+      id: n.id,
+      serverId: n.serverId,
+      role: n.role,
+      content: n.content,
+      payload: n.payload || null,
+      feedback: n.feedback || null,
+      parentId: n.parentId,
+      activeChildId: n.activeChildId,
+      childIds: n.childIds.slice(),
+    })),
+  };
 }
 
 function conversationTitleFromMessages(messages) {
   const firstUser = (messages || []).find((m) => m.role === 'user' && m.content);
   const raw = String(firstUser?.content || '新对话').trim().replace(/\s+/g, ' ');
+  return (raw.slice(0, 40) || '新对话');
+}
+
+function conversationTitleFromTree() {
+  const root = getNode(state.tree.activeRootId) || getNode(state.tree.rootIds[0]);
+  const raw = String(root?.content || '新对话').trim().replace(/\s+/g, ' ');
   return (raw.slice(0, 40) || '新对话');
 }
 
@@ -251,7 +458,8 @@ function localConversationsAsSummaries(list) {
     title: c.title || '新对话',
     updated_at: c.updated_at,
     created_at: c.updated_at,
-    message_count: (c.messages || []).length,
+    message_count: c.tree?.messages?.length
+      ?? (c.messages || []).length,
   }));
 }
 
@@ -263,8 +471,8 @@ function syncLocalConversationsToState() {
 
 function upsertLocalConversationFromState() {
   if (state.user) return;
-  const messages = snapshotMessagesForStore(state.messages);
-  if (!messages.length) return;
+  const snap = snapshotTreeForStore();
+  if (!snap.messages.length) return;
 
   let id = state.activeConversationId;
   if (!isLocalConversationId(id)) {
@@ -274,14 +482,27 @@ function upsertLocalConversationFromState() {
 
   const list = loadLocalConversations();
   const prev = list.find((c) => c.id === id);
-  const autoTitle = conversationTitleFromMessages(messages);
-  const prevAuto = conversationTitleFromMessages(prev?.messages || []);
+  const autoTitle = conversationTitleFromTree();
+  const prevAuto = prev?.tree
+    ? (String(prev.tree.messages?.find((m) => m.role === 'user')?.content || '新对话').trim().slice(0, 40) || '新对话')
+    : conversationTitleFromMessages(prev?.messages || []);
   const keepRename = Boolean(prev?.title && prev.title !== '新对话' && prev.title !== prevAuto);
   const entry = {
     id,
     title: keepRename ? prev.title : autoTitle,
     updated_at: new Date().toISOString(),
-    messages,
+    tree: snap,
+    // Keep flat messages for older readers (active path only)
+    messages: state.messages.filter((m) => !m.pending).map((m) => ({
+      id: m.id,
+      serverId: m.serverId,
+      role: m.role,
+      content: m.content,
+      payload: m.payload || null,
+      feedback: m.feedback || null,
+      parentId: m.parentId,
+      activeChildId: m.activeChildId,
+    })),
     lastPayload: state.lastPayload,
   };
   const idx = list.findIndex((c) => c.id === id);
@@ -298,7 +519,11 @@ function openLocalConversation(id) {
   const conv = list.find((c) => c.id === id);
   if (!conv) return;
   state.activeConversationId = conv.id;
-  state.messages = normalizeMessageVersions((conv.messages || []).map((m) => ({ ...m })));
+  if (conv.tree?.messages?.length) {
+    buildTreeFromMessages(conv.tree.messages, conv.tree.activeRootId);
+  } else {
+    buildTreeFromMessages(conv.messages || [], null);
+  }
   state.lastPayload = conv.lastPayload || null;
   persistChatState();
   renderHistory();
@@ -340,9 +565,11 @@ function persistChatState() {
     } else {
       localStorage.removeItem(ACTIVE_CONV_KEY);
     }
+    const snap = snapshotTreeForStore();
     const draft = {
       conversationId: state.activeConversationId,
-      messages: snapshotMessagesForStore(state.messages),
+      tree: snap,
+      messages: snap.messages,
       lastPayload: state.lastPayload,
     };
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -368,7 +595,8 @@ async function restoreChatAfterLoad() {
     localStorage.removeItem(ACTIVE_CONV_KEY);
   }
   const draft = loadDraft();
-  if (!draft?.messages?.length) {
+  const draftMsgs = draft?.tree?.messages || draft?.messages;
+  if (!draftMsgs?.length) {
     if (!state.user) {
       syncLocalConversationsToState();
       renderHistory();
@@ -384,7 +612,7 @@ async function restoreChatAfterLoad() {
   }
   state.activeConversationId = draft.conversationId || null;
   if (state.user) detachLocalActiveConversation();
-  state.messages = normalizeMessageVersions(draft.messages);
+  buildTreeFromMessages(draftMsgs, draft.tree?.activeRootId || draft.activeRootId || null);
   state.lastPayload = draft.lastPayload || null;
   if (!state.user) upsertLocalConversationFromState();
   renderHistory();
@@ -680,13 +908,7 @@ async function openConversation(id) {
   if (!resp.ok) return;
   const data = await resp.json();
   state.activeConversationId = data.id;
-  state.messages = normalizeMessageVersions((data.messages || []).map((m) => ({
-    id: m.id,
-    role: m.role,
-    content: m.content,
-    payload: m.payload,
-    feedback: m.feedback,
-  })));
+  buildTreeFromMessages(data.messages || [], data.active_root_id || null);
   const lastAssistant = [...state.messages].reverse().find((m) => m.role === 'assistant');
   state.lastPayload = lastAssistant?.payload || null;
   persistChatState();
@@ -699,7 +921,7 @@ function newChat({ skipSave = false } = {}) {
     upsertLocalConversationFromState();
   }
   state.activeConversationId = null;
-  state.messages = [];
+  resetTree();
   state.lastPayload = null;
   if (state.abortController) state.abortController.abort();
   localStorage.removeItem(ACTIVE_CONV_KEY);
@@ -758,12 +980,21 @@ function renderVersionNav(current, total, prevAct, nextAct) {
     </span>`;
 }
 
+function renderBranchControls(message) {
+  const sibs = siblingsOf(message);
+  const total = sibs.length;
+  const current = siblingIndex(message);
+  const vNav = renderVersionNav(current, total, 'prev-branch', 'next-branch');
+  // Always show delete on both sides (remove this node + its subtree).
+  const delBtn = `<button type="button" data-act="del-branch" class="btn-del-branch" title="删除此分支" aria-label="删除此分支"${state.isSubmitting ? ' disabled' : ''}>${ICON.trash}</button>`;
+  return { vNav, delBtn, total };
+}
+
 function renderMessage(message, idx) {
   if (message.role === 'user') {
-    ensureUserVariants(message);
     if (message.editing) {
       return `
-        <div class="msg-row user editing" data-msg-idx="${idx}">
+        <div class="msg-row user editing" data-msg-idx="${idx}" data-node-id="${escapeHtml(message.id || '')}">
           <div class="message user editing">
             <div class="user-edit-box">
               <textarea class="user-edit-input" rows="3" aria-label="编辑问题">${escapeHtml(message.content)}</textarea>
@@ -775,14 +1006,9 @@ function renderMessage(message, idx) {
           </div>
         </div>`;
     }
-    const vNav = renderVersionNav(
-      message.variantIndex ?? 0,
-      message.variants.length,
-      'prev-variant',
-      'next-variant',
-    );
+    const { vNav, delBtn } = renderBranchControls(message);
     return `
-      <div class="msg-row user" data-msg-idx="${idx}">
+      <div class="msg-row user" data-msg-idx="${idx}" data-node-id="${escapeHtml(message.id || '')}">
         <div class="message user">
           <div class="tag">用户提问</div>
           <div class="user-content">${escapeHtml(message.content)}</div>
@@ -790,6 +1016,7 @@ function renderMessage(message, idx) {
         <div class="msg-actions msg-actions-user">
           ${vNav}
           <span class="msg-actions-icons">
+            ${delBtn}
             <button type="button" data-act="copy-user" title="复制" aria-label="复制">${ICON.copy}</button>
             <button type="button" data-act="edit" title="编辑" aria-label="编辑"${state.isSubmitting ? ' disabled' : ''}>${ICON.edit}</button>
           </span>
@@ -806,7 +1033,7 @@ function renderMessage(message, idx) {
       : '';
     const current = steps.length ? steps[steps.length - 1].label : '正在检索与生成回答…';
     return `
-      <div class="msg-row assistant" data-msg-idx="${idx}">
+      <div class="msg-row assistant" data-msg-idx="${idx}" data-node-id="${escapeHtml(message.id || '')}">
         <div class="message assistant">
           <div class="tag">AI 回答</div>
           <div class="answer">
@@ -823,35 +1050,17 @@ function renderMessage(message, idx) {
   const body = renderAnswerBody(payload, message.content);
   const feedback = message.feedback || '';
   const tag = answerKindLabel(payload.answer_kind);
-  const userMsg = state.messages[idx - 1];
-  const pairedUser = userMsg?.role === 'user' ? userMsg : null;
-  if (pairedUser) ensureUserVariants(pairedUser);
-  ensureAssistantVariants(message, pairedUser);
-  const answers = message.variantAnswers?.[message.variantIndex] || [];
-  // Prefer question-variant nav after edit; else answer-version nav after regen.
-  const userVariants = pairedUser?.variants?.length || 0;
-  const aNav = userVariants > 1
-    ? renderVersionNav(
-      pairedUser.variantIndex ?? 0,
-      userVariants,
-      'prev-variant',
-      'next-variant',
-    )
-    : renderVersionNav(
-      message.answerIndex ?? 0,
-      answers.length,
-      'prev-answer',
-      'next-answer',
-    );
+  const { vNav, delBtn } = renderBranchControls(message);
   return `
-    <div class="msg-row assistant" data-msg-idx="${idx}" data-msg-id="${escapeHtml(message.id || '')}">
+    <div class="msg-row assistant" data-msg-idx="${idx}" data-node-id="${escapeHtml(message.id || '')}" data-msg-id="${escapeHtml(message.serverId || message.id || '')}">
       <div class="message assistant">
         <div class="tag">${escapeHtml(tag)}</div>
         <div class="answer">${body}</div>
       </div>
       <div class="msg-actions">
-        ${aNav}
+        ${vNav}
         <span class="msg-actions-icons">
+          ${delBtn}
           <button type="button" data-act="copy" title="复制" aria-label="复制">${ICON.copy}</button>
           <button type="button" data-act="regen" title="重说" aria-label="重说"${state.isSubmitting ? ' disabled' : ''}>${ICON.regen}</button>
           <button type="button" data-act="up" class="${feedback === 'up' ? 'active' : ''}" title="点赞" aria-label="点赞">${ICON.up}</button>
@@ -1226,12 +1435,29 @@ async function copyShareLink(url, btn, restoreHtml, restoreLabel = '分享') {
 function bindMessageActions() {
   els.chatLog.querySelectorAll('.msg-row').forEach((node) => {
     const idx = Number(node.dataset.msgIdx);
-    const msg = state.messages[idx];
+    const msg = state.messages[idx] || getNode(node.dataset.nodeId);
     if (!msg) return;
 
     node.querySelectorAll('[data-act]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const act = btn.dataset.act;
+
+        if (act === 'prev-branch' || act === 'next-branch') {
+          await switchBranch(msg, act === 'prev-branch' ? -1 : 1);
+          return;
+        }
+        if (act === 'del-branch') {
+          if (state.isSubmitting) return;
+          const multi = siblingsOf(msg).length > 1;
+          const tip = multi
+            ? '删除此分支及其后续对话？其他版本会保留。'
+            : (msg.role === 'user'
+              ? '删除此问题及其后续对话？'
+              : '删除此回答及其后续对话？');
+          if (!confirm(tip)) return;
+          await deleteBranch(msg);
+          return;
+        }
 
         if (msg.role === 'user') {
           if (act === 'copy-user') {
@@ -1245,7 +1471,7 @@ function bindMessageActions() {
           }
           if (act === 'edit') {
             if (state.isSubmitting) return;
-            state.messages.forEach((m) => { if (m.role === 'user') m.editing = false; });
+            Object.values(state.tree.nodesById).forEach((m) => { if (m.role === 'user') m.editing = false; });
             msg.editing = true;
             renderChat();
             return;
@@ -1264,22 +1490,7 @@ function bindMessageActions() {
               renderChat();
               return;
             }
-            askQuestion(next, { editFromIdx: idx });
-            return;
-          }
-          if (act === 'prev-variant' || act === 'next-variant') {
-            ensureUserVariants(msg);
-            const asst = state.messages[idx + 1];
-            if (asst?.role === 'assistant') {
-              storeCurrentAnswerSnapshot(asst, msg);
-            }
-            const delta = act === 'prev-variant' ? -1 : 1;
-            const nextIdx = (msg.variantIndex ?? 0) + delta;
-            if (nextIdx < 0 || nextIdx >= msg.variants.length) return;
-            msg.variantIndex = nextIdx;
-            syncTurnView(idx);
-            persistChatState();
-            renderChat();
+            askQuestion(next, { editFromNodeId: msg.id });
             return;
           }
           return;
@@ -1296,42 +1507,15 @@ function bindMessageActions() {
           }
         } else if (act === 'regen') {
           if (state.isSubmitting) return;
-          const userMsg = state.messages[idx - 1];
+          const userMsg = getNode(msg.parentId);
           if (userMsg?.role === 'user') {
-            state.messages = state.messages.slice(0, idx + 1);
-            askQuestion(userMsg.content, { regenerate: true });
+            askQuestion(userMsg.content, { regenerate: true, userNodeId: userMsg.id });
           }
-        } else if (act === 'prev-variant' || act === 'next-variant') {
-          // Turn-level switch from assistant toolbar (synced with paired user).
-          const userIdx = idx - 1;
-          const userMsg = state.messages[userIdx];
-          if (!userMsg || userMsg.role !== 'user') return;
-          ensureUserVariants(userMsg);
-          storeCurrentAnswerSnapshot(msg, userMsg);
-          const delta = act === 'prev-variant' ? -1 : 1;
-          const nextIdx = (userMsg.variantIndex ?? 0) + delta;
-          if (nextIdx < 0 || nextIdx >= userMsg.variants.length) return;
-          userMsg.variantIndex = nextIdx;
-          syncTurnView(userIdx);
-          persistChatState();
-          renderChat();
-        } else if (act === 'prev-answer' || act === 'next-answer') {
-          const userMsg = state.messages[idx - 1];
-          ensureAssistantVariants(msg, userMsg?.role === 'user' ? userMsg : null);
-          storeCurrentAnswerSnapshot(msg, userMsg?.role === 'user' ? userMsg : null);
-          const answers = msg.variantAnswers[msg.variantIndex] || [];
-          const delta = act === 'prev-answer' ? -1 : 1;
-          const nextIdx = (msg.answerIndex ?? 0) + delta;
-          if (nextIdx < 0 || nextIdx >= answers.length) return;
-          msg.answerIndex = nextIdx;
-          applyAnswerSnapshot(msg, answers[nextIdx]);
-          if (msg.payload) state.lastPayload = msg.payload;
-          persistChatState();
-          renderChat();
         } else if (act === 'up' || act === 'down') {
           const value = msg.feedback === act ? null : act;
-          if (state.user && msg.id) {
-            const resp = await api(`/api/messages/${msg.id}/feedback`, {
+          const serverId = msg.serverId || null;
+          if (state.user && serverId) {
+            const resp = await api(`/api/messages/${serverId}/feedback`, {
               method: 'POST',
               body: JSON.stringify({ value }),
             });
@@ -1341,12 +1525,10 @@ function bindMessageActions() {
             }
           }
           msg.feedback = value;
-          const userMsg = state.messages[idx - 1];
-          storeCurrentAnswerSnapshot(msg, userMsg?.role === 'user' ? userMsg : null);
           persistChatState();
           renderChat();
         } else if (act === 'share') {
-          const url = await createShareLink({ messageId: msg.id || null });
+          const url = await createShareLink({ messageId: msg.serverId || null });
           if (!url) return;
           await copyShareLink(url, btn, ICON.share, '分享此回答');
         }
@@ -1387,8 +1569,8 @@ function emptyAnswerPayload(text) {
 }
 
 function finalizeStoppedAssistant(assistant) {
-  // newChat() may have cleared messages after aborting; ignore stale assistants.
-  if (!state.messages.includes(assistant)) return;
+  // newChat() may have cleared tree after aborting; ignore stale assistants.
+  if (!assistant || !getNode(assistant.id)) return;
   const partial = String(assistant.content || '').trim();
   if (assistant.pending || !partial) {
     assistant.pending = false;
@@ -1400,10 +1582,8 @@ function finalizeStoppedAssistant(assistant) {
       assistant.payload = emptyAnswerPayload(assistant.content);
     }
   }
-  const userIdx = state.messages.indexOf(assistant) - 1;
-  const userMsg = userIdx >= 0 ? state.messages[userIdx] : null;
-  storeCurrentAnswerSnapshot(assistant, userMsg?.role === 'user' ? userMsg : null);
   state.lastPayload = assistant.payload;
+  rebuildActivePath();
   renderChat();
 }
 
@@ -1415,98 +1595,79 @@ async function askQuestion(question, meta = {}) {
   if (els.followUpInput) els.followUpInput.value = '';
   setComposerExpanded(false);
 
-  let assistant;
+  let assistant = null;
+  let userNode = null;
+  let parentMessageId = null; // server id for API
+  let regenerate = false;
 
-  if (typeof meta.editFromIdx === 'number') {
-    const userIdx = meta.editFromIdx;
-    const user = state.messages[userIdx];
+  if (meta.editFromNodeId) {
+    const oldUser = getNode(meta.editFromNodeId);
+    if (!oldUser || oldUser.role !== 'user') {
+      state.isSubmitting = false;
+      setAskBtnMode('send');
+      return;
+    }
+    oldUser.editing = false;
+    const parent = getNode(oldUser.parentId);
+    parentMessageId = parent?.serverId || null;
+    userNode = createNode({
+      role: 'user',
+      content: q,
+      parentId: oldUser.parentId,
+    });
+    assistant = createNode({
+      role: 'assistant',
+      content: '',
+      parentId: userNode.id,
+      pending: true,
+    });
+  } else if (meta.regenerate) {
+    const user = getNode(meta.userNodeId) || (() => {
+      const last = state.messages.at(-1);
+      return last?.role === 'assistant' ? getNode(last.parentId) : null;
+    })();
     if (!user || user.role !== 'user') {
       state.isSubmitting = false;
       setAskBtnMode('send');
       return;
     }
-    ensureUserVariants(user);
-    const oldAsst = state.messages[userIdx + 1]?.role === 'assistant'
-      ? state.messages[userIdx + 1]
-      : null;
-    let preserved = null;
-    if (oldAsst) {
-      ensureAssistantVariants(oldAsst, user);
-      storeCurrentAnswerSnapshot(oldAsst, user);
-      preserved = oldAsst.variantAnswers.map((arr) => (arr || []).map((s) => ({ ...s })));
-    }
-    state.messages = state.messages.slice(0, userIdx + 1);
-    user.variants.push(q);
-    user.variantIndex = user.variants.length - 1;
-    user.content = q;
-    user.editing = false;
-    const variantAnswers = preserved || user.variants.slice(0, -1).map(() => []);
-    while (variantAnswers.length < user.variants.length - 1) variantAnswers.push([]);
-    variantAnswers.push([]);
-    assistant = {
+    regenerate = true;
+    parentMessageId = user.serverId || null;
+    userNode = user;
+    assistant = createNode({
       role: 'assistant',
       content: '',
-      payload: null,
-      feedback: null,
+      parentId: user.id,
       pending: true,
-      statusSteps: [],
-      variantAnswers,
-      variantIndex: user.variantIndex,
-      answerIndex: 0,
-    };
-    state.messages.push(assistant);
-  } else if (meta.regenerate) {
-    const last = state.messages.at(-1);
-    if (!last || last.role !== 'assistant') {
-      state.isSubmitting = false;
-      setAskBtnMode('send');
-      return;
-    }
-    const user = state.messages.at(-2);
-    if (user?.role === 'user') ensureUserVariants(user);
-    ensureAssistantVariants(last, user?.role === 'user' ? user : null);
-    storeCurrentAnswerSnapshot(last, user?.role === 'user' ? user : null);
-    const vi = last.variantIndex ?? user?.variantIndex ?? 0;
-    if (!Array.isArray(last.variantAnswers[vi])) last.variantAnswers[vi] = [];
-    last.content = '';
-    last.payload = null;
-    last.feedback = null;
-    last.id = null;
-    last.pending = true;
-    last.statusSteps = [];
-    last.citePayload = null;
-    last.answerIndex = last.variantAnswers[vi].length;
-    assistant = last;
+    });
   } else {
-    const user = {
+    const leaf = state.messages.length ? state.messages[state.messages.length - 1] : null;
+    const parentId = leaf && !leaf.pending ? leaf.id : null;
+    parentMessageId = leaf && !leaf.pending ? (leaf.serverId || null) : null;
+    userNode = createNode({
       role: 'user',
       content: q,
-      variants: [q],
-      variantIndex: 0,
-    };
-    state.messages.push(user);
-    assistant = {
+      parentId,
+    });
+    assistant = createNode({
       role: 'assistant',
       content: '',
-      payload: null,
-      feedback: null,
+      parentId: userNode.id,
       pending: true,
-      statusSteps: [],
-      variantAnswers: [[]],
-      variantIndex: 0,
-      answerIndex: 0,
-    };
-    state.messages.push(assistant);
+    });
   }
+
+  rebuildActivePath();
   renderChat();
 
   if (state.abortController) state.abortController.abort();
   state.abortController = new AbortController();
 
   try {
+    // Active path without pending bubbles; drop current user turn (sent as `question`).
     const history = state.messages
-      .filter((m) => m.role === 'user' || (m.role === 'assistant' && !m.pending))
-      .slice(0, -2) // exclude the just-appended user + pending assistant
+      .filter((m) => !m.pending)
+      .slice(0, -1)
       .slice(-6)
       .map((m) => ({
         role: m.role,
@@ -1524,16 +1685,18 @@ async function askQuestion(question, meta = {}) {
         trace: true,
         conversation_id: conversationId,
         history,
+        parent_message_id: parentMessageId,
+        regenerate,
       }),
       signal: state.abortController.signal,
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const ctype = resp.headers.get('content-type') || '';
     if (ctype.includes('text/event-stream') && resp.body) {
-      await consumeSSE(resp, assistant);
+      await consumeSSE(resp, assistant, userNode);
     } else {
       const data = await resp.json();
-      finalizeAssistant(assistant, data);
+      finalizeAssistant(assistant, data, userNode);
     }
   } catch (err) {
     if (err.name === 'AbortError') {
@@ -1542,22 +1705,21 @@ async function askQuestion(question, meta = {}) {
       assistant.pending = false;
       assistant.content = '请求失败，请稍后重试。';
       assistant.payload = emptyAnswerPayload(assistant.content);
-      const userIdx = state.messages.indexOf(assistant) - 1;
-      const userMsg = userIdx >= 0 ? state.messages[userIdx] : null;
-      storeCurrentAnswerSnapshot(assistant, userMsg?.role === 'user' ? userMsg : null);
       state.lastPayload = assistant.payload;
+      rebuildActivePath();
       renderChat();
     }
   } finally {
     state.isSubmitting = false;
     setAskBtnMode('send');
     persistChatState();
+    renderChat();
     if (state.user) await loadConversations();
     else renderHistory();
   }
 }
 
-async function consumeSSE(resp, assistant) {
+async function consumeSSE(resp, assistant, userNode = null) {
   const reader = resp.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
@@ -1573,6 +1735,7 @@ async function consumeSSE(resp, assistant) {
     const idx = Number(el.dataset.msgIdx);
     if (Number.isFinite(idx)) {
       el.outerHTML = renderMessage(assistant, idx);
+      bindMessageActions();
       els.chatLog.scrollTop = els.chatLog.scrollHeight;
     }
   };
@@ -1611,18 +1774,25 @@ async function consumeSSE(resp, assistant) {
         else renderChat();
         els.chatLog.scrollTop = els.chatLog.scrollHeight;
       } else if (event.type === 'final') {
-        finalizeAssistant(assistant, event.payload || {});
+        finalizeAssistant(assistant, event.payload || {}, userNode);
         return;
       }
     }
   }
 }
 
-function finalizeAssistant(assistant, payload) {
+function finalizeAssistant(assistant, payload, userNode = null) {
+  if (!assistant || !getNode(assistant.id)) return;
   assistant.pending = false;
   assistant.payload = payload;
   assistant.content = payload.answer_markdown || assistant.content || '';
-  assistant.id = payload.assistant_message_id || assistant.id;
+  if (payload.assistant_message_id) {
+    assistant.serverId = payload.assistant_message_id;
+  }
+  const user = userNode || getNode(assistant.parentId);
+  if (user && payload.user_message_id) {
+    user.serverId = payload.user_message_id;
+  }
   if (payload.conversation_id) {
     if (state.user) {
       state.activeConversationId = payload.conversation_id;
@@ -1631,10 +1801,8 @@ function finalizeAssistant(assistant, payload) {
       state.activeConversationId = state.activeConversationId || newLocalConversationId();
     }
   }
-  const userIdx = state.messages.indexOf(assistant) - 1;
-  const userMsg = userIdx >= 0 ? state.messages[userIdx] : null;
-  storeCurrentAnswerSnapshot(assistant, userMsg?.role === 'user' ? userMsg : null);
   state.lastPayload = payload;
+  rebuildActivePath();
   persistChatState();
   renderChat();
 }

@@ -74,14 +74,31 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _resolve_parent_message(
+    db: Session,
+    *,
+    conv: Conversation,
+    parent_message_id: Optional[str],
+) -> Optional[Message]:
+    """Return parent message if it belongs to this conversation; else None (treat as new root)."""
+    if not parent_message_id:
+        return None
+    parent = db.get(Message, parent_message_id)
+    if parent is None or parent.conversation_id != conv.id:
+        return None
+    return parent
+
+
 def _persist_qa_turn(
     *,
     user: Optional[User],
     conversation_id: Optional[str],
     question: str,
     payload: dict[str, Any],
+    parent_message_id: Optional[str] = None,
+    regenerate: bool = False,
 ) -> Optional[dict[str, str]]:
-    """Persist user+assistant messages when logged in. Returns message ids."""
+    """Persist messages on the conversation tree when logged in. Returns message ids."""
     if user is None:
         return None
     factory = get_session_factory()
@@ -94,31 +111,74 @@ def _persist_qa_turn(
                 conv = None
         if conv is None:
             title = question.strip()[:40] + ("…" if len(question.strip()) > 40 else "")
-            conv = Conversation(user_id=user.id, title=title or "新对话", created_at=_utcnow(), updated_at=_utcnow())
+            conv = Conversation(
+                user_id=user.id,
+                title=title or "新对话",
+                created_at=_utcnow(),
+                updated_at=_utcnow(),
+            )
             db.add(conv)
             db.flush()
-        user_msg = Message(
-            conversation_id=conv.id,
-            role="user",
-            content=question,
-            created_at=_utcnow(),
-        )
-        assistant_msg = Message(
-            conversation_id=conv.id,
-            role="assistant",
-            content=payload.get("answer_markdown") or "",
-            payload_json=json.dumps(payload, ensure_ascii=False),
-            created_at=_utcnow(),
-        )
-        conv.updated_at = _utcnow()
+
+        parent = _resolve_parent_message(db, conv=conv, parent_message_id=parent_message_id)
+        now = _utcnow()
+        user_msg_id: Optional[str] = None
+        assistant_msg: Message
+
+        if regenerate:
+            # New assistant sibling under an existing user node.
+            if parent is None or parent.role != "user":
+                regenerate = False
+            else:
+                assistant_msg = Message(
+                    conversation_id=conv.id,
+                    parent_id=parent.id,
+                    role="assistant",
+                    content=payload.get("answer_markdown") or "",
+                    payload_json=json.dumps(payload, ensure_ascii=False),
+                    created_at=now,
+                )
+                db.add(assistant_msg)
+                db.flush()
+                parent.active_child_id = assistant_msg.id
+                user_msg_id = parent.id
+
+        if not regenerate:
+            # New user (+ assistant) under parent (assistant leaf, or root if None).
+            user_parent_id = parent.id if parent is not None else None
+            user_msg = Message(
+                conversation_id=conv.id,
+                parent_id=user_parent_id,
+                role="user",
+                content=question,
+                created_at=now,
+            )
+            db.add(user_msg)
+            db.flush()
+            assistant_msg = Message(
+                conversation_id=conv.id,
+                parent_id=user_msg.id,
+                role="assistant",
+                content=payload.get("answer_markdown") or "",
+                payload_json=json.dumps(payload, ensure_ascii=False),
+                created_at=now,
+            )
+            db.add(assistant_msg)
+            db.flush()
+            user_msg.active_child_id = assistant_msg.id
+            if parent is None:
+                conv.active_root_id = user_msg.id
+            else:
+                parent.active_child_id = user_msg.id
+            user_msg_id = user_msg.id
+
+        conv.updated_at = now
         if conv.title in ("新对话", "") and question.strip():
             conv.title = question.strip()[:40] + ("…" if len(question.strip()) > 40 else "")
-        db.add(user_msg)
-        db.add(assistant_msg)
         db.commit()
         return {
             "conversation_id": conv.id,
-            "user_message_id": user_msg.id,
+            "user_message_id": user_msg_id or "",
             "assistant_message_id": assistant_msg.id,
         }
     except Exception:
@@ -170,6 +230,10 @@ class AskRequest(BaseModel):
     stream: bool = True
     conversation_id: Optional[str] = None
     history: Optional[list[HistoryTurn]] = None
+    # Tree attachment: parent node id (assistant leaf for follow-up, user for regen, etc.)
+    parent_message_id: Optional[str] = None
+    # When True, only create a new assistant sibling under parent_message_id (must be user).
+    regenerate: bool = False
 
 
 def create_app() -> FastAPI:
@@ -229,9 +293,12 @@ def create_app() -> FastAPI:
                 conversation_id=body.conversation_id,
                 question=body.question,
                 payload=payload_obj,
+                parent_message_id=body.parent_message_id,
+                regenerate=body.regenerate,
             )
             if ids:
                 payload_obj["conversation_id"] = ids["conversation_id"]
+                payload_obj["user_message_id"] = ids["user_message_id"]
                 payload_obj["assistant_message_id"] = ids["assistant_message_id"]
             return JSONResponse(content=payload_obj, headers=UTF8_JSON_HEADERS)
 
@@ -250,9 +317,12 @@ def create_app() -> FastAPI:
                             conversation_id=body.conversation_id,
                             question=body.question,
                             payload=final_payload,
+                            parent_message_id=body.parent_message_id,
+                            regenerate=body.regenerate,
                         )
                         if ids and isinstance(final_payload, dict):
                             final_payload["conversation_id"] = ids["conversation_id"]
+                            final_payload["user_message_id"] = ids["user_message_id"]
                             final_payload["assistant_message_id"] = ids["assistant_message_id"]
                             event = {"type": "final", "payload": final_payload}
                     yield event
