@@ -1121,7 +1121,8 @@ function decorateCitations(html, payload) {
       const idx = Number(n) - 1;
       const s = sources[idx] || {};
       const label = s.citation_label || s.printed_page_code || `S${n}`;
-      return `<button class="cite" data-cite="S" data-index="${idx}" title="${escapeHtml(s.display_title || label)}">${escapeHtml(label)}</button>`;
+      const tip = escapeHtml(s.display_title || label);
+      return `<button class="cite" data-cite="S" data-index="${idx}" aria-label="${tip}">${escapeHtml(label)}</button>`;
     })
     .replace(/\[G(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
@@ -1131,7 +1132,8 @@ function decorateCitations(html, payload) {
       const hit = refs.find((r) => String(r.ref_number) === String(n));
       if (!hit) return m;
       const label = hit.author_year || hit.citation_label || n;
-      return `<button class="cite" data-cite="R" data-ref="${escapeHtml(String(n))}" title="${escapeHtml(hit.display_title || label)}">${escapeHtml(label)}</button>`;
+      const tip = escapeHtml(hit.display_title || label);
+      return `<button class="cite" data-cite="R" data-ref="${escapeHtml(String(n))}" aria-label="${tip}">${escapeHtml(label)}</button>`;
     });
 }
 
