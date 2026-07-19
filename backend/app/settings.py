@@ -68,6 +68,10 @@ class Settings:
     neo4j_database: str
     neo4j_clear: bool
     neo4j_batch_size: int
+    chunk_index_path: Path
+    chunk_embedding_model: str
+    chunk_embedding_index_path: Path
+    chunk_embedding_meta_path: Path
 
 
 def _first_pdf(root_dir: Path) -> Path:
@@ -337,4 +341,35 @@ def load_settings() -> Settings:
         neo4j_database=str(os.getenv("NEO4J_DATABASE", "neo4j")),
         neo4j_clear=_as_bool(os.getenv("NEO4J_CLEAR", "0"), default=False),
         neo4j_batch_size=int(os.getenv("NEO4J_BATCH_SIZE", "500")),
+        chunk_index_path=_resolve_path(
+            _cfg_or_env(
+                cfg,
+                "CHUNK_INDEX_PATH",
+                ROOT_DIR / "data" / "indexes" / "knowledge_chunks.json",
+                "paths",
+                "chunk_index",
+            ),
+            ROOT_DIR,
+        ),
+        chunk_embedding_model=str(_cfg_or_env(cfg, "CHUNK_EMBEDDING_MODEL", "bge-m3", "embedding", "model")),
+        chunk_embedding_index_path=_resolve_path(
+            _cfg_or_env(
+                cfg,
+                "CHUNK_EMBEDDING_INDEX_PATH",
+                ROOT_DIR / "data" / "indexes" / "knowledge_chunks.faiss",
+                "paths",
+                "chunk_embedding_index",
+            ),
+            ROOT_DIR,
+        ),
+        chunk_embedding_meta_path=_resolve_path(
+            _cfg_or_env(
+                cfg,
+                "CHUNK_EMBEDDING_META_PATH",
+                ROOT_DIR / "data" / "indexes" / "knowledge_chunks_meta.json",
+                "paths",
+                "chunk_embedding_meta",
+            ),
+            ROOT_DIR,
+        ),
     )

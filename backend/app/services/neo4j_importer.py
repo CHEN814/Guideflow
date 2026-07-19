@@ -376,6 +376,27 @@ class Neo4jGraphImporter:
         return rows
 
     @staticmethod
+    def _article_chunk_rows(chunks: Sequence[DiscussionChunk]) -> List[dict]:
+        return [
+            {
+                "article_id": chunk.article_id,
+                "chunk_id": chunk.chunk_id,
+            }
+            for chunk in chunks
+        ]
+
+    @staticmethod
+    def _chunk_reference_rows(chunks: Sequence[DiscussionChunk], refs: Sequence[ReferenceEntry]) -> List[dict]:
+        ref_lookup = {(ref.article_id, ref.ref_number): ref.entry_id for ref in refs}
+        rows = []
+        for chunk in chunks:
+            for ref_number in chunk.reference_ids:
+                entry_id = ref_lookup.get((chunk.article_id, ref_number))
+                if entry_id:
+                    rows.append({"chunk_id": chunk.chunk_id, "entry_id": entry_id, "ref_number": ref_number})
+        return rows
+
+    @staticmethod
     def _triple_subject_rows(bundle: KnowledgeGraphBundle) -> List[dict]:
         return [
             {

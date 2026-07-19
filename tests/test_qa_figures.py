@@ -53,6 +53,10 @@ def _settings(tmp_path: Path) -> Settings:
         neo4j_database="neo4j",
         neo4j_clear=False,
         neo4j_batch_size=500,
+        chunk_index_path=tmp_path / "knowledge_chunks.json",
+        chunk_embedding_model="bge-m3",
+        chunk_embedding_index_path=tmp_path / "knowledge_chunks.faiss",
+        chunk_embedding_meta_path=tmp_path / "knowledge_chunks_meta.json",
     )
 
 

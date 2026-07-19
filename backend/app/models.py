@@ -204,6 +204,48 @@ class ReferenceEntry:
 
 
 @dataclass
+class KnowledgeChunk:
+    """Unified chunk for embedding, retrieval, and graph extraction."""
+
+    chunk_id: str
+    source_id: str
+    page_type: str
+    pdf_page: int
+    text: str
+    printed_page_code: Optional[str] = None
+    module_code: Optional[str] = None
+    section: Optional[str] = None
+    article_id: Optional[str] = None
+    reference_ids: List[str] = field(default_factory=list)
+    order: int = 0
+    needs_review: bool = False
+    embedding_model: Optional[str] = None
+    embedding_dim: Optional[int] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "KnowledgeChunk":
+        return cls(
+            chunk_id=data["chunk_id"],
+            source_id=data["source_id"],
+            page_type=data.get("page_type", "discussion"),
+            pdf_page=int(data.get("pdf_page", 0)),
+            text=data.get("text", ""),
+            printed_page_code=data.get("printed_page_code"),
+            module_code=data.get("module_code"),
+            section=data.get("section"),
+            article_id=data.get("article_id"),
+            reference_ids=list(data.get("reference_ids", [])),
+            order=int(data.get("order", 0)),
+            needs_review=bool(data.get("needs_review", False)),
+            embedding_model=data.get("embedding_model"),
+            embedding_dim=data.get("embedding_dim"),
+        )
+
+
+@dataclass
 class StructuredKnowledgeBase:
     """Top-level knowledge base produced by the PDF extractor."""
 
@@ -228,6 +270,47 @@ class StructuredKnowledgeBase:
             reference_entries=[ReferenceEntry.from_dict(e) for e in data.get("reference_entries", [])],
             stats=dict(data.get("stats", {})),
         )
+
+    def to_chunks(self) -> List[KnowledgeChunk]:
+        """Generate unified chunks for retrieval, embedding, and graph extraction."""
+        chunks: List[KnowledgeChunk] = []
+        for order, page in enumerate(self.guideline_pages, start=1):
+            if page.clean_text.strip():
+                chunks.append(
+                    KnowledgeChunk(
+                        chunk_id=page.page_id,
+                        source_id=page.page_id,
+                        page_type=page.page_type,
+                        pdf_page=page.pdf_page,
+                        text=page.clean_text,
+                        printed_page_code=page.printed_page_code,
+                        module_code=page.module_code,
+                        section=None,
+                        article_id=None,
+                        reference_ids=[],
+                        order=order,
+                        needs_review=page.needs_review,
+                    )
+                )
+        offset = len(chunks)
+        for idx, chunk in enumerate(self.discussion_chunks, start=1):
+            if chunk.clean_text.strip():
+                chunks.append(
+                    KnowledgeChunk(
+                        chunk_id=chunk.chunk_id,
+                        source_id=chunk.chunk_id,
+                        page_type="discussion",
+                        pdf_page=chunk.pdf_page,
+                        text=chunk.clean_text,
+                        printed_page_code=chunk.ms_page_code,
+                        module_code=None,
+                        section=chunk.section,
+                        article_id=chunk.article_id,
+                        reference_ids=list(chunk.reference_ids),
+                        order=offset + idx,
+                    )
+                )
+        return chunks
 
     def to_search_documents(self) -> List[SearchDocument]:
         """Generate flat search units for BM25 indexing.
@@ -418,6 +501,7 @@ class QAResult:
     reference_links: Dict[str, List[str]] = field(default_factory=dict)
     figures: List[FigureReference] = field(default_factory=list)
     graph_triples: List[GraphTriple] = field(default_factory=list)
+    graph_seed_candidates: List[str] = field(default_factory=list)
     generation_mode: str = "text"          # "text" (Qwen) | "multimodal" (VLM)
     answer_kind: str = "guideline"         # guideline | general_medical | chitchat
     standalone_question: Optional[str] = None
@@ -460,6 +544,7 @@ class QAResult:
             "sources": [enrich_source_dict(doc) for doc in self.sources],
             "attached_references": [enrich_reference_dict(ref) for ref in self.attached_references],
             "graph_triples": [triple.to_dict() for triple in self.graph_triples],
+            "graph_seed_candidates": self.graph_seed_candidates,
             "reference_links": self.reference_links,
             "verification": self.verification,
             "degraded": self.degraded,

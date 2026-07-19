@@ -15,5 +15,9 @@ email-validator>=2.0.0
 pydantic[email]>=2.0.0
 httpx>=0.27.0
 
-# Optional: Neo4j import for knowledge-graph visualization / export
-# neo4j>=5.20.0
+# Optional: Neo4j for knowledge-graph visualization / neighborhood API
+neo4j>=5.20.0
+
+# Optional (disabled by default): vector embedding retrieval
+# sentence-transformers
+# faiss-cpu

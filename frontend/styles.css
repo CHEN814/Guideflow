@@ -248,6 +248,9 @@ body{
 .drawer-header{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
 .drawer-content{padding:16px 18px;overflow:auto;line-height:1.7}
 .evidence-card{padding:12px;border:1px solid rgba(0,0,0,.06);border-radius:14px;background:#fff;margin-bottom:10px}
+.drawer-panel-wide{width:min(1100px,100%)}
+.neo4j-node{cursor:pointer}
+.neo4j-node:hover text{font-weight:700}
 .context-menu{position:fixed;z-index:85;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;min-width:140px}
 .context-menu button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:8px;cursor:pointer}
 .context-menu button:hover{background:rgba(229,111,61,.08)}

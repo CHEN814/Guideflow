@@ -20,6 +20,7 @@ from backend.api.routes_conversations import router as conversations_router
 from backend.app.db import get_db, get_session_factory, init_db
 from backend.app.models_db import Conversation, Message, User
 from backend.app.services.auth import get_optional_user
+from backend.app.services.neo4j_graph_service import Neo4jGraphService
 from backend.app.services.qa import QAService
 from backend.app.settings import ROOT_DIR, load_settings
 from backend.app.web_config import load_web_config
@@ -358,6 +359,44 @@ def create_app() -> FastAPI:
         except ValueError:
             raise HTTPException(status_code=403, detail="Access denied") from None
         return FileResponse(resolved, media_type="image/png")
+
+    @app.get("/api/graph/neighborhood")
+    def graph_neighborhood(seed: str, limit: int = 60, depth: int = 1) -> dict[str, Any]:
+        if not settings.neo4j_password:
+            raise HTTPException(status_code=400, detail="NEO4J_PASSWORD is required")
+        service = Neo4jGraphService(settings)
+        try:
+            return service.neighborhood(seed=seed, limit=limit, depth=depth)
+        finally:
+            service.close()
+
+    @app.get("/api/graph/node")
+    def graph_node(seed: str) -> dict[str, Any]:
+        if not settings.neo4j_password:
+            raise HTTPException(status_code=400, detail="NEO4J_PASSWORD is required")
+        service = Neo4jGraphService(settings)
+        try:
+            result = service.neighborhood(seed=seed, limit=40, depth=1)
+            nodes = result.get("nodes", [])
+            edges = result.get("edges", [])
+            center = next((n for n in nodes if str(n.get("id")) == str(seed)), None)
+            related_edges = [
+                e for e in edges if str(e.get("source")) == str(seed) or str(e.get("target")) == str(seed)
+            ]
+            related_ids = {str(seed)}
+            for edge in related_edges:
+                related_ids.add(str(edge.get("source")))
+                related_ids.add(str(edge.get("target")))
+            related_nodes = [n for n in nodes if str(n.get("id")) in related_ids]
+            return {
+                "center": seed,
+                "node": center or (related_nodes[0] if related_nodes else None),
+                "neighbors": related_nodes,
+                "edges": related_edges,
+                "stats": {"nodes": len(related_nodes), "edges": len(related_edges)},
+            }
+        finally:
+            service.close()
 
     app.state.qa_service = qa_service
     app.state.settings = settings

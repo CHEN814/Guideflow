@@ -52,7 +52,10 @@ class KnowledgeGraphRetriever:
 
     def resolve_query_entities(self, query: str) -> List[Tuple[str, str]]:
         terms: List[Tuple[str, str]] = []
-        for token in query.split():
+        # Chinese / Latin mixed query tokenization
+        raw_tokens = tokenize(query)
+        raw_tokens.update({t.strip() for t in query.replace('？', ' ').replace('?', ' ').replace('，', ' ').replace(',', ' ').split() if t.strip()})
+        for token in raw_tokens:
             concept = self.ontology.normalize(token)
             if concept:
                 terms.append((concept.canonical_id, concept.name))
@@ -60,6 +63,17 @@ class KnowledgeGraphRetriever:
             lowered = query.lower()
             for concept in self.ontology.concepts:
                 if concept.name.lower() in lowered:
+                    terms.append((concept.canonical_id, concept.name))
+        # phrase aliases / common abbreviations
+        lowered = query.lower()
+        alias_hits = {
+            'DLBCL': 'dlbcl', 'R-CHOP': 'r-chop', 'TP53': 'tp53', 'MYC': 'myc', 'BCL2': 'bcl2', 'BCL6': 'bcl6',
+            'Pola-R-CHP': 'pola-r-chp', 'CAR-T': 'car-t', 'BCEL-3': 'bcel-3', 'BCEL-A 1 OF 3': 'bcel-a 1 of 3',
+        }
+        for name, needle in alias_hits.items():
+            if needle in lowered:
+                concept = self.ontology.normalize(name)
+                if concept:
                     terms.append((concept.canonical_id, concept.name))
         return self._unique(terms)
 

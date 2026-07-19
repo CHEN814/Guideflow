@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
-from backend.app.models import DiscussionChunk, GraphTriple, GuidelinePage, ReferenceEntry, StructuredKnowledgeBase
+from backend.app.models import DiscussionChunk, GraphTriple, GuidelinePage, KnowledgeChunk, ReferenceEntry, StructuredKnowledgeBase
 
 
 ENTITY_PATTERNS: List[tuple[str, str, Sequence[str]]] = [
@@ -358,6 +358,49 @@ def _score_relation(relation: str, source_kind: str, sentence: str) -> float:
 class KnowledgeGraphBuilder:
     def __init__(self, ontology: Optional[MedicalOntology] = None) -> None:
         self.ontology = ontology or MedicalOntology()
+
+    def build_from_chunks(
+        self,
+        chunks: Sequence[KnowledgeChunk],
+        llm_validator: Optional[Callable[[CandidateTriple], Tuple[bool, Optional[float], Optional[str]]]] = None,
+    ) -> KnowledgeGraphBundle:
+        guided_kb = StructuredKnowledgeBase(guideline_pages=[], discussion_chunks=[], reference_entries=[])
+        # Reuse the same extraction rules by materializing chunks back into the existing KB shape.
+        guideline_pages = []
+        discussion_chunks = []
+        for chunk in chunks:
+            if chunk.page_type == "clinical_guideline":
+                from backend.app.models import GuidelinePage
+
+                guideline_pages.append(
+                    GuidelinePage(
+                        page_id=chunk.source_id,
+                        pdf_page=chunk.pdf_page,
+                        page_type=chunk.page_type,
+                        clean_text=chunk.text,
+                        printed_page_code=chunk.printed_page_code,
+                        module_code=chunk.module_code,
+                        needs_review=chunk.needs_review,
+                    )
+                )
+            else:
+                from backend.app.models import DiscussionChunk
+
+                discussion_chunks.append(
+                    DiscussionChunk(
+                        chunk_id=chunk.chunk_id,
+                        article_id=chunk.article_id or "",
+                        article_title=chunk.source_id,
+                        pdf_page=chunk.pdf_page,
+                        ms_page_code=chunk.printed_page_code,
+                        section=chunk.section or "",
+                        clean_text=chunk.text,
+                        reference_ids=list(chunk.reference_ids),
+                    )
+                )
+        guided_kb.guideline_pages = guideline_pages
+        guided_kb.discussion_chunks = discussion_chunks
+        return self.build(guided_kb, llm_validator=llm_validator)
 
     def build(self, kb: StructuredKnowledgeBase, llm_validator: Optional[Callable[[CandidateTriple], Tuple[bool, Optional[float], Optional[str]]]] = None) -> KnowledgeGraphBundle:
         candidates: List[CandidateTriple] = []

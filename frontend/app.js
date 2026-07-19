@@ -1128,6 +1128,7 @@ function decorateCitations(html, payload) {
       const idx = Number(n) - 1;
       return `<button class="cite" data-cite="G" data-index="${idx}">G${n}</button>`;
     })
+    .replace(/(?<!\w)G(\d+)(?!\w)/g, (_, n) => `<button class="cite" data-cite="G" data-index="${Number(n) - 1}">G${n}</button>`)
     .replace(/\[(\d{1,3})\]/g, (m, n) => {
       const hit = refs.find((r) => String(r.ref_number) === String(n));
       if (!hit) return m;
@@ -1146,7 +1147,8 @@ function answerKindLabel(kind) {
 function renderReferences(payload) {
   const sources = payload.sources || [];
   const refs = payload.attached_references || [];
-  if (!sources.length && !refs.length) return '';
+  const graph = payload.graph_triples || [];
+  if (!sources.length && !refs.length && !graph.length) return '';
   const items = [];
   sources.forEach((s, i) => {
     const metaParts = [s.subtitle, s.source_label, s.locator].filter(Boolean);
@@ -1164,6 +1166,15 @@ function renderReferences(payload) {
       url: r.url,
     });
   });
+  graph.forEach((g, i) => {
+    const sourceTag = g.review_status === 'synthetic' ? 'Synthetic' : (g.evidence_kind === 'neo4j' ? 'Neo4j' : 'Graph');
+    items.push({
+      title: `${g.subject_name || ''} → ${g.relation || ''} → ${g.object_name || ''}`,
+      meta: (g.evidence_text || '').slice(0, 160) || `confidence ${Number(g.confidence || 0).toFixed(2)}`,
+      badge: sourceTag,
+      cite: { type: 'G', index: i },
+    });
+  });
   return `
     <details class="refs-block" open>
       <summary>
@@ -1176,13 +1187,13 @@ function renderReferences(payload) {
             <text x="1" y="15" font-size="5" fill="currentColor" font-family="sans-serif">3</text>
             <line x1="7" y1="13.5" x2="15" y2="13.5" stroke="currentColor" stroke-width="1.2"/>
           </svg>
-          <span>References</span>
+          <span>References & Graph</span>
         </span>
         <span class="muted small">${items.length}</span>
       </summary>
       ${items.map((it, i) => `
         <div class="ref-item">
-          <div class="rtitle"><span class="rnum">${i + 1}.</span> ${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>` : escapeHtml(it.title)}</div>
+          <div class="rtitle"><span class="rnum">${i + 1}.</span> ${it.cite ? `<button class="cite" data-cite="${it.cite.type}" data-index="${it.cite.index}">G${it.cite.index + 1}</button> ` : ''}${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>` : escapeHtml(it.title)}</div>
           <div class="rmeta"><span>${escapeHtml(it.meta)}</span><span class="badge">${escapeHtml(it.badge)}</span></div>
         </div>`).join('')}
     </details>`;
@@ -1203,6 +1214,395 @@ function openLightbox(src, label) {
   overlay.innerHTML = `<img src="${escapeHtml(src)}" alt="${escapeHtml(label)}" />`;
   overlay.addEventListener('click', () => overlay.remove());
   document.body.appendChild(overlay);
+}
+
+function isNoiseLabel(value) {
+  const s = String(value || '').trim();
+  if (!s) return true;
+  if (/^\d+$/.test(s)) return true;
+  if (/^\[\d+\]$/.test(s)) return true;
+  if (/^\d{5,}$/.test(s)) return true;
+  if (/^(node|edge|entity|item|page|triple)[:_\-]?\d*$/i.test(s)) return true;
+  return false;
+}
+
+function humanizeNodeLabel(node) {
+  const props = node?.properties || {};
+  const type = String(node?.type || '').toLowerCase();
+  if (type.includes('triple')) {
+    const subj = String(props.subject_name || '').trim();
+    const rel = String(props.relation || '').trim();
+    const obj = String(props.object_name || '').trim();
+    if (subj && rel && obj) return `${subj} → ${rel} → ${obj}`;
+  }
+  if (type.includes('reference')) {
+    const refNo = props.ref_number != null ? String(props.ref_number) : '';
+    const text = String(props.text || props.title || props.name || '').replace(/\s+/g, ' ').trim();
+    const snippet = text ? text.slice(0, 42) : '';
+    if (refNo && snippet) return `文献${refNo} · ${snippet}`;
+    if (snippet) return snippet;
+    if (refNo) return `文献 ${refNo}`;
+  }
+  const candidates = [
+    props.name,
+    props.title,
+    props.label,
+    node?.label,
+    props.page_code,
+    props.printed_page_code,
+    props.article_title,
+    props.subject_name,
+    props.object_name,
+    props.source_name,
+    props.text ? String(props.text).slice(0, 42) : '',
+    node?.id,
+  ];
+  for (const candidate of candidates) {
+    const text = String(candidate || '').trim();
+    if (!text || isNoiseLabel(text)) continue;
+    return text;
+  }
+  return '未命名节点';
+}
+
+function normalizeConceptKey(label) {
+  return String(label || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, '')
+    .trim();
+}
+
+/** Collapse TrustedTriple intermediates into concept–relation–concept edges (Neo4j Browser style). */
+function projectClinicalGraph(data) {
+  const rawNodes = Array.isArray(data?.nodes) ? data.nodes : [];
+  const rawEdges = Array.isArray(data?.edges) ? data.edges : [];
+  const byId = new Map(rawNodes.map((n) => [String(n.id), n]));
+
+  const isTriple = (n) => String(n?.type || '').toLowerCase().includes('triple');
+  const isStructuralRel = (rel) => {
+    const r = String(rel || '').toUpperCase();
+    return r === 'SUBJECT_OF' || r === 'OBJECT_OF' || r === 'EDGE' || r === 'RELATED_TO';
+  };
+
+  // Build subject/object of each triple via SUBJECT_OF / OBJECT_OF or triple properties.
+  const tripleSubjects = new Map();
+  const tripleObjects = new Map();
+  for (const e of rawEdges) {
+    const rel = String(e.label || e.type || '').toUpperCase();
+    const s = String(e.source);
+    const t = String(e.target);
+    if (rel === 'SUBJECT_OF') tripleSubjects.set(t, s);
+    if (rel === 'OBJECT_OF') tripleObjects.set(s, t);
+  }
+
+  const conceptNodes = [];
+  const idAlias = new Map(); // original id -> merged concept key
+  const merged = new Map(); // concept key -> node
+
+  const ensureConcept = (node) => {
+    if (!node || isTriple(node)) return null;
+    const displayLabel = humanizeNodeLabel(node);
+    const key = normalizeConceptKey(displayLabel) || String(node.id);
+    if (!merged.has(key)) {
+      const item = {
+        ...node,
+        id: key,
+        displayLabel,
+        type: String(node.type || 'Concept'),
+        properties: { ...(node.properties || {}), original_ids: [String(node.id)] },
+      };
+      merged.set(key, item);
+      conceptNodes.push(item);
+    } else {
+      const exist = merged.get(key);
+      const ids = exist.properties.original_ids || [];
+      if (!ids.includes(String(node.id))) ids.push(String(node.id));
+      exist.properties.original_ids = ids;
+    }
+    idAlias.set(String(node.id), key);
+    return key;
+  };
+
+  for (const n of rawNodes) {
+    if (!isTriple(n)) ensureConcept(n);
+  }
+
+  const edgeKeySet = new Set();
+  const edges = [];
+  const pushEdge = (source, target, label) => {
+    if (!source || !target || source === target) return;
+    const rel = String(label || 'RELATED_TO').toUpperCase();
+    if (isStructuralRel(rel)) return;
+    const k = `${source}|${rel}|${target}`;
+    if (edgeKeySet.has(k)) return;
+    edgeKeySet.add(k);
+    edges.push({
+      id: k,
+      source,
+      target,
+      label: rel,
+      type: rel,
+      properties: {},
+    });
+  };
+
+  // Concept edges from triple nodes (preferred clinical relations).
+  for (const n of rawNodes) {
+    if (!isTriple(n)) continue;
+    const props = n.properties || {};
+    const tid = String(n.id);
+    let subjId = tripleSubjects.get(tid);
+    let objId = tripleObjects.get(tid);
+    if (!subjId && props.subject_id) subjId = String(props.subject_id);
+    if (!objId && props.object_id) objId = String(props.object_id);
+    // Also match by name if id missing
+    if (!subjId && props.subject_name) {
+      const hit = rawNodes.find((x) => !isTriple(x) && humanizeNodeLabel(x) === props.subject_name);
+      if (hit) subjId = String(hit.id);
+    }
+    if (!objId && props.object_name) {
+      const hit = rawNodes.find((x) => !isTriple(x) && humanizeNodeLabel(x) === props.object_name);
+      if (hit) objId = String(hit.id);
+    }
+    // Synthesize concept nodes from names if needed
+    if (!subjId && props.subject_name) {
+      const fake = { id: `name:${props.subject_name}`, label: props.subject_name, type: props.subject_type || 'OntologyConcept', properties: { name: props.subject_name } };
+      subjId = ensureConcept(fake) || String(fake.id);
+      if (!byId.has(String(fake.id))) byId.set(String(fake.id), fake);
+    }
+    if (!objId && props.object_name) {
+      const fake = { id: `name:${props.object_name}`, label: props.object_name, type: props.object_type || 'OntologyConcept', properties: { name: props.object_name } };
+      objId = ensureConcept(fake) || String(fake.id);
+      if (!byId.has(String(fake.id))) byId.set(String(fake.id), fake);
+    }
+    const sKey = subjId ? (idAlias.get(String(subjId)) || ensureConcept(byId.get(String(subjId))) || ensureConcept({ id: subjId, label: props.subject_name, type: 'OntologyConcept', properties: { name: props.subject_name } })) : null;
+    const oKey = objId ? (idAlias.get(String(objId)) || ensureConcept(byId.get(String(objId))) || ensureConcept({ id: objId, label: props.object_name, type: 'OntologyConcept', properties: { name: props.object_name } })) : null;
+    const rel = props.relation || n.label || 'RELATED_TO';
+    pushEdge(sKey, oKey, rel);
+  }
+
+  // Direct non-structural edges between concepts
+  for (const e of rawEdges) {
+    const rel = String(e.label || e.type || '');
+    if (isStructuralRel(rel)) continue;
+    const sn = byId.get(String(e.source));
+    const tn = byId.get(String(e.target));
+    if (!sn || !tn || isTriple(sn) || isTriple(tn)) continue;
+    const sKey = idAlias.get(String(e.source)) || ensureConcept(sn);
+    const tKey = idAlias.get(String(e.target)) || ensureConcept(tn);
+    pushEdge(sKey, tKey, rel);
+  }
+
+  // Resolve center to merged concept key
+  let center = String(data?.center || '');
+  if (idAlias.has(center)) center = idAlias.get(center);
+  else {
+    const cn = byId.get(center);
+    if (cn && !isTriple(cn)) {
+      const k = ensureConcept(cn);
+      if (k) center = k;
+    } else {
+      const byName = conceptNodes.find((n) => normalizeConceptKey(n.displayLabel) === normalizeConceptKey(center));
+      if (byName) center = byName.id;
+      else if (conceptNodes[0]) center = conceptNodes[0].id;
+    }
+  }
+
+  // Prefer connected neighborhood around center (max ~18 nodes)
+  const adj = new Map();
+  for (const e of edges) {
+    if (!adj.has(e.source)) adj.set(e.source, new Set());
+    if (!adj.has(e.target)) adj.set(e.target, new Set());
+    adj.get(e.source).add(e.target);
+    adj.get(e.target).add(e.source);
+  }
+  const keep = new Set();
+  if (center) {
+    keep.add(center);
+    const q = [center];
+    while (q.length && keep.size < 18) {
+      const cur = q.shift();
+      for (const nb of adj.get(cur) || []) {
+        if (keep.has(nb)) continue;
+        keep.add(nb);
+        q.push(nb);
+        if (keep.size >= 18) break;
+      }
+    }
+  }
+  let nodes = conceptNodes.filter((n) => keep.size === 0 || keep.has(n.id));
+  if (!nodes.length) nodes = conceptNodes.slice(0, 18);
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  const finalEdges = edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target));
+
+
+  const finalNodeIds = new Set(nodes.map((n) => n.id));
+  const finalFocusedEdges = finalEdges.filter((e) => finalNodeIds.has(e.source) && finalNodeIds.has(e.target));
+
+  return {
+    center,
+    depth: data?.depth,
+    nodes,
+    edges: finalFocusedEdges,
+    stats: { nodes: nodes.length, edges: finalFocusedEdges.length },
+  };
+}
+
+function renderNeo4jGraph(data, selectedId = '') {
+  const projected = projectClinicalGraph(data || {});
+  const nodes = projected.nodes || [];
+  const edges = projected.edges || [];
+  if (!nodes.length) return '<div class="muted" style="padding:16px">没有可视化数据（请换一个临床实体 seed，如 DLBCL / TP53 / R-CHOP）</div>';
+
+  const typeWeight = (type) => {
+    const t = String(type || '').toLowerCase();
+    if (t.includes('disease') || t.includes('diagnos') || t.includes('concept')) return 5;
+    if (t.includes('treat') || t.includes('drug') || t.includes('therapy') || t.includes('regimen')) return 4;
+    if (t.includes('biomarker') || t.includes('gene') || t.includes('protein') || t.includes('mutation')) return 4;
+    if (t.includes('outcome') || t.includes('prognos') || t.includes('risk')) return 3;
+    if (t.includes('page') || t.includes('reference')) return 1;
+    return 2;
+  };
+  const scored = nodes.map((n) => {
+    const deg = edges.filter((e) => e.source === n.id || e.target === n.id).length;
+    const score = typeWeight(n.type) + Math.min(4, deg) + (String(n.id) === String(projected.center) ? 5 : 0);
+    return { ...n, __score: score, displayLabel: n.displayLabel || humanizeNodeLabel(n), __focus: false };
+  });
+
+  const w = 980;
+  const h = 700;
+  const cx = w / 2;
+  const cy = h / 2;
+  const centerNode = scored.find((n) => String(n.id) === String(projected.center)) || scored[0];
+  const others = scored.filter((n) => String(n.id) !== String(centerNode?.id));
+
+  // Simple force-ish layout: center + one ring (Neo4j Browser-like star)
+  const layout = [];
+  if (centerNode) layout.push({ ...centerNode, x: cx, y: cy });
+  const n = Math.max(others.length, 1);
+  const radius = Math.min(280, 120 + n * 12);
+  others.forEach((node, idx) => {
+    const angle = -Math.PI / 2 + (2 * Math.PI * idx) / n;
+    layout.push({
+      ...node,
+      x: cx + Math.cos(angle) * radius,
+      y: cy + Math.sin(angle) * radius,
+    });
+  });
+  // Light repulsion pass
+  for (let iter = 0; iter < 40; iter += 1) {
+    for (let i = 0; i < layout.length; i += 1) {
+      for (let j = i + 1; j < layout.length; j += 1) {
+        const a = layout[i];
+        const b = layout[j];
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const minD = 88;
+        if (dist < minD) {
+          const push = (minD - dist) / 2;
+          dx /= dist;
+          dy /= dist;
+          if (i !== 0) {
+            a.x -= dx * push;
+            a.y -= dy * push;
+          }
+          if (j !== 0) {
+            b.x += dx * push;
+            b.y += dy * push;
+          }
+        }
+      }
+    }
+  }
+  if (centerNode) {
+    layout[0].x = cx;
+    layout[0].y = cy;
+  }
+
+  const nodeMap = new Map(layout.map((n) => [String(n.id), n]));
+  const edgeLines = edges.map((edge) => {
+    const s = nodeMap.get(String(edge.source));
+    const t = nodeMap.get(String(edge.target));
+    if (!s || !t) return '';
+    const midX = (s.x + t.x) / 2;
+    const midY = (s.y + t.y) / 2;
+    const rawLabel = String(edge.label || edge.type || '').replace(/_/g, ' ');
+    const label = escapeHtml(rawLabel.slice(0, 22));
+    return `
+      <g>
+        <line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" stroke="#9aa4b2" stroke-width="1.6" marker-end="url(#arrow)" />
+        ${label ? `<rect x="${midX - Math.min(40, label.length * 3)}" y="${midY - 11}" width="${Math.min(90, Math.max(28, label.length * 6))}" height="15" rx="7" fill="rgba(248,250,252,.96)" stroke="rgba(148,163,184,.35)" />` : ''}
+        ${label ? `<text x="${midX}" y="${midY}" text-anchor="middle" font-size="9" fill="#64748b">${label}</text>` : ''}
+      </g>`;
+  }).join('');
+
+  const typeColor = (type) => {
+    const t = String(type || '').toLowerCase();
+    if (t.includes('disease') || t.includes('diagnos')) return '#4f86f7';
+    if (t.includes('treat')) return '#2f9e6a';
+    if (t.includes('biomarker') || t.includes('gene') || t.includes('protein')) return '#f59e0b';
+    if (t.includes('reference')) return '#94a3b8';
+    if (t.includes('concept')) return '#64748b';
+    return '#94a3b8';
+  };
+
+  const nodeEls = layout.map((node) => {
+    const selected = String(node.id) === String(selectedId);
+    const isCenter = String(node.id) === String(centerNode?.id);
+    const isFocus = Boolean(node.__focus);
+    const fill = isCenter ? '#fff7ed' : '#e2e8f0';
+    const opacity = 1;
+    const labelRaw = String(node.displayLabel || node.label || node.id);
+    const label = escapeHtml(labelRaw.length > 18 ? `${labelRaw.slice(0, 16)}…` : labelRaw);
+    const tooltip = escapeHtml([
+      `名称: ${labelRaw}`,
+      `类型: ${String(node.type || '')}`,
+      `ID: ${String(node.id || '')}`,
+    ].join('\n'));
+    const r = isCenter ? 34 : 26;
+    return `
+      <g class="neo4j-node ${selected ? 'selected' : ''}" data-node-id="${escapeHtml(String(node.id))}" data-node-label="${escapeHtml(labelRaw)}" style="cursor:pointer;opacity:${opacity}">
+        <title>${tooltip}</title>
+        <circle cx="${node.x}" cy="${node.y}" r="${r}" fill="${fill}" stroke="${selected || isCenter ? '#ea580c' : typeColor(node.type)}" stroke-width="${selected || isCenter ? '3' : '1.6'}" />
+        <text x="${node.x}" y="${node.y + 4}" text-anchor="middle" font-size="${isCenter ? 12 : 10}" fill="#1e293b" font-weight="${isCenter ? '600' : '500'}">${label}</text>
+      </g>`;
+  }).join('');
+
+  return `
+    <div class="muted small" style="padding:12px 14px 0">中心：${escapeHtml(String(centerNode?.displayLabel || projected.center || ''))} · 概念节点 ${layout.length} · 关系 ${edges.length}</div>
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="700" preserveAspectRatio="xMidYMid meet" style="display:block;background:#f8fafc">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"></path>
+        </marker>
+      </defs>
+      ${edgeLines}
+      ${nodeEls}
+    </svg>`;
+}
+
+function bindNeo4jGraphInteractions(root, onSelect, onExpand) {
+  root?.querySelectorAll('.neo4j-node').forEach((node) => {
+    node.addEventListener('mouseenter', () => {
+      node.querySelector('circle')?.setAttribute('stroke-width', '3');
+    });
+    node.addEventListener('mouseleave', () => {
+      const selected = node.classList.contains('selected');
+      node.querySelector('circle')?.setAttribute('stroke-width', selected ? '3' : '1.6');
+    });
+    node.addEventListener('click', () => {
+      const id = node.dataset.nodeId;
+      const label = node.dataset.nodeLabel || id;
+      if (!id) return;
+      onSelect?.(id, label);
+    });
+    node.addEventListener('dblclick', () => {
+      const id = node.dataset.nodeId;
+      const label = node.dataset.nodeLabel || id;
+      if (id) onExpand?.(id, label);
+    });
+  });
 }
 
 function bindCitations() {
@@ -1255,7 +1655,11 @@ function bindCitations() {
       html = `
         <div class="ref-head"><span class="k">Graph</span><button type="button" class="see" data-see-all>See All</button></div>
         <div class="ref-title">${escapeHtml(g.subject_name || '')} → ${escapeHtml(g.relation || '')} → ${escapeHtml(g.object_name || '')}</div>
-        <div class="ref-meta"><span>confidence ${Number(g.confidence || 0).toFixed(2)}</span><span class="badge">${escapeHtml(g.validation_status || 'graph')}</span></div>`;
+        <div class="ref-meta"><span>confidence ${Number(g.confidence || 0).toFixed(2)}</span><span class="badge">${escapeHtml(g.validation_status || 'graph')}</span></div>
+        <div class="muted small" style="margin-top:8px;max-width:320px;white-space:pre-wrap">${escapeHtml((g.evidence_text || '').slice(0, 220))}</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn primary" data-open-neo4j>查看图谱</button>
+        </div>`;
     } else {
       const r = (payload.attached_references || []).find((x) => String(x.ref_number) === String(btn.dataset.ref)) || {};
       const metaLine = r.source_label || [r.journal, r.year, r.authors].filter(Boolean).join('. ') || (r.pmid ? `PMID ${r.pmid}` : 'Literature');
@@ -1275,6 +1679,13 @@ function bindCitations() {
       e.preventDefault();
       e.stopPropagation();
       scrollToRefs();
+    });
+    pop.querySelector('[data-open-neo4j]')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const g = (payload.graph_triples || [])[Number(btn.dataset.index)] || {};
+      const seed = g.subject_name || g.object_name || payload.standalone_question || payload.question || '';
+      openToolsDrawer('neo4j', seed);
     });
   };
 
@@ -1809,7 +2220,7 @@ function finalizeAssistant(assistant, payload, userNode = null) {
   renderChat();
 }
 
-function openToolsDrawer(kind) {
+function openToolsDrawer(kind, seedOverride = '') {
   const payload = state.lastPayload;
   if (!payload) { alert('请先完成一次问答'); return; }
   const overlay = document.createElement('div');
@@ -1825,14 +2236,53 @@ function openToolsDrawer(kind) {
       <div style="margin-top:8px">${escapeHtml((s.text || '').slice(0, 400))}</div></div>`).join('') || '<div class="muted">无证据</div>';
   } else if (kind === 'graph') {
     body = (payload.graph_triples || []).map((g, i) => `
-      <div class="evidence-card"><strong>[G${i + 1}]</strong> ${escapeHtml(g.subject_name)} → ${escapeHtml(g.relation)} → ${escapeHtml(g.object_name)}
-      <div class="muted small">confidence ${Number(g.confidence || 0).toFixed(2)}</div></div>`).join('') || '<div class="muted">无图谱</div>';
+      <div class="evidence-card">
+        <div><button class="cite" data-cite="G" data-index="${i}">G${i + 1}</button> <strong>${escapeHtml(g.subject_name)}</strong> → ${escapeHtml(g.relation)} → <strong>${escapeHtml(g.object_name)}</strong></div>
+        <div class="muted small">confidence ${Number(g.confidence || 0).toFixed(2)} · ${escapeHtml(g.evidence_kind || 'graph')}</div>
+      </div>`).join('') || '<div class="muted">无图谱</div>';
+  } else if (kind === 'neo4j') {
+    const seeds = Array.isArray(payload.graph_seed_candidates) ? payload.graph_seed_candidates : [];
+    const initialSeed = (seedOverride || seeds[0] || '').trim();
+    body = `
+      <div class="evidence-card">
+        <div class="muted small">推荐 seed</div>
+        <div id="neo4jSeedList" class="template-row" style="justify-content:flex-start; margin-top:10px;">
+          ${seeds.map((s) => `<button class="template-pill" data-seed="${escapeHtml(String(s))}">${escapeHtml(String(s))}</button>`).join('') || '<span class="muted">暂无推荐 seed</span>'}
+        </div>
+        <div style="display:flex; gap:10px; margin-top:12px; align-items:center; flex-wrap:wrap;">
+          <input id="neo4jSeedInput" value="${escapeHtml(initialSeed)}" placeholder="输入实体名 / 页面码" style="flex:1; min-width:220px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.1); font:inherit;" />
+          <button class="btn primary" id="loadNeo4jGraphBtn">加载图谱</button>
+          <button class="btn" id="neo4jResetBtn">重置</button>
+          <button class="btn" id="neo4jCenterBtn">居中</button>
+          <button class="btn" id="neo4jZoomInBtn">放大</button>
+          <button class="btn" id="neo4jZoomOutBtn">缩小</button>
+        </div>
+      </div>
+      <div class="neo4j-shell" style="display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px;align-items:start;">
+        <div id="neo4jGraphCanvas" class="evidence-card" style="min-height:640px; overflow:auto;">${escapeHtml('正在加载...')}</div>
+        <aside id="neo4jSidePanel" class="evidence-card" style="position:sticky;top:12px;min-height:640px;max-height:640px;overflow:auto;padding:14px;">
+          <div class="ref-title" style="margin-bottom:10px">图谱概览</div>
+          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <button class="btn" id="neo4jPathBtn">路径模式</button>
+            <button class="btn" id="neo4jOverviewBtn">概览模式</button>
+          </div>
+          <div id="neo4jStats" class="muted small">加载后显示统计信息</div>
+          <div id="neo4jNodeDetail" style="margin-top:14px"></div>
+        </aside>
+      </div>`;
   } else {
     body = (payload.figures || []).map((f, i) => renderFigureCard(f, `tool-${i}`)).join('') || '<div class="muted">无流程图</div>';
   }
+  const drawerWide = kind === 'neo4j' ? ' drawer-panel-wide' : '';
   overlay.innerHTML = `
-    <div class="drawer-panel">
-      <div class="drawer-header"><strong>${escapeHtml(kind)}</strong><button class="btn" id="closeToolsDrawer">关闭</button></div>
+    <div class="drawer-panel${drawerWide}">
+      <div class="drawer-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${kind === 'neo4j' ? '<button class="btn" id="neo4jBackTopBtn" title="返回" aria-label="返回" style="padding:8px 10px; min-width:40px; line-height:1; font-size:16px">←</button>' : ''}
+          <strong>${escapeHtml(kind)}</strong>
+        </div>
+        <button class="btn" id="closeToolsDrawer">关闭</button>
+      </div>
       <div class="drawer-content">${body}</div>
     </div>`;
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -1841,6 +2291,173 @@ function openToolsDrawer(kind) {
   overlay.querySelectorAll('[data-fig-open]').forEach((el) => {
     el.addEventListener('click', () => openLightbox(el.getAttribute('data-fig-open'), ''));
   });
+  if (kind === 'neo4j') {
+    const seedInput = overlay.querySelector('#neo4jSeedInput');
+    const canvas = overlay.querySelector('#neo4jGraphCanvas');
+    const loadBtn = overlay.querySelector('#loadNeo4jGraphBtn');
+    const resetBtn = overlay.querySelector('#neo4jResetBtn');
+    const centerBtn = overlay.querySelector('#neo4jCenterBtn');
+    const zoomInBtn = overlay.querySelector('#neo4jZoomInBtn');
+    const zoomOutBtn = overlay.querySelector('#neo4jZoomOutBtn');
+    const backBtn = overlay.querySelector('#neo4jBackBtn');
+    const backTopBtn = overlay.querySelector('#neo4jBackTopBtn');
+    const homeBtn = overlay.querySelector('#neo4jHomeBtn');
+    const pathBtn = overlay.querySelector('#neo4jPathBtn');
+    const overviewBtn = overlay.querySelector('#neo4jOverviewBtn');
+    const seedPills = overlay.querySelectorAll('[data-seed]');
+    const statsEl = overlay.querySelector('#neo4jStats');
+    const detailEl = overlay.querySelector('#neo4jNodeDetail');
+    let currentSeed = '';
+    let currentData = null;
+    let currentScale = 1;
+    let selectedNodeId = '';
+    const historyStack = [];
+    let mode = 'path';
+    const renderStats = (data) => {
+      if (!statsEl || !data) return;
+      const projected = projectClinicalGraph(data || {});
+      const pNodes = projected.nodes || [];
+      const pEdges = projected.edges || [];
+      const typeCounts = pNodes.reduce((acc, n) => {
+        const k = String(n.type || 'Concept');
+        acc[k] = (acc[k] || 0) + 1;
+        return acc;
+      }, {});
+      const relCounts = pEdges.reduce((acc, e) => {
+        const k = String(e.label || e.type || 'EDGE');
+        acc[k] = (acc[k] || 0) + 1;
+        return acc;
+      }, {});
+      const centerLabel = pNodes.find((n) => String(n.id) === String(projected.center))?.displayLabel
+        || projected.center
+        || currentSeed
+        || '';
+      const pathCount = Array.isArray(window.__GF_GRAPH_FOCUS__) ? window.__GF_GRAPH_FOCUS__.length : 0;
+      statsEl.innerHTML = `
+        <div><strong>模式</strong> ${mode === 'path' ? '路径模式' : '概览模式'}</div>
+        <div><strong>中心节点</strong> ${escapeHtml(String(centerLabel))}</div>
+        <div><strong>概念节点</strong> ${pNodes.length} · <strong>临床关系</strong> ${pEdges.length}</div>
+        <div><strong>高亮路径</strong> ${pathCount}</div>
+        <div class="muted small" style="margin-top:6px">单击查看详情 · 双击展开邻域 · 点“返回”回退</div>
+        <div style="margin-top:10px"><strong>节点类型</strong><br>${Object.entries(typeCounts).slice(0, 6).map(([k, v]) => `<span class="badge" style="margin-right:6px;margin-top:6px;display:inline-block">${escapeHtml(k)} ${v}</span>`).join('') || '<span class="muted">无</span>'}</div>
+        <div style="margin-top:10px"><strong>关系类型</strong><br>${Object.entries(relCounts).slice(0, 8).map(([k, v]) => `<span class="badge" style="margin-right:6px;margin-top:6px;display:inline-block">${escapeHtml(k)} ${v}</span>`).join('') || '<span class="muted">无</span>'}</div>`;
+    };
+    const renderDetail = (node) => {
+      if (!detailEl) return;
+      if (!node) {
+        detailEl.innerHTML = '<div class="muted">点击一个节点查看详情</div>';
+        return;
+      }
+      const props = node.properties && typeof node.properties === 'object' ? node.properties : {};
+      const preferKeys = ['name', 'title', 'relation', 'subject_name', 'object_name', 'evidence_text', 'text', 'ref_number', 'article_id', 'page_code', 'printed_page_code'];
+      const entries = [];
+      for (const k of preferKeys) {
+        if (props[k] != null && String(props[k]).trim()) entries.push([k, props[k]]);
+      }
+      for (const [k, v] of Object.entries(props)) {
+        if (preferKeys.includes(k) || k === 'original_ids') continue;
+        if (entries.length >= 8) break;
+        entries.push([k, v]);
+      }
+      const items = entries.map(([k, v]) => `<div><strong>${escapeHtml(k)}</strong>: ${escapeHtml(String(v).slice(0, 180))}</div>`).join('');
+      detailEl.innerHTML = `
+        <div class="ref-title">${escapeHtml(String(node.displayLabel || node.label || node.id || 'Node'))}</div>
+        <div class="muted small">类型：${escapeHtml(String(node.type || ''))}</div>
+        <div class="muted small">节点键：${escapeHtml(String(node.id || ''))}</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn primary" id="neo4jExpandNodeBtn">展开此节点</button>
+        </div>
+        <div style="margin-top:10px">${items || '<div class="muted">无属性</div>'}</div>`;
+      detailEl.querySelector('#neo4jExpandNodeBtn')?.addEventListener('click', () => {
+        navigateTo(node.displayLabel || node.id, 1, true);
+      });
+    };
+    const paintCanvas = () => {
+      if (!canvas || !currentData) return;
+      const projected = projectClinicalGraph(currentData, Array.isArray(window.__GF_GRAPH_FOCUS__) ? window.__GF_GRAPH_FOCUS__ : []);
+      selectedNodeId = selectedNodeId || projected.center || '';
+      canvas.innerHTML = renderNeo4jGraph(currentData, selectedNodeId);
+      canvas.style.transform = `scale(${currentScale})`;
+      canvas.style.transformOrigin = 'top center';
+      bindNeo4jGraphInteractions(
+        canvas,
+        (nodeId) => {
+          selectedNodeId = nodeId;
+          const p = projectClinicalGraph(currentData);
+          const selected = (p.nodes || []).find((n) => String(n.id) === String(nodeId));
+          paintCanvas();
+          renderDetail(selected || null);
+          renderStats(currentData);
+        },
+        (_nodeId, label) => {
+          navigateTo(label || _nodeId, 1, true);
+        },
+      );
+      const p = projectClinicalGraph(currentData);
+      const selected = (p.nodes || []).find((n) => String(n.id) === String(selectedNodeId));
+      renderDetail(selected || null);
+      renderStats(currentData);
+      if (backBtn) backBtn.disabled = historyStack.length === 0;
+    };
+    const navigateTo = async (seed, depth = 1, pushHistory = false) => {
+      if (!seedInput || !canvas) return;
+      const next = String(seed || '').trim();
+      if (!next) {
+        canvas.innerHTML = '<div class="muted" style="padding:16px">请输入一个实体名（如 DLBCL、TP53、R-CHOP），不要用纯数字 ID。</div>';
+        return;
+      }
+      if (pushHistory && currentSeed) historyStack.push({ seed: currentSeed, scale: currentScale, selectedNodeId });
+      canvas.innerHTML = '<div class="muted" style="padding:16px">加载中...</div>';
+      currentSeed = next;
+      if (seedInput) seedInput.value = next;
+      try {
+        const depthOverride = mode === 'overview' ? Math.max(depth, 2) : depth;
+        const limit = mode === 'overview' ? 120 : 60;
+        const resp = await api(`/api/graph/neighborhood?seed=${encodeURIComponent(next)}&limit=${limit}&depth=${depthOverride}`, { method: 'GET' });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(formatApiDetail(data));
+        currentData = data;
+        selectedNodeId = '';
+        if (mode === 'path') {
+          const first = (projectClinicalGraph(data).nodes || [])[0];
+          if (first) selectedNodeId = first.id;
+        }
+        paintCanvas();
+      } catch (err) {
+        canvas.innerHTML = `<div class="muted" style="padding:16px">加载失败：${escapeHtml(err?.message || 'unknown error')}<br><span class="small">提示：请用临床实体名作 seed（DLBCL / Biopsy / TP53），不要点纯数字文献编号。</span></div>`;
+      }
+    };
+    const goBack = () => {
+      const prev = historyStack.pop();
+      if (!prev) return;
+      currentScale = prev.scale || 1;
+      selectedNodeId = prev.selectedNodeId || '';
+      void navigateTo(prev.seed, 1, false);
+    };
+    loadBtn?.addEventListener('click', () => navigateTo(seedInput?.value || '', 1, true));
+    resetBtn?.addEventListener('click', () => { currentScale = 1; selectedNodeId = ''; historyStack.length = 0; navigateTo(currentSeed || (seedInput?.value || ''), 1, false); });
+    centerBtn?.addEventListener('click', () => paintCanvas());
+    homeBtn?.addEventListener('click', () => paintCanvas());
+    backBtn?.addEventListener('click', goBack);
+    backTopBtn?.addEventListener('click', goBack);
+    pathBtn?.addEventListener('click', () => { mode = 'path'; navigateTo(currentSeed || seedInput?.value || '', 1, false); });
+    overviewBtn?.addEventListener('click', () => { mode = 'overview'; navigateTo(currentSeed || seedInput?.value || '', 2, false); });
+    zoomInBtn?.addEventListener('click', () => { currentScale = Math.min(1.8, currentScale + 0.1); if (canvas) canvas.style.transform = `scale(${currentScale})`; });
+    zoomOutBtn?.addEventListener('click', () => { currentScale = Math.max(0.6, currentScale - 0.1); if (canvas) canvas.style.transform = `scale(${currentScale})`; });
+    seedPills.forEach((pill) => pill.addEventListener('click', () => navigateTo(pill.dataset.seed || '', 1, true)));
+    const payloadSeeds = Array.isArray(payload.graph_seed_candidates) ? payload.graph_seed_candidates.filter(Boolean) : [];
+    if (payloadSeeds.length) {
+      const seedList = overlay.querySelector('#neo4jSeedList');
+      if (seedList) {
+        seedList.innerHTML = payloadSeeds.map((s) => `<button class="template-pill" data-seed="${escapeHtml(String(s))}">${escapeHtml(String(s))}</button>`).join('');
+        seedList.querySelectorAll('[data-seed]').forEach((pill) => pill.addEventListener('click', () => navigateTo(pill.dataset.seed || '', 1, true)));
+      }
+      if (seedInput && !seedInput.value.trim()) seedInput.value = payloadSeeds[0];
+      void navigateTo(payloadSeeds[0], 1, false);
+    } else {
+      void navigateTo(seedInput?.value || '', 1, false);
+    }
+  }
 }
 
 // —— events ——
