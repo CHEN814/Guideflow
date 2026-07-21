@@ -23,6 +23,8 @@ class SearchDocument:
     article_id: Optional[str] = None
     reference_ids: List[str] = field(default_factory=list)
     needs_review: bool = False
+    source: str = "nccn"              # nccn | csco
+    content_type: str = "text"        # text | table
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -40,6 +42,8 @@ class SearchDocument:
             article_id=data.get("article_id"),
             reference_ids=list(data.get("reference_ids", [])),
             needs_review=bool(data.get("needs_review", False)),
+            source=str(data.get("source") or "nccn"),
+            content_type=str(data.get("content_type") or "text"),
         )
 
 
@@ -88,6 +92,7 @@ class GuidelinePage:
     module_code: Optional[str] = None
     outgoing_links: List[PageLink] = field(default_factory=list)
     needs_review: bool = False
+    source: str = "nccn"
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -105,6 +110,7 @@ class GuidelinePage:
             module_code=data.get("module_code"),
             outgoing_links=[PageLink.from_dict(lnk) for lnk in data.get("outgoing_links", [])],
             needs_review=bool(data.get("needs_review", False)),
+            source=str(data.get("source") or "nccn"),
         )
 
     def to_search_document(self) -> SearchDocument:
@@ -120,6 +126,8 @@ class GuidelinePage:
             printed_page_code=self.printed_page_code,
             module_code=self.module_code,
             needs_review=self.needs_review,
+            source=self.source,
+            content_type="text",
         )
 
 
@@ -135,6 +143,8 @@ class DiscussionChunk:
     section: str
     clean_text: str
     reference_ids: List[str] = field(default_factory=list)
+    source: str = "nccn"
+    content_type: str = "text"  # text | table
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -150,6 +160,8 @@ class DiscussionChunk:
             section=data.get("section", ""),
             clean_text=data.get("clean_text", ""),
             reference_ids=list(data.get("reference_ids", [])),
+            source=str(data.get("source") or "nccn"),
+            content_type=str(data.get("content_type") or "text"),
         )
 
     def to_search_document(self) -> SearchDocument:
@@ -161,6 +173,8 @@ class DiscussionChunk:
             section=self.section,
             article_id=self.article_id,
             reference_ids=self.reference_ids,
+            source=self.source,
+            content_type=self.content_type,
         )
 
 
@@ -175,6 +189,7 @@ class ReferenceEntry:
     pmid: Optional[str] = None
     doi: Optional[str] = None
     url: Optional[str] = None
+    source: str = "nccn"
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -189,6 +204,7 @@ class ReferenceEntry:
             pmid=data.get("pmid"),
             doi=data.get("doi"),
             url=data.get("url"),
+            source=str(data.get("source") or "nccn"),
         )
 
     def to_search_document(self) -> SearchDocument:
@@ -200,6 +216,8 @@ class ReferenceEntry:
             section="References",
             article_id=self.article_id,
             reference_ids=[self.ref_number],
+            source=self.source,
+            content_type="text",
         )
 
 
@@ -221,6 +239,8 @@ class KnowledgeChunk:
     needs_review: bool = False
     embedding_model: Optional[str] = None
     embedding_dim: Optional[int] = None
+    source: str = "nccn"
+    content_type: str = "text"
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -242,6 +262,8 @@ class KnowledgeChunk:
             needs_review=bool(data.get("needs_review", False)),
             embedding_model=data.get("embedding_model"),
             embedding_dim=data.get("embedding_dim"),
+            source=str(data.get("source") or "nccn"),
+            content_type=str(data.get("content_type") or "text"),
         )
 
 
@@ -253,6 +275,7 @@ class StructuredKnowledgeBase:
     discussion_chunks: List[DiscussionChunk]
     reference_entries: List[ReferenceEntry]
     stats: Dict[str, Any] = field(default_factory=dict)
+    source: str = "nccn"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -260,6 +283,7 @@ class StructuredKnowledgeBase:
             "discussion_chunks": [c.to_dict() for c in self.discussion_chunks],
             "reference_entries": [e.to_dict() for e in self.reference_entries],
             "stats": self.stats,
+            "source": self.source,
         }
 
     @classmethod
@@ -269,6 +293,7 @@ class StructuredKnowledgeBase:
             discussion_chunks=[DiscussionChunk.from_dict(c) for c in data.get("discussion_chunks", [])],
             reference_entries=[ReferenceEntry.from_dict(e) for e in data.get("reference_entries", [])],
             stats=dict(data.get("stats", {})),
+            source=str(data.get("source") or data.get("stats", {}).get("source") or "nccn"),
         )
 
     def to_chunks(self) -> List[KnowledgeChunk]:
@@ -290,6 +315,8 @@ class StructuredKnowledgeBase:
                         reference_ids=[],
                         order=order,
                         needs_review=page.needs_review,
+                        source=page.source or self.source,
+                        content_type="text",
                     )
                 )
         offset = len(chunks)
@@ -308,6 +335,8 @@ class StructuredKnowledgeBase:
                         article_id=chunk.article_id,
                         reference_ids=list(chunk.reference_ids),
                         order=offset + idx,
+                        source=chunk.source or self.source,
+                        content_type=chunk.content_type or "text",
                     )
                 )
         return chunks

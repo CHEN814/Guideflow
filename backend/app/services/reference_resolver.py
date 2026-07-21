@@ -8,7 +8,7 @@ from backend.app.models import ReferenceEntry, RetrievalHit, StructuredKnowledge
 from backend.app.services.store import load_knowledge_base
 
 _CITATION_RE = re.compile(
-    r"(?:[\.,](\d{1,3})(?:-(\d{1,3}))?|[\[\(](\d{1,3})[\]\)])"
+    r"(?:[\.,](\d{1,3})(?:[-–—～~](\d{1,3}))?|[\[\(【](\d{1,3})(?:[-–—～~](\d{1,3}))?[\]\)】])"
 )
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.。!?！？])\s+|\n+")
 
@@ -16,10 +16,17 @@ _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.。!?！？])\s+|\n+")
 def _ref_numbers_in_text(text: str) -> List[str]:
     ids: set[str] = set()
     for m in _CITATION_RE.finditer(text or ""):
-        start = int(m.group(1) or m.group(3))
-        end = int(m.group(2)) if m.group(2) else start
-        for n in range(start, min(end + 1, start + 20)):
-            ids.add(str(n))
+        start_s = m.group(1) or m.group(3)
+        end_s = m.group(2) or m.group(4)
+        if not start_s:
+            continue
+        start = int(start_s)
+        end = int(end_s) if end_s else start
+        if end < start:
+            start, end = end, start
+        for n in range(start, min(end + 1, start + 30)):
+            if 1 <= n <= 200:
+                ids.add(str(n))
     return sorted(ids, key=int)
 
 

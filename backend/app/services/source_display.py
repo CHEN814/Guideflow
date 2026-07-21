@@ -140,31 +140,38 @@ def enrich_source_dict(doc: SearchDocument) -> Dict[str, Any]:
     data = doc.to_dict()
     page_code = doc.printed_page_code or ""
     pdf_page = doc.pdf_page or 0
+    src = (getattr(doc, "source", None) or "nccn").lower()
+    is_csco = src == "csco"
 
     if doc.page_type == "clinical_guideline":
         citation_label = page_code or (f"p.{pdf_page}" if pdf_page else doc.source_id)
-        # Primary title = page code (OE-style short identifier).
         display_title = citation_label
         subtitle = extract_guideline_title(doc.text, fallback="")
         if subtitle and subtitle.upper() == citation_label.upper():
             subtitle = ""
-        source_label = "NCCN B 细胞淋巴瘤指南"
+        source_label = "CSCO 淋巴瘤诊疗指南 2025" if is_csco else "NCCN B 细胞淋巴瘤指南"
         locator = f"p.{pdf_page}" if pdf_page else ""
         badge = "指南"
     elif doc.page_type == "discussion":
-        citation_label = doc.section or "Discussion"
-        display_title = doc.section or "Discussion"
+        citation_label = doc.section or ("表格" if getattr(doc, "content_type", "") == "table" else "Discussion")
+        display_title = doc.section or citation_label
         if doc.article_id:
-            display_title = f"{doc.article_id.upper()} · {display_title}"
+            display_title = f"{doc.article_id} · {display_title}"
         subtitle = ""
-        source_label = "NCCN 指南 · Discussion"
+        if is_csco:
+            source_label = "CSCO 淋巴瘤诊疗指南 2025"
+            badge = "表格" if getattr(doc, "content_type", "") == "table" else "章节"
+        else:
+            source_label = "NCCN 指南 · Discussion"
+            badge = "Discussion"
         locator = f"p.{pdf_page}" if pdf_page else ""
-        badge = "Discussion"
     else:
         citation_label = page_code or doc.source_id
         display_title = citation_label
         subtitle = ""
-        source_label = doc.page_type or "Source"
+        source_label = (
+            "CSCO 淋巴瘤诊疗指南 2025" if is_csco else (doc.page_type or "Source")
+        )
         locator = f"p.{pdf_page}" if pdf_page else ""
         badge = doc.page_type or "Source"
 
@@ -174,6 +181,12 @@ def enrich_source_dict(doc: SearchDocument) -> Dict[str, Any]:
     data["locator"] = locator
     data["citation_label"] = citation_label
     data["badge"] = badge
+    data["data_source"] = src
+    # Tables are rendered inline in the answer (frontend reads ``text``).
+    is_table = getattr(doc, "content_type", "text") == "table"
+    data["is_table"] = is_table
+    if is_table:
+        data["table_markdown"] = doc.text
     return data
 
 

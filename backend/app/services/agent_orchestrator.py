@@ -44,14 +44,31 @@ class AgentOrchestrator:
             or 4
         )
 
-    @staticmethod
-    def _should_upgrade_to_flowchart(state: AgentState) -> bool:
+    @property
+    def source_key(self) -> str:
+        return str(getattr(self.settings, "source_key", "nccn") or "nccn").lower()
+
+    def _active_tools(self) -> List[Dict[str, Any]]:
+        """Filter tool schemas by source capabilities."""
+        enable_vlm = bool(getattr(self.settings, "enable_vlm", True))
+        enable_flowchart = bool(getattr(self.settings, "enable_flowchart", True))
+        enable_kg = bool(getattr(self.settings, "enable_kg", True))
+        allowed = {"search_guidelines", "respond_directly"}
+        if enable_vlm and enable_flowchart:
+            allowed.add("view_pages")
+        if enable_kg:
+            allowed.add("query_graph")
+        return [t for t in TOOL_DEFINITIONS if t.get("function", {}).get("name") in allowed]
+
+    def _should_upgrade_to_flowchart(self, state: AgentState) -> bool:
         """Upgrade evidence→flowchart only when flowchart intent is genuine.
 
         A leaked low-rank decision page (common after BM25 summary injection)
         must NOT force the VLM path. Require either an intent-map seed that is
         a decision page, or a rank-1 hit that is itself a decision page.
         """
+        if not bool(getattr(self.settings, "enable_flowchart", True)):
+            return False
         if state.route != "evidence":
             return False
         if is_decision_flow_page(state.seed_page_code):
@@ -88,7 +105,7 @@ class AgentOrchestrator:
 
         for step_idx in range(max_steps):
             assistant_msg, tool_calls, degraded = self.qa.qwen.run_tool_turn(
-                messages, tools=TOOL_DEFINITIONS, timeout=45
+                messages, tools=self._active_tools(), timeout=45
             )
             if degraded:
                 state.diagnostics.setdefault("degraded", []).append(degraded)
@@ -211,7 +228,7 @@ class AgentOrchestrator:
 
         for step_idx in range(max_steps):
             assistant_msg, tool_calls, degraded = self.qa.qwen.run_tool_turn(
-                messages, tools=TOOL_DEFINITIONS, timeout=45
+                messages, tools=self._active_tools(), timeout=45
             )
             if degraded:
                 state.diagnostics.setdefault("degraded", []).append(degraded)
@@ -321,8 +338,15 @@ class AgentOrchestrator:
                 trace=trace,
             )
         if name == "query_graph":
+            if not bool(getattr(self.settings, "enable_kg", True)):
+                return json.dumps({"ok": False, "error": "knowledge_graph_disabled_for_source"}, ensure_ascii=False)
             return self._tool_query_graph(args, state=state, disease_scope=disease_scope)
         if name == "view_pages":
+            if not (
+                bool(getattr(self.settings, "enable_vlm", True))
+                and bool(getattr(self.settings, "enable_flowchart", True))
+            ):
+                return json.dumps({"ok": False, "error": "view_pages_disabled_for_source"}, ensure_ascii=False)
             return self._tool_view_pages(args, state=state, standalone=standalone, trace=trace)
         if name == "respond_directly":
             return self._tool_respond_directly(args, state=state, question=standalone)

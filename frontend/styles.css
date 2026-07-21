@@ -119,8 +119,6 @@ body{
 .answer h2,.answer h3{margin:14px 0 8px}
 .answer ul{margin:8px 0 0 20px}
 .answer p{margin:0 0 10px}
-.answer table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px}
-.answer th,.answer td{border:1px solid var(--line);padding:8px 10px;text-align:left}
 .answer code{background:rgba(0,0,0,.05);padding:1px 5px;border-radius:6px;font-size:.92em}
 .msg-actions{display:flex;gap:2px;margin-top:6px;flex-wrap:wrap;align-items:center;justify-content:flex-start}
 .msg-actions-user{justify-content:flex-end}
@@ -190,6 +188,29 @@ body{
 .figure-card .fig-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.05);font-size:13px;color:var(--muted)}
 .figure-card img{display:block;width:100%;max-height:320px;object-fit:contain;background:#f8f5f2;cursor:zoom-in}
 .figure-card .fig-cap{padding:8px 12px;font-size:12px;color:var(--muted)}
+/* Inline guideline tables — ChatGPT-like minimal horizontal rules only */
+.table-card{margin:18px 0 8px;border:none;border-radius:0;overflow:visible;background:transparent;box-shadow:none}
+.table-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 0 10px;border-bottom:none;background:transparent}
+.table-card-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:.01em;line-height:1.4}
+.table-copy{display:inline-flex;align-items:center;gap:5px;flex:none;border:0;background:transparent;color:var(--muted);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;cursor:pointer;transition:color .15s ease,background .15s ease}
+.table-copy:hover{color:var(--text);background:rgba(0,0,0,.04)}
+.table-copy.copied{color:#2e9e5b;background:rgba(46,158,91,.08)}
+.table-copy svg{display:block}
+.table-card-body{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0}
+.table-card-body table{border-collapse:collapse;width:100%;margin:0;font-size:14px;line-height:1.65;border-top:1px solid rgba(0,0,0,.12);border-bottom:1px solid rgba(0,0,0,.12)}
+.table-card-body th,.table-card-body td{border:none;border-bottom:1px solid rgba(0,0,0,.08);padding:12px 14px;text-align:left;vertical-align:top;background:transparent}
+.table-card-body thead th{background:transparent;color:var(--text);font-weight:600;font-size:13.5px;white-space:nowrap;border-bottom:1px solid rgba(0,0,0,.18)}
+.table-card-body tbody tr:nth-child(even){background:transparent}
+.table-card-body tbody tr:hover{background:rgba(0,0,0,.02)}
+.table-card-body tbody tr:last-child td{border-bottom:none}
+.table-card-body td:first-child{font-weight:600;color:var(--text);white-space:nowrap;width:1%;padding-right:18px}
+.table-card-foot{padding:8px 2px 0;font-size:12px;color:var(--muted);border-top:none;background:transparent}
+.answer-block.table-extra{margin-top:4px}
+/* Also keep answer-body markdown tables in the same minimal style */
+.answer table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;line-height:1.65;border-top:1px solid rgba(0,0,0,.12);border-bottom:1px solid rgba(0,0,0,.12)}
+.answer th,.answer td{border:none;border-bottom:1px solid rgba(0,0,0,.08);padding:12px 14px;text-align:left;vertical-align:top}
+.answer thead th{font-weight:600;border-bottom:1px solid rgba(0,0,0,.18)}
+.answer tbody tr:last-child td{border-bottom:none}
 .lightbox{position:fixed;inset:0;background:rgba(20,14,10,.72);display:flex;align-items:center;justify-content:center;z-index:90;padding:16px}
 .lightbox img{max-width:95vw;max-height:90vh;border-radius:12px;background:#fff;object-fit:contain}
 .composer{padding:10px 22px calc(18px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.55))}
@@ -197,6 +218,12 @@ body{
 .composer-box.expanded{align-items:flex-end}
 .composer-box.expanded textarea{min-height:180px;max-height:42vh;height:180px}
 .composer textarea{flex:1;min-height:40px;height:40px;max-height:160px;resize:none;border:0;outline:none;font:inherit;background:transparent;line-height:1.5;overflow-y:auto}
+.data-source-wrap{flex-shrink:0;align-self:flex-end;margin-bottom:2px}
+.data-source-select{appearance:none;-webkit-appearance:none;border:1px solid rgba(229,111,61,.28);background:#fff8f3;color:#5c3d2e;border-radius:12px;padding:8px 28px 8px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c3d2e' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.data-source-select:focus{outline:2px solid rgba(229,111,61,.35);outline-offset:1px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.source-chip{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;vertical-align:middle;background:rgba(229,111,61,.12);color:#8a4b2a}
+.source-chip.csco{background:rgba(46,125,110,.12);color:#1f5c52}
 .composer-actions{display:flex;flex-direction:row;gap:6px;align-items:center;justify-content:flex-end;flex-shrink:0;align-self:flex-end}
 .composer-expand{width:32px;height:32px;flex-shrink:0;font-size:13px;display:grid;place-items:center}
 .composer-box.expanded .composer-expand{transform:rotate(180deg)}

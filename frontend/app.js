@@ -37,6 +37,7 @@ const els = {
   shareChatBtn: document.getElementById('shareChatBtn'),
   composerBox: document.getElementById('composerBox'),
   expandInputBtn: document.getElementById('expandInputBtn'),
+  dataSourceSelect: document.getElementById('dataSourceSelect'),
 };
 
 const ICON = {
@@ -57,6 +58,20 @@ const SUGGESTIONS = [
   'TP53 对 DLBCL 预后有何影响？',
   'DLBCL 何时考虑 CNS prophylaxis？',
 ];
+
+const DATA_SOURCE_KEY = 'gf_data_source';
+const DATA_SOURCE_LABELS = { nccn: 'NCCN', csco: 'CSCO' };
+
+function loadDataSource() {
+  const v = (localStorage.getItem(DATA_SOURCE_KEY) || 'nccn').toLowerCase();
+  return v === 'csco' ? 'csco' : 'nccn';
+}
+
+function saveDataSource(key) {
+  const v = key === 'csco' ? 'csco' : 'nccn';
+  localStorage.setItem(DATA_SOURCE_KEY, v);
+  return v;
+}
 
 const state = {
   user: null,
@@ -79,6 +94,7 @@ const state = {
   citePinned: false,
   sidebarCollapsed: localStorage.getItem('gf_sidebar_collapsed') === '1',
   abortController: null,
+  dataSource: loadDataSource(),
 };
 
 const ACTIVE_CONV_KEY = 'gf_active_conversation_id';
@@ -639,8 +655,19 @@ function resolveImageUrl(url) {
   return `${API_BASE}${url.startsWith('/') ? url : `/${url}`}`;
 }
 
+function normalizeMarkdownRanges(md) {
+  // CSCO / clinical Chinese uses ASCII "~" for numeric ranges (IPI 2~5, 40~50mg,
+  // d1~5). GFM strikethrough is "~~…~~"; a pair of single "~" in one paragraph
+  // can still be mis-parsed as <del> by some marked builds. Normalize ranges to
+  // the fullwidth tilde so they never become strikethrough.
+  return String(md || '').replace(
+    /([0-9A-Za-z])\s*~\s*([0-9A-Za-z])/g,
+    '$1～$2',
+  );
+}
+
 function renderMarkdown(md) {
-  const raw = String(md || '');
+  const raw = normalizeMarkdownRanges(md);
   let html;
   try {
     html = window.marked?.parse ? window.marked.parse(raw, { breaks: true }) : raw;
@@ -959,6 +986,7 @@ function renderChat() {
   bindMessageActions();
   bindCitations();
   bindFigures();
+  bindTables();
   updateShareChatBtn();
   const editingInput = els.chatLog.querySelector('.user-edit-input');
   if (editingInput) {
@@ -1050,11 +1078,15 @@ function renderMessage(message, idx) {
   const body = renderAnswerBody(payload, message.content);
   const feedback = message.feedback || '';
   const tag = answerKindLabel(payload.answer_kind);
+  const src = (payload.data_source || message.dataSource || '').toLowerCase();
+  const srcChip = src
+    ? `<span class="source-chip ${src === 'csco' ? 'csco' : ''}">${escapeHtml(DATA_SOURCE_LABELS[src] || src)}</span>`
+    : '';
   const { vNav, delBtn } = renderBranchControls(message);
   return `
     <div class="msg-row assistant" data-msg-idx="${idx}" data-node-id="${escapeHtml(message.id || '')}" data-msg-id="${escapeHtml(message.serverId || message.id || '')}">
       <div class="message assistant">
-        <div class="tag">${escapeHtml(tag)}</div>
+        <div class="tag">${escapeHtml(tag)}${srcChip}</div>
         <div class="answer">${body}</div>
       </div>
       <div class="msg-actions">
@@ -1071,6 +1103,37 @@ function renderMessage(message, idx) {
     </div>`;
 }
 
+function isTableSource(s) {
+  return !!s && (s.is_table === true || s.content_type === 'table') && !!(s.table_markdown || s.text);
+}
+
+// Map each cited table source to the paragraph that first references it, so the
+// full table renders inline (not hidden inside an evidence card). Returns the
+// per-paragraph table indices plus any cited tables left unanchored.
+function planCitedTables(paragraphs, payload) {
+  const sources = payload.sources || [];
+  const byParagraph = paragraphs.map(() => []);
+  const placed = new Set();
+  paragraphs.forEach((p, idx) => {
+    const re = /\[S(\d+)\]/gi;
+    let m;
+    while ((m = re.exec(String(p))) !== null) {
+      const si = Number(m[1]) - 1;
+      if (placed.has(si)) continue;
+      if (isTableSource(sources[si])) {
+        placed.add(si);
+        byParagraph[idx].push(si);
+      }
+    }
+  });
+  // Table evidence that exists but was never cited → still show it to the reader.
+  const leftovers = [];
+  sources.forEach((s, si) => {
+    if (isTableSource(s) && !placed.has(si)) leftovers.push(si);
+  });
+  return { byParagraph, leftovers };
+}
+
 function renderAnswerBody(payload, fallbackText) {
   const paragraphs = (payload.answer_paragraphs && payload.answer_paragraphs.length)
     ? payload.answer_paragraphs
@@ -1085,16 +1148,49 @@ function renderAnswerBody(payload, fallbackText) {
       anchored.set(fig.anchor_paragraph, list);
     } else unanchored.push(fig);
   }
+  const sources = payload.sources || [];
+  const tablePlan = planCitedTables(paragraphs, payload);
   let html = paragraphs.map((p, idx) => {
     const figs = (anchored.get(idx) || []).map((f, i) => renderFigureCard(f, `${idx}-${i}`)).join('');
-    return `<div class="answer-block">${decorateCitations(renderMarkdown(p), payload)}${figs}</div>`;
+    const tbls = tablePlan.byParagraph[idx]
+      .map((si) => renderTableCard(sources[si], si))
+      .join('');
+    return `<div class="answer-block">${decorateCitations(renderMarkdown(p), payload)}${tbls}${figs}</div>`;
   }).join('');
+  if (tablePlan.leftovers.length) {
+    html += `<div class="answer-block table-extra">${tablePlan.leftovers.map((si) => renderTableCard(sources[si], si)).join('')}</div>`;
+  }
   if (unanchored.length) {
     html += `<div class="answer-block"><h3>相关流程图</h3>${unanchored.map((f, i) => renderFigureCard(f, `u-${i}`)).join('')}</div>`;
   }
   html += `<p class="ai-disclaimer">本回答由 AI 生成，内容仅供参考，请仔细甄别</p>`;
   html += renderReferences(payload);
   return html;
+}
+
+function renderTableCard(s, key) {
+  if (!s) return '';
+  const md = String(s.table_markdown || s.text || '').trim();
+  if (!md) return '';
+  let caption = s.display_title || s.citation_label || '指南表格';
+  let bodyMd = md;
+  const capMatch = md.match(/^\*\*(.+?)\*\*\s*\n+/);
+  if (capMatch) {
+    caption = capMatch[1].trim();
+    bodyMd = md.slice(capMatch[0].length).trim();
+  }
+  const tableHtml = renderMarkdown(bodyMd);
+  const foot = [s.citation_label, s.source_label].filter(Boolean).join(' · ');
+  const copyPayload = encodeURIComponent(bodyMd);
+  return `
+    <figure class="table-card" data-table-key="${escapeHtml(String(key))}">
+      <figcaption class="table-card-head">
+        <span class="table-card-title">${escapeHtml(caption)}</span>
+        <button type="button" class="table-copy" data-copy-md="${copyPayload}" title="复制表格" aria-label="复制表格">${ICON.copy}<span class="table-copy-label">复制</span></button>
+      </figcaption>
+      <div class="table-card-body">${tableHtml}</div>
+      ${foot ? `<figcaption class="table-card-foot">${escapeHtml(foot)}</figcaption>` : ''}
+    </figure>`;
 }
 
 function renderFigureCard(fig, key) {
@@ -1204,6 +1300,39 @@ function bindFigures() {
     el.addEventListener('click', (e) => {
       e.preventDefault();
       openLightbox(el.getAttribute('data-fig-open'), el.getAttribute('data-fig-label') || '');
+    });
+  });
+}
+
+function bindTables() {
+  els.chatLog.querySelectorAll('.table-copy[data-copy-md]').forEach((el) => {
+    el.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const md = decodeURIComponent(el.getAttribute('data-copy-md') || '');
+      if (!md) return;
+      const label = el.querySelector('.table-copy-label');
+      const done = () => {
+        el.classList.add('copied');
+        const prev = label ? label.textContent : '';
+        if (label) label.textContent = '已复制';
+        setTimeout(() => {
+          el.classList.remove('copied');
+          if (label) label.textContent = prev || '复制';
+        }, 1400);
+      };
+      try {
+        await navigator.clipboard.writeText(md);
+        done();
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = md;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch { /* ignore */ }
+        ta.remove();
+      }
     });
   });
 }
@@ -2100,6 +2229,7 @@ async function askQuestion(question, meta = {}) {
         history,
         parent_message_id: parentMessageId,
         regenerate,
+        data_source: state.dataSource || 'nccn',
       }),
       signal: state.abortController.signal,
     });
@@ -2197,7 +2327,11 @@ async function consumeSSE(resp, assistant, userNode = null) {
 function finalizeAssistant(assistant, payload, userNode = null) {
   if (!assistant || !getNode(assistant.id)) return;
   assistant.pending = false;
+  if (payload && !payload.data_source) {
+    payload.data_source = state.dataSource || 'nccn';
+  }
   assistant.payload = payload;
+  assistant.dataSource = payload?.data_source || state.dataSource;
   assistant.content = payload.answer_markdown || assistant.content || '';
   if (payload.assistant_message_id) {
     assistant.serverId = payload.assistant_message_id;
@@ -2534,6 +2668,12 @@ els.askBtn?.addEventListener('click', () => {
   }
   askQuestion(els.followUpInput.value);
 });
+if (els.dataSourceSelect) {
+  els.dataSourceSelect.value = state.dataSource;
+  els.dataSourceSelect.addEventListener('change', () => {
+    state.dataSource = saveDataSource(els.dataSourceSelect.value);
+  });
+}
 els.followUpInput?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();

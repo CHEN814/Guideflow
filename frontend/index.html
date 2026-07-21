@@ -50,13 +50,20 @@
 
       <div class="composer">
         <div class="composer-box" id="composerBox">
+          <label class="data-source-wrap" title="选择指南数据源（单次检索不混用）">
+            <span class="sr-only">指南来源</span>
+            <select id="dataSourceSelect" class="data-source-select" aria-label="指南数据源">
+              <option value="nccn">NCCN</option>
+              <option value="csco">CSCO</option>
+            </select>
+          </label>
           <textarea id="followUpInput" placeholder="问一个临床问题……" rows="1"></textarea>
           <div class="composer-actions">
             <button type="button" class="icon-btn composer-expand" id="expandInputBtn" title="展开输入" aria-label="展开输入">⤢</button>
             <button class="circle-btn" id="askBtn" aria-label="发送">➤</button>
           </div>
         </div>
-        <div class="composer-hint muted small">回车发送 · Shift+回车换行 · 未登录历史仅本页有效，登录后可同步到云端</div>
+        <div class="composer-hint muted small">回车发送 · Shift+回车换行 · 可切换 NCCN / CSCO 指南 · 未登录历史仅本页有效</div>
       </div>
     </main>
   </div>

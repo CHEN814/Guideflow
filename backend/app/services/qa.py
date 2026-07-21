@@ -112,6 +112,7 @@ class QAService:
             api_key=settings.qwen_api_key,
             base_url=settings.qwen_base_url,
             model=settings.qwen_model,
+            source_key=getattr(settings, "source_key", "nccn") or "nccn",
         )
         self.vlm = load_multimodal_client(
             api_key=settings.vlm_api_key,
@@ -188,7 +189,10 @@ class QAService:
         standalone, topic_shift, condense_degraded = self.qwen.condense_question(question, history)
         if topic_shift:
             history = []
-        disease_scope = detect_disease_scope(standalone)
+        disease_scope = detect_disease_scope(
+            standalone,
+            source=getattr(self.settings, "source_key", "nccn") or "nccn",
+        )
         routing_mode = str(getattr(self.settings, "routing_mode", "agentic") or "agentic").lower()
 
         yield {
@@ -374,7 +378,10 @@ class QAService:
         standalone, topic_shift, condense_degraded = self.qwen.condense_question(question, history)
         if topic_shift:
             history = []
-        disease_scope = detect_disease_scope(standalone)
+        disease_scope = detect_disease_scope(
+            standalone,
+            source=getattr(self.settings, "source_key", "nccn") or "nccn",
+        )
         routing_mode = str(getattr(self.settings, "routing_mode", "agentic") or "agentic").lower()
         if routing_mode == "agentic":
             orch = AgentOrchestrator(self)
@@ -554,7 +561,12 @@ class QAService:
             graph_triples=graph_triples_prompt,
             graph_context=graph_context_prompt,
         )
-        use_vlm = bool(figures) and self.vlm.available
+        use_vlm = (
+            bool(figures)
+            and self.vlm.available
+            and bool(getattr(self.settings, "enable_vlm", True))
+            and bool(getattr(self.settings, "enable_flowchart", True))
+        )
         trace.log(
             "multimodal_decision",
             {
@@ -790,7 +802,12 @@ class QAService:
             graph_triples=graph_triples_prompt,
             graph_context=graph_context_prompt,
         )
-        use_vlm = bool(figures) and self.vlm.available
+        use_vlm = (
+            bool(figures)
+            and self.vlm.available
+            and bool(getattr(self.settings, "enable_vlm", True))
+            and bool(getattr(self.settings, "enable_flowchart", True))
+        )
         trace.log(
             "multimodal_decision",
             {

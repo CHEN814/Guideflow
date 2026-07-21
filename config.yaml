@@ -10,6 +10,27 @@ paths:
   summary_cache: data/cache/page_summaries.json
   logs: logs/runs
 
+# 双数据源（NCCN / CSCO）。未列出的字段回退到上方 paths（仅 nccn）或代码默认值。
+sources:
+  nccn:
+    label: "NCCN B 细胞淋巴瘤指南"
+    pdf: "（2026.V3）NCCN临床 实践指南：B细胞淋巴瘤.pdf"
+    knowledge_base: data/processed/dlbcl_knowledge_base.json
+    bm25_index: data/indexes/bm25_index.pkl
+    knowledge_graph: data/processed/knowledge_graph.json
+    enable_vlm: true
+    enable_flowchart: true
+    enable_kg: true
+  csco:
+    label: "CSCO 淋巴瘤诊疗指南 2025"
+    pdf: "2025CSCO淋巴瘤诊疗指南(OCR).pdf"
+    knowledge_base: data/processed/csco_knowledge_base.json
+    bm25_index: data/indexes/csco_bm25_index.pkl
+    knowledge_graph: data/processed/csco_knowledge_graph.json
+    enable_vlm: false
+    enable_flowchart: false
+    enable_kg: false
+
 qwen:
   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
   model: qwen-plus
