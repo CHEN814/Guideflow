@@ -44,6 +44,22 @@ class AgentOrchestrator:
             or 4
         )
 
+    @staticmethod
+    def _should_upgrade_to_flowchart(state: AgentState) -> bool:
+        """Upgrade evidence→flowchart only when flowchart intent is genuine.
+
+        A leaked low-rank decision page (common after BM25 summary injection)
+        must NOT force the VLM path. Require either an intent-map seed that is
+        a decision page, or a rank-1 hit that is itself a decision page.
+        """
+        if state.route != "evidence":
+            return False
+        if is_decision_flow_page(state.seed_page_code):
+            return True
+        if state.hits and is_decision_flow_page(state.hits[0].document.printed_page_code):
+            return True
+        return False
+
     def run(
         self,
         *,
@@ -161,10 +177,7 @@ class AgentOrchestrator:
                 trace=trace,
             )
 
-        if state.route == "evidence" and any(
-            is_decision_flow_page(h.document.printed_page_code) for h in state.hits
-        ):
-            # Soft upgrade when decision pages are present.
+        if self._should_upgrade_to_flowchart(state):
             state.route = "flowchart"
 
         state.ready = True
@@ -283,9 +296,7 @@ class AgentOrchestrator:
                 trace=trace,
             )
 
-        if state.route == "evidence" and any(
-            is_decision_flow_page(h.document.printed_page_code) for h in state.hits
-        ):
+        if self._should_upgrade_to_flowchart(state):
             state.route = "flowchart"
 
         state.ready = True
@@ -310,7 +321,7 @@ class AgentOrchestrator:
                 trace=trace,
             )
         if name == "query_graph":
-            return self._tool_query_graph(args, state=state)
+            return self._tool_query_graph(args, state=state, disease_scope=disease_scope)
         if name == "view_pages":
             return self._tool_view_pages(args, state=state, standalone=standalone, trace=trace)
         if name == "respond_directly":
@@ -358,11 +369,13 @@ class AgentOrchestrator:
         protect = route in ("flowchart", "hybrid")
         gate_degraded = None
         if self.settings.enable_evidence_gating and hits:
+            pre_gate_hits = list(hits)
             hits, gate_degraded, gated_indices = self.qa.qwen.gate_evidence(
                 standalone, hits, protect_decision_pages=protect
             )
             # Always reinject intent seed decision page if present in raw retrieval.
             hits = self._ensure_seed_hit(standalone, hits, diagnostics, disease_scope, trace)
+            hits, disease_guard = self.qa._reinject_disease_hits(pre_gate_hits, hits, disease_scope)
             trace.log(
                 "evidence_gated",
                 {
@@ -371,6 +384,7 @@ class AgentOrchestrator:
                     "kept_count": len(hits),
                     "degraded": gate_degraded,
                     "protect_decision_pages": protect,
+                    "disease_guard": disease_guard,
                 },
             )
         state.gate_degraded = gate_degraded
@@ -495,7 +509,9 @@ class AgentOrchestrator:
                 )
         return candidates[:12]
 
-    def _tool_query_graph(self, args: Dict[str, Any], *, state: AgentState) -> str:
+    def _tool_query_graph(
+        self, args: Dict[str, Any], *, state: AgentState, disease_scope: Optional[DiseaseScope] = None
+    ) -> str:
         question = str(args.get("question") or "").strip()
         relation = args.get("relation")
         relation_s = str(relation).strip() if relation else None
@@ -504,6 +520,7 @@ class AgentOrchestrator:
             top_k=self.settings.final_top_k,
             hops=self.settings.graph_depth,
             relation=relation_s,
+            disease_scope=disease_scope,
         )
         state.graph_hits = hits
         if not hits:

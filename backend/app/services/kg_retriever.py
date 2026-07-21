@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from backend.app.models import GraphTriple
+from backend.app.services.disease_scope import DiseaseScope, triple_sources_in_scope
 from backend.app.services.figure_selection import tokenize
 from backend.app.services.knowledge_graph import KnowledgeGraphBundle, MedicalOntology, load_knowledge_graph_bundle
 
@@ -84,12 +85,13 @@ class KnowledgeGraphRetriever:
         hops: int = 1,
         relation: Optional[str] = None,
         min_relevance: float = 0.12,
+        disease_scope: Optional[DiseaseScope] = None,
     ) -> List[KGHit]:
         seeds = self.resolve_query_entities(query)
         therapy_query = self._is_therapy_query(query)
         preferred_relations = self._preferred_relations(query, relation)
         if not seeds:
-            hits = self._fallback_retrieve(query, top_k=top_k * 3)
+            hits = self._scope_filter_hits(self._fallback_retrieve(query, top_k=top_k * 3), disease_scope)
             return self._filter_by_relevance(
                 hits,
                 query,
@@ -125,6 +127,7 @@ class KnowledgeGraphRetriever:
                     frontier.append((other, depth + 1))
 
         results = sorted(scored.values(), key=lambda hit: (hit.score, hit.triple.confidence), reverse=True)
+        results = self._scope_filter_hits(results, disease_scope)
         return self._filter_by_relevance(
             results,
             query,
@@ -134,7 +137,27 @@ class KnowledgeGraphRetriever:
             min_relevance=min_relevance,
         )
 
-    def expand_subgraph(self, entity_ids: Sequence[str], hops: int = 1, top_k: int = 20) -> List[GraphTriple]:
+    @staticmethod
+    def _scope_filter_hits(hits: Sequence[KGHit], disease_scope: Optional[DiseaseScope]) -> List[KGHit]:
+        """Drop hits whose evidence sources all resolve to another disease.
+
+        Unresolvable sources (verdict ``None``) are kept here; higher layers may
+        apply name-based filtering for those (e.g. Neo4j edges)."""
+        if disease_scope is None:
+            return list(hits)
+        return [
+            hit
+            for hit in hits
+            if triple_sources_in_scope(hit.triple.evidence_source_ids, disease_scope) is not False
+        ]
+
+    def expand_subgraph(
+        self,
+        entity_ids: Sequence[str],
+        hops: int = 1,
+        top_k: int = 20,
+        disease_scope: Optional[DiseaseScope] = None,
+    ) -> List[GraphTriple]:
         frontier = deque([(entity_id, 0) for entity_id in entity_ids])
         seen_entities = set()
         seen_triples = set()
@@ -153,6 +176,12 @@ class KnowledgeGraphRetriever:
                     frontier.append((triple.subject_id, depth + 1))
                 if triple.object_id not in seen_entities:
                     frontier.append((triple.object_id, depth + 1))
+        if disease_scope is not None:
+            triples = [
+                triple
+                for triple in triples
+                if triple_sources_in_scope(triple.evidence_source_ids, disease_scope) is not False
+            ]
         triples.sort(key=lambda triple: (triple.confidence, triple.validation_status == "trusted"), reverse=True)
         return triples[:top_k]
 

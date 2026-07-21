@@ -128,6 +128,70 @@ def with_common_modules(scope: DiseaseScope) -> DiseaseScope:
     return replace(scope, module_codes=modules, article_ids=articles)
 
 
+def parse_source_scope(source_id: str) -> Tuple[Optional[str], Optional[str]]:
+    """Parse a retrieval ``source_id`` into ``(article_id, module_code)``.
+
+    Either element may be ``None``. Conventions used across the corpus:
+
+    - ``disc-{article}-p{page}-c{chunk}`` -> article (e.g. ``disc-dlbcl-p248-c0``)
+    - ``ref-{article}-{n}``               -> article (e.g. ``ref-mzl-29``)
+    - ``page-{MODULE}-...`` / ``page-{MODULE}`` -> module (e.g. ``page-BCEL-A_1_OF_3``)
+
+    Anything else (e.g. a bare Neo4j edge id) resolves to ``(None, None)``.
+    """
+    if not source_id:
+        return (None, None)
+    s = source_id.strip()
+    lower = s.lower()
+    if lower.startswith("disc-"):
+        article = s[5:].split("-", 1)[0].lower()
+        return (article or None, None)
+    if lower.startswith("ref-"):
+        article = s[4:].split("-", 1)[0].lower()
+        return (article or None, None)
+    if lower.startswith("page-"):
+        module = s[5:].split("-", 1)[0].upper()
+        return (None, module or None)
+    return (None, None)
+
+
+def source_in_scope(source_id: str, scope: DiseaseScope) -> Optional[bool]:
+    """Scope verdict for a single source id.
+
+    ``True`` if it belongs to ``scope`` (its article/module is allowed),
+    ``False`` if it resolves to another disease, ``None`` if unresolvable.
+    """
+    article, module = parse_source_scope(source_id)
+    if article is None and module is None:
+        return None
+    allowed_articles = {a.lower() for a in scope.article_ids}
+    allowed_modules = {m.upper() for m in scope.module_codes}
+    if article is not None and article in allowed_articles:
+        return True
+    if module is not None and module in allowed_modules:
+        return True
+    return False
+
+
+def triple_sources_in_scope(source_ids: Sequence[str], scope: Optional[DiseaseScope]) -> Optional[bool]:
+    """Aggregate scope verdict for a triple's evidence sources.
+
+    - ``True``  if at least one source is in-scope.
+    - ``False`` if every resolvable source is out-of-scope (another disease).
+    - ``None``  if no source could be resolved (e.g. only Neo4j edge ids).
+
+    When ``scope`` is ``None`` / ``all`` / has empty filters, returns ``True``
+    (no filtering applies).
+    """
+    if scope is None or scope.key == "all" or (not scope.article_ids and not scope.module_codes):
+        return True
+    verdicts = [source_in_scope(sid, scope) for sid in (source_ids or [])]
+    resolved = [v for v in verdicts if v is not None]
+    if not resolved:
+        return None
+    return True if any(resolved) else False
+
+
 def detect_disease_scope(question: str, forced_key: Optional[str] = None) -> DiseaseScope:
     """Detect disease scope from the question text.
 

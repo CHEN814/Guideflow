@@ -133,6 +133,64 @@ def test_filter_attached_references_keeps_when_discussion_cited() -> None:
     assert filtered_links == links
 
 
+def test_filter_attached_references_drops_when_answer_has_no_citation() -> None:
+    hits = [
+        _hit(
+            _doc(
+                "disc-dlbcl-p248-c0",
+                page_type="discussion",
+                section="Discussion",
+                article_id="dlbcl",
+                reference_ids=["1"],
+            )
+        )
+    ]
+    refs = [
+        ReferenceEntry(
+            entry_id="ref-dlbcl-1",
+            article_id="dlbcl",
+            ref_number="1",
+            text="Al-Hamadani M, et al. Study. 2015.",
+            pmid="26096944",
+        )
+    ]
+    links = {"disc-dlbcl-p248-c0": ["1"]}
+    filtered_refs, filtered_links = filter_attached_references(
+        hits, refs, links, answer="回答正文没有任何来源引用标记。"
+    )
+    assert filtered_refs == []
+    assert filtered_links == {}
+
+
+def test_filter_attached_references_keeps_when_answer_cites_source() -> None:
+    hits = [
+        _hit(
+            _doc(
+                "disc-dlbcl-p248-c0",
+                page_type="discussion",
+                section="Discussion",
+                article_id="dlbcl",
+                reference_ids=["1"],
+            )
+        )
+    ]
+    refs = [
+        ReferenceEntry(
+            entry_id="ref-dlbcl-1",
+            article_id="dlbcl",
+            ref_number="1",
+            text="Al-Hamadani M, et al. Study. 2015.",
+            pmid="26096944",
+        )
+    ]
+    links = {"disc-dlbcl-p248-c0": ["1"]}
+    filtered_refs, filtered_links = filter_attached_references(
+        hits, refs, links, answer="依据 [S1] 判断。"
+    )
+    assert len(filtered_refs) == 1
+    assert filtered_links == links
+
+
 def test_extract_guideline_title_strips_boilerplate() -> None:
     text = (
         "Note: All recommendations are category 2A unless otherwise indicated. "

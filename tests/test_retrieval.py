@@ -173,7 +173,7 @@ def test_reference_resolver_attaches_references_from_discussion_hits() -> None:
         _hit(
             _doc(
                 "disc-dlbcl-p140-c0",
-                "TP53 mutation discussion cites 27 and 33.",
+                "TP53 mutation confers poor prognosis.27,33",
                 article_id="dlbcl",
                 reference_ids=["27", "33"],
             )
@@ -251,7 +251,7 @@ def test_reference_resolver_deduplicates_and_ignores_non_discussion_hits() -> No
         _hit(
             _doc(
                 "disc-a",
-                "discussion one cites 27.",
+                "discussion one cites the trial.27",
                 article_id="dlbcl",
                 reference_ids=["27"],
             )
@@ -259,7 +259,7 @@ def test_reference_resolver_deduplicates_and_ignores_non_discussion_hits() -> No
         _hit(
             _doc(
                 "disc-b",
-                "discussion two cites 27.",
+                "discussion two cites the trial.27",
                 article_id="dlbcl",
                 reference_ids=["27"],
             )

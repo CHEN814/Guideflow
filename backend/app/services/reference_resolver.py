@@ -123,10 +123,11 @@ class ReferenceResolver:
                     ordered.append(n)
             candidate_nums = ordered
             if not candidate_nums:
-                # Fall back to a small prefix of chunk-level refs (not the whole list).
-                candidate_nums = sorted(doc.reference_ids, key=lambda v: int(v))[
-                    : min(3, self.max_attached_refs)
-                ]
+                # Rule: a reference may only surface when the cited discussion
+                # sentence itself carries an inline citation marker (".N" / "[N]").
+                # No marker near the matched window => attach nothing (no fallback
+                # to an arbitrary prefix of the chunk's reference_ids).
+                continue
 
             linked_numbers: List[str] = []
             for ref_number in candidate_nums:

@@ -11,7 +11,14 @@ from backend.app.services.agent_tools import status_event
 from backend.app.services.answer_formatter import format_answer
 from backend.app.services.bm25_store import BM25Store
 from backend.app.services.chunk_embedding_index import ChunkEmbeddingIndex
-from backend.app.services.disease_scope import DiseaseScope, detect_disease_scope
+from backend.app.services.disease_scope import (
+    COMMON_ARTICLE_IDS,
+    COMMON_MODULE_CODES,
+    DiseaseScope,
+    detect_disease_scope,
+    parse_source_scope,
+    triple_sources_in_scope,
+)
 from backend.app.services.qwen import QwenClient
 from backend.app.prompts import PAGE_SUMMARY_MARKER, build_evidence_prompt
 from backend.app.services.dlbcl_flow_map import is_decision_flow_page, normalize_page_code
@@ -512,7 +519,7 @@ class QAService:
         )
         graph_hits = list(agent_state.graph_hits)
         if len(graph_hits) < 2:
-            graph_hits = self._retrieve_graph_fallbacks(standalone, hits)
+            graph_hits = self._retrieve_graph_fallbacks(standalone, hits, disease_scope)
         graph_triples = []
         for hit in graph_hits:
             triple = hit.triple
@@ -520,6 +527,10 @@ class QAService:
             graph_triples.append(triple)
         graph_context = self._graph_context(graph_hits)
         graph_seed_candidates = self._graph_seed_candidates(standalone, graph_triples, hits)
+        # Decouple UI vs prompt: the full list feeds the UI/trace; only the
+        # scope-filtered, de-noised subset is injected into [G*] for generation.
+        graph_triples_prompt = self._filter_graph_for_prompt(graph_triples, disease_scope, standalone)
+        graph_context_prompt = self._graph_context_from_triples(graph_triples_prompt)
         figures = list(agent_state.figures)
         seed_meta = dict(agent_state.seed_meta or {})
         seed_page_code = agent_state.seed_page_code or seed_meta.get("seed_page_code")
@@ -540,8 +551,8 @@ class QAService:
             attached_references=attached_references,
             reference_links=reference_links,
             figures=figures,
-            graph_triples=graph_triples,
-            graph_context=graph_context,
+            graph_triples=graph_triples_prompt,
+            graph_context=graph_context_prompt,
         )
         use_vlm = bool(figures) and self.vlm.available
         trace.log(
@@ -573,7 +584,8 @@ class QAService:
                 "evidence_source_ids": [hit.document.source_id for hit in hits],
                 "evidence_count": len(hits),
                 "attached_reference_count": len(attached_references),
-                "graph_triple_count": len(graph_triples),
+                "graph_triple_count": len(graph_triples_prompt),
+                "graph_triple_count_ui": len(graph_triples),
                 "prompt_char_count": len(prompt_text),
                 "routing_mode": "agentic",
             },
@@ -723,11 +735,13 @@ class QAService:
         gate_degraded: Optional[str] = None
         gated_indices: List[int] = list(range(1, len(hits) + 1))
         if self.settings.enable_evidence_gating and hits:
+            pre_gate_hits = list(hits)
             hits, gate_degraded, gated_indices = self.qwen.gate_evidence(
                 standalone,
                 hits,
                 protect_decision_pages=route in ("flowchart", "hybrid"),
             )
+            hits, disease_guard = self._reinject_disease_hits(pre_gate_hits, hits, disease_scope)
             trace.log(
                 "evidence_gated",
                 {
@@ -736,6 +750,7 @@ class QAService:
                     "kept_count": len(hits),
                     "degraded": gate_degraded,
                     "protect_decision_pages": route in ("flowchart", "hybrid"),
+                    "disease_guard": disease_guard,
                 },
             )
         else:
@@ -745,7 +760,7 @@ class QAService:
             hits, question=standalone
         )
 
-        graph_hits = self._retrieve_graph_fallbacks(standalone, hits)
+        graph_hits = self._retrieve_graph_fallbacks(standalone, hits, disease_scope)
         graph_triples = []
         for hit in graph_hits:
             triple = hit.triple
@@ -753,6 +768,10 @@ class QAService:
             graph_triples.append(triple)
         graph_context = self._graph_context(graph_hits)
         graph_seed_candidates = self._graph_seed_candidates(standalone, graph_triples, hits)
+        # Decouple UI vs prompt (see agentic path): full list for UI, scoped
+        # de-noised subset for [G*] injection.
+        graph_triples_prompt = self._filter_graph_for_prompt(graph_triples, disease_scope, standalone)
+        graph_context_prompt = self._graph_context_from_triples(graph_triples_prompt)
 
         figures, seed_meta = self._gather_figures(
             hits=hits,
@@ -768,8 +787,8 @@ class QAService:
             attached_references=attached_references,
             reference_links=reference_links,
             figures=figures,
-            graph_triples=graph_triples,
-            graph_context=graph_context,
+            graph_triples=graph_triples_prompt,
+            graph_context=graph_context_prompt,
         )
         use_vlm = bool(figures) and self.vlm.available
         trace.log(
@@ -808,7 +827,8 @@ class QAService:
                 "evidence_source_ids": [hit.document.source_id for hit in hits],
                 "evidence_count": len(hits),
                 "attached_reference_count": len(attached_references),
-                "graph_triple_count": len(graph_triples),
+                "graph_triple_count": len(graph_triples_prompt),
+                "graph_triple_count_ui": len(graph_triples),
                 "prompt_char_count": len(prompt_text),
             },
         )
@@ -869,7 +889,7 @@ class QAService:
         hits_before = len(hits)
         answer, hits, figures, citation_remap = filter_cited_hits(answer, hits, figures)
         attached_references, reference_links = filter_attached_references(
-            hits, attached_references, reference_links
+            hits, attached_references, reference_links, answer=answer
         )
         if citation_remap or hits_before != len(hits):
             trace.log(
@@ -1098,9 +1118,11 @@ class QAService:
         return 0
 
     def _graph_context(self, graph_hits) -> List[str]:
+        return self._graph_context_from_triples([hit.triple for hit in graph_hits])
+
+    def _graph_context_from_triples(self, triples) -> List[str]:
         lines: List[str] = []
-        for idx, hit in enumerate(graph_hits, start=1):
-            triple = hit.triple
+        for idx, triple in enumerate(triples, start=1):
             evidence_ids = ", ".join(triple.evidence_source_ids) if triple.evidence_source_ids else "无"
             lines.append(
                 f"[G{idx}] {triple.subject_name}({triple.subject_type}) --{triple.relation}--> "
@@ -1109,13 +1131,115 @@ class QAService:
             )
         return lines
 
-    def _retrieve_graph_fallbacks(self, question: str, hits: List[RetrievalHit]):
+    def _reinject_disease_hits(
+        self,
+        pre_gate_hits: List[RetrievalHit],
+        gated_hits: List[RetrievalHit],
+        disease_scope: Optional[DiseaseScope],
+        limit: int = 2,
+    ) -> Tuple[List[RetrievalHit], bool]:
+        """Guard against evidence gating collapsing to common-module pages only.
+
+        If a specific disease scope is active and the gated result contains no
+        disease-specific page (e.g. only NHODG/ABBR), re-add the top same-disease
+        hits from the pre-gate candidates. Returns ``(hits, changed)``."""
+        if disease_scope is None or disease_scope.key == "all":
+            return gated_hits, False
+        specific_articles = {a.lower() for a in disease_scope.article_ids} - {a.lower() for a in COMMON_ARTICLE_IDS}
+        specific_modules = {m.upper() for m in disease_scope.module_codes} - {m.upper() for m in COMMON_MODULE_CODES}
+        if not specific_articles and not specific_modules:
+            return gated_hits, False
+
+        def is_specific(hit: RetrievalHit) -> bool:
+            article, module = parse_source_scope(hit.document.source_id)
+            return (article is not None and article in specific_articles) or (
+                module is not None and module in specific_modules
+            )
+
+        if any(is_specific(hit) for hit in gated_hits):
+            return gated_hits, False
+        existing = {hit.document.source_id for hit in gated_hits}
+        additions = [
+            hit for hit in pre_gate_hits if is_specific(hit) and hit.document.source_id not in existing
+        ][:limit]
+        if not additions:
+            return gated_hits, False
+        return gated_hits + additions, True
+
+    @staticmethod
+    def _is_prompt_worthy_triple(triple) -> bool:
+        """Whether a graph triple is solid enough to *ground the answer*.
+
+        Excludes synthesized / fallback clues and edges with empty endpoints —
+        these may still be shown in the UI but must not steer the answer."""
+        if not (triple.subject_name or "").strip() or not (triple.object_name or "").strip():
+            return False
+        tid = triple.triple_id or ""
+        if tid.startswith("synth:") or tid.startswith("fallback:"):
+            return False
+        if (getattr(triple, "review_status", "") or "") == "synthetic":
+            return False
+        if (triple.validation_status or "") == "fallback":
+            return False
+        return True
+
+    @staticmethod
+    def _scope_name_terms(disease_scope: Optional[DiseaseScope]) -> set:
+        if disease_scope is None or disease_scope.key == "all":
+            return set()
+        terms = {disease_scope.key.lower()}
+        for word in re.split(r"\W+", (disease_scope.label or "").lower()):
+            # Keep disease-identifying tokens, drop generic ones.
+            if len(word) >= 4 and word not in {"cell", "large", "zone", "type", "grade"}:
+                terms.add(word)
+        return terms
+
+    def _filter_graph_for_prompt(
+        self,
+        triples,
+        disease_scope: Optional[DiseaseScope],
+        question: str,
+    ) -> list:
+        """Derive the subset of graph triples allowed to enter the [G*] prompt.
+
+        UI keeps the full list; only this scoped + de-noised subset is injected
+        into generation. Empty subset => no [G*] block (answer relies on [Sn])."""
+        q_lower = (question or "").lower()
+        scope_terms = self._scope_name_terms(disease_scope)
+        kept = []
+        for triple in triples:
+            if not self._is_prompt_worthy_triple(triple):
+                continue
+            verdict = triple_sources_in_scope(triple.evidence_source_ids, disease_scope)
+            if verdict is True:
+                kept.append(triple)
+            elif verdict is None:
+                # Unresolvable sources (e.g. Neo4j edges): require a name match to
+                # the disease scope or to an entity present in the question.
+                names = f"{triple.subject_name} {triple.object_name}".lower()
+                name_hit = any(term in names for term in scope_terms) or any(
+                    len(part) >= 3 and part in q_lower
+                    for part in re.split(r"\W+", names)
+                    if part
+                )
+                if name_hit:
+                    kept.append(triple)
+            # verdict is False (another disease) => drop from prompt
+        return kept
+
+    def _retrieve_graph_fallbacks(
+        self,
+        question: str,
+        hits: List[RetrievalHit],
+        disease_scope: Optional[DiseaseScope] = None,
+    ):
         # Stage 1: KG JSON retrieval (already multi-hop aware).
         seed_hits = self.kg_retriever.retrieve(
             question,
             top_k=max(self.settings.final_top_k, 8),
             hops=max(1, self.settings.graph_depth + 1),
-            min_relevance=0.0,
+            min_relevance=0.12,
+            disease_scope=disease_scope,
         )
         graph_hits = list(seed_hits)
 
@@ -1129,6 +1253,7 @@ class QAService:
                 seed_entity_ids,
                 hops=max(1, self.settings.graph_depth),
                 top_k=max(self.settings.final_top_k, 10),
+                disease_scope=disease_scope,
             )
             for triple in expanded:
                 score = 0.72 + 0.12 * min(2, self.settings.graph_depth)
@@ -1203,8 +1328,11 @@ class QAService:
                     rel = str(edge.get("label") or edge.get("type") or "RELATED_TO")
                     s_node = nodes.get(sid, {})
                     t_node = nodes.get(tid, {})
-                    subject_name = str(s_node.get("label") or s_node.get("properties", {}).get("name") or sid)
-                    object_name = str(t_node.get("label") or t_node.get("properties", {}).get("name") or tid)
+                    subject_name = str(s_node.get("label") or s_node.get("properties", {}).get("name") or "").strip()
+                    object_name = str(t_node.get("label") or t_node.get("properties", {}).get("name") or "").strip()
+                    # Skip nameless edges (bare ids only) — they are pure noise.
+                    if not subject_name or subject_name == sid or not object_name or object_name == tid:
+                        continue
                     evidence_text = f"Neo4j edge {rel} between {subject_name} and {object_name}"
                     confidence = 0.8 if rel not in ("RELATED_TO", "EDGE") else 0.66
                     triple = GraphTriple(

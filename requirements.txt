@@ -16,7 +16,8 @@ pydantic[email]>=2.0.0
 httpx>=0.27.0
 
 # Optional: Neo4j for knowledge-graph visualization / neighborhood API
-neo4j>=5.20.0
+# Pin to 5.x: driver 6.x has API differences vs Neo4jGraphService (written for 5.x).
+neo4j>=5.20.0,<6
 
 # Optional (disabled by default): vector embedding retrieval
 # sentence-transformers

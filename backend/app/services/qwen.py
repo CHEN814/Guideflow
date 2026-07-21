@@ -45,6 +45,31 @@ def _lexical_gate_indices(question: str, hits: List[RetrievalHit], min_keep: int
     return sorted(set(keep))
 
 
+def _fallback_indices(
+    question: str,
+    hits: List[RetrievalHit],
+    protected: set[int],
+    *,
+    protect_decision_pages: bool,
+) -> List[int]:
+    """Lexical gate fallback; drop decision pages unless protect is on.
+
+    When protect_decision_pages is False (discussion/evidence questions),
+    decision-flow pages must not survive an empty/failed LLM gate — they
+    would otherwise trip the evidence→flowchart soft upgrade. If stripping
+    them empties the set, keep the original lexical set to avoid blank evidence.
+    """
+    indices = sorted(set(_lexical_gate_indices(question, hits)) | protected)
+    if protect_decision_pages:
+        return indices
+    filtered = [
+        idx
+        for idx in indices
+        if not is_decision_flow_page(hits[idx - 1].document.printed_page_code)
+    ]
+    return filtered if filtered else indices
+
+
 def _history_messages(
     history: Sequence[dict] | None,
     max_turns: int = 4,
@@ -339,8 +364,9 @@ class QwenClient:
         }
 
         if not self.api_key:
-            indices = _lexical_gate_indices(question, hits)
-            indices = sorted(set(indices) | protected)
+            indices = _fallback_indices(
+                question, hits, protected, protect_decision_pages=protect_decision_pages
+            )
             filtered = [hit for idx, hit in enumerate(hits, start=1) if idx in indices]
             return filtered, "evidence_gate_lexical_fallback", indices
 
@@ -372,13 +398,17 @@ class QwenClient:
                     indices.append(int(m.group(1)))
             indices = sorted({i for i in indices if 1 <= i <= len(hits)} | protected)
             if not indices:
-                indices = sorted(set(_lexical_gate_indices(question, hits)) | protected)
+                indices = _fallback_indices(
+                    question, hits, protected, protect_decision_pages=protect_decision_pages
+                )
                 filtered = [hit for idx, hit in enumerate(hits, start=1) if idx in indices]
                 return filtered, "evidence_gate_empty_fallback", indices
             filtered = [hits[i - 1] for i in indices]
             return filtered, None, indices
         except (requests.RequestException, KeyError, ValueError, RuntimeError, json.JSONDecodeError):
-            indices = sorted(set(_lexical_gate_indices(question, hits)) | protected)
+            indices = _fallback_indices(
+                question, hits, protected, protect_decision_pages=protect_decision_pages
+            )
             filtered = [hit for idx, hit in enumerate(hits, start=1) if idx in indices]
             return filtered, "evidence_gate_request_failed", indices
 
