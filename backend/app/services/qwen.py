@@ -548,7 +548,7 @@ class QwenClient:
             if detail:
                 header += f"（{detail[:200]}）"
         else:
-            header = "未检测到千问 API key，以下为证据摘要模式，不代表最终模型回答。"
+            header = "未检测到千问 API key（支持 QWEN_API_KEY / QWEN_APIKEY / DASHSCOPE_API_KEY / DASHSCOPE_APIKEY / ALIYUN_API_KEY），以下为证据摘要模式，不代表最终模型回答。"
         lines = [
             header,
             "",

@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from backend.api.routes_auth import router as auth_router
 from backend.api.routes_conversations import router as conversations_router
+from backend.api.routes_feedback import router as feedback_router
 from backend.app.db import get_db, get_session_factory, init_db
 from backend.app.models_db import Conversation, Message, User
 from backend.app.services.auth import get_optional_user
@@ -269,6 +270,8 @@ def create_app() -> FastAPI:
     )
     app.include_router(auth_router)
     app.include_router(conversations_router)
+    app.include_router(feedback_router)
+    app.include_router(feedback_router)
 
     frontend_dir = ROOT_DIR / "frontend"
     if frontend_dir.is_dir():
@@ -281,6 +284,10 @@ def create_app() -> FastAPI:
             "status": "ok",
             "sources": list_source_keys(),
             "loaded": list(qa_services.keys()),
+            "qwen_configured": bool(settings.qwen_api_key),
+            "qwen_key_length": len(settings.qwen_api_key or ""),
+            "qwen_model": settings.qwen_model,
+            "qwen_base_url": settings.qwen_base_url,
         }
 
     @app.get("/api/sources")

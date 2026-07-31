@@ -233,6 +233,9 @@ def load_settings() -> Settings:
         qwen_api_key=(
             os.getenv("QWEN_API_KEY")
             or os.getenv("QWEN_APIKEY")
+            or os.getenv("DASHSCOPE_API_KEY")
+            or os.getenv("DASHSCOPE_APIKEY")
+            or os.getenv("ALIYUN_API_KEY")
             or os.getenv("DEEPSEEK_API_KEY")
             or os.getenv("DEEPSEEK_APIKEY")
         ),

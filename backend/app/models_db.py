@@ -1,11 +1,11 @@
-"""ORM models for auth, conversations, messages, and share links."""
+"""ORM models for auth, conversations, messages, share links, and doctor feedback."""
 from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.db import Base
@@ -97,3 +97,35 @@ class Share(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     conversation: Mapped["Conversation"] = relationship(back_populates="shares")
+
+
+class DoctorFeedback(Base):
+    """Doctor feedback on an assistant answer (raw text + rule categories)."""
+
+    __tablename__ = "doctor_feedback"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id)
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    conversation_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    # Assistant message this feedback targets (optional for guest / local chats).
+    answer_message_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("messages.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    question_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    answer_excerpt: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # 1..5
+    helpful: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # yes | no | null
+    # Doctor-selected primary category (or auto if empty).
+    primary_category: Mapped[str] = mapped_column(String(40), default="其他", nullable=False)
+    # JSON list of category keys (primary first, then secondary tags).
+    categories_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    # Original free-text comment — always preserved.
+    comment: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    # Rule classifier output (may differ from doctor pick).
+    auto_primary: Mapped[str] = mapped_column(String(40), default="其他", nullable=False)
+    auto_tags_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)

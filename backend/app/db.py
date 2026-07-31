@@ -30,11 +30,7 @@ def get_engine() -> Engine:
     if cfg.database_url.startswith("sqlite"):
         connect_args["check_same_thread"] = False
 
-    _engine = create_engine(
-        cfg.database_url,
-        connect_args=connect_args,
-        future=True,
-    )
+    _engine = create_engine(cfg.database_url, connect_args=connect_args, future=True)
 
     if cfg.database_url.startswith("sqlite"):
 
@@ -55,10 +51,8 @@ def get_session_factory() -> sessionmaker[Session]:
 
 
 def _migrate_message_tree_columns(engine: Engine) -> None:
-    """Idempotent ADD COLUMN for conversation tree fields (SQLite)."""
     cfg = load_web_config()
     if not cfg.database_url.startswith("sqlite"):
-        # Non-SQLite: create_all handles new DBs; ALTER for existing left to ops.
         return
 
     with engine.begin() as conn:
@@ -71,10 +65,37 @@ def _migrate_message_tree_columns(engine: Engine) -> None:
         if "active_child_id" not in msg_cols:
             conn.execute(text("ALTER TABLE messages ADD COLUMN active_child_id VARCHAR(36)"))
 
+        fb_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(doctor_feedback)")).fetchall()}
+        if not fb_cols:
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE doctor_feedback (
+                        id VARCHAR(36) PRIMARY KEY,
+                        user_id VARCHAR(36),
+                        conversation_id VARCHAR(36),
+                        answer_message_id VARCHAR(36),
+                        question_text TEXT NOT NULL DEFAULT '',
+                        answer_excerpt TEXT NOT NULL DEFAULT '',
+                        rating INTEGER,
+                        helpful VARCHAR(10),
+                        primary_category VARCHAR(40) NOT NULL DEFAULT '其他',
+                        categories_json TEXT NOT NULL DEFAULT '[]',
+                        comment TEXT NOT NULL DEFAULT '',
+                        auto_primary VARCHAR(40) NOT NULL DEFAULT '其他',
+                        auto_tags_json TEXT NOT NULL DEFAULT '[]',
+                        created_at DATETIME NOT NULL
+                    )
+                    """
+                )
+            )
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_doctor_feedback_user_id ON doctor_feedback(user_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_doctor_feedback_conversation_id ON doctor_feedback(conversation_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_doctor_feedback_answer_message_id ON doctor_feedback(answer_message_id)"))
+
 
 def _backfill_linear_message_trees() -> None:
-    """One-time: chain legacy linear messages into a tree (active_root_id IS NULL)."""
-    from backend.app.models_db import Conversation, Message
+    from backend.app.models_db import Conversation
 
     factory = get_session_factory()
     db = factory()
@@ -82,13 +103,9 @@ def _backfill_linear_message_trees() -> None:
         convs = db.scalars(select(Conversation).where(Conversation.active_root_id.is_(None))).all()
         for conv in convs:
             epoch = datetime.min.replace(tzinfo=timezone.utc)
-            msgs = sorted(
-                [m for m in conv.messages],
-                key=lambda m: (m.created_at or epoch, m.id),
-            )
+            msgs = sorted([m for m in conv.messages], key=lambda m: (m.created_at or epoch, m.id))
             if not msgs:
                 continue
-            # Already partially tree-shaped (e.g. parent_id set) — only set root if missing.
             if any(m.parent_id for m in msgs):
                 roots = [m for m in msgs if not m.parent_id]
                 if roots and not conv.active_root_id:
@@ -107,7 +124,6 @@ def _backfill_linear_message_trees() -> None:
 
 
 def init_db() -> None:
-    """Create tables if missing, migrate columns, backfill linear trees."""
     from backend.app import models_db  # noqa: F401
 
     engine = get_engine()
@@ -126,7 +142,6 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def reset_db_for_tests() -> None:
-    """Drop and recreate tables (tests only)."""
     global _engine, _SessionLocal
     from backend.app import models_db  # noqa: F401
 
