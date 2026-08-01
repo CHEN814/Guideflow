@@ -44,6 +44,39 @@ class AgentOrchestrator:
             or 4
         )
 
+    @property
+    def source_key(self) -> str:
+        return str(getattr(self.settings, "source_key", "nccn") or "nccn").lower()
+
+    def _active_tools(self) -> List[Dict[str, Any]]:
+        """Filter tool schemas by source capabilities."""
+        enable_vlm = bool(getattr(self.settings, "enable_vlm", True))
+        enable_flowchart = bool(getattr(self.settings, "enable_flowchart", True))
+        enable_kg = bool(getattr(self.settings, "enable_kg", True))
+        allowed = {"search_guidelines", "respond_directly"}
+        if enable_vlm and enable_flowchart:
+            allowed.add("view_pages")
+        if enable_kg:
+            allowed.add("query_graph")
+        return [t for t in TOOL_DEFINITIONS if t.get("function", {}).get("name") in allowed]
+
+    def _should_upgrade_to_flowchart(self, state: AgentState) -> bool:
+        """Upgrade evidence→flowchart only when flowchart intent is genuine.
+
+        A leaked low-rank decision page (common after BM25 summary injection)
+        must NOT force the VLM path. Require either an intent-map seed that is
+        a decision page, or a rank-1 hit that is itself a decision page.
+        """
+        if not bool(getattr(self.settings, "enable_flowchart", True)):
+            return False
+        if state.route != "evidence":
+            return False
+        if is_decision_flow_page(state.seed_page_code):
+            return True
+        if state.hits and is_decision_flow_page(state.hits[0].document.printed_page_code):
+            return True
+        return False
+
     def run(
         self,
         *,
@@ -72,7 +105,7 @@ class AgentOrchestrator:
 
         for step_idx in range(max_steps):
             assistant_msg, tool_calls, degraded = self.qa.qwen.run_tool_turn(
-                messages, tools=TOOL_DEFINITIONS, timeout=45
+                messages, tools=self._active_tools(), timeout=45
             )
             if degraded:
                 state.diagnostics.setdefault("degraded", []).append(degraded)
@@ -161,10 +194,7 @@ class AgentOrchestrator:
                 trace=trace,
             )
 
-        if state.route == "evidence" and any(
-            is_decision_flow_page(h.document.printed_page_code) for h in state.hits
-        ):
-            # Soft upgrade when decision pages are present.
+        if self._should_upgrade_to_flowchart(state):
             state.route = "flowchart"
 
         state.ready = True
@@ -198,7 +228,7 @@ class AgentOrchestrator:
 
         for step_idx in range(max_steps):
             assistant_msg, tool_calls, degraded = self.qa.qwen.run_tool_turn(
-                messages, tools=TOOL_DEFINITIONS, timeout=45
+                messages, tools=self._active_tools(), timeout=45
             )
             if degraded:
                 state.diagnostics.setdefault("degraded", []).append(degraded)
@@ -283,9 +313,7 @@ class AgentOrchestrator:
                 trace=trace,
             )
 
-        if state.route == "evidence" and any(
-            is_decision_flow_page(h.document.printed_page_code) for h in state.hits
-        ):
+        if self._should_upgrade_to_flowchart(state):
             state.route = "flowchart"
 
         state.ready = True
@@ -310,8 +338,15 @@ class AgentOrchestrator:
                 trace=trace,
             )
         if name == "query_graph":
-            return self._tool_query_graph(args, state=state)
+            if not bool(getattr(self.settings, "enable_kg", True)):
+                return json.dumps({"ok": False, "error": "knowledge_graph_disabled_for_source"}, ensure_ascii=False)
+            return self._tool_query_graph(args, state=state, disease_scope=disease_scope)
         if name == "view_pages":
+            if not (
+                bool(getattr(self.settings, "enable_vlm", True))
+                and bool(getattr(self.settings, "enable_flowchart", True))
+            ):
+                return json.dumps({"ok": False, "error": "view_pages_disabled_for_source"}, ensure_ascii=False)
             return self._tool_view_pages(args, state=state, standalone=standalone, trace=trace)
         if name == "respond_directly":
             return self._tool_respond_directly(args, state=state, question=standalone)
@@ -358,11 +393,13 @@ class AgentOrchestrator:
         protect = route in ("flowchart", "hybrid")
         gate_degraded = None
         if self.settings.enable_evidence_gating and hits:
+            pre_gate_hits = list(hits)
             hits, gate_degraded, gated_indices = self.qa.qwen.gate_evidence(
                 standalone, hits, protect_decision_pages=protect
             )
             # Always reinject intent seed decision page if present in raw retrieval.
             hits = self._ensure_seed_hit(standalone, hits, diagnostics, disease_scope, trace)
+            hits, disease_guard = self.qa._reinject_disease_hits(pre_gate_hits, hits, disease_scope)
             trace.log(
                 "evidence_gated",
                 {
@@ -371,6 +408,7 @@ class AgentOrchestrator:
                     "kept_count": len(hits),
                     "degraded": gate_degraded,
                     "protect_decision_pages": protect,
+                    "disease_guard": disease_guard,
                 },
             )
         state.gate_degraded = gate_degraded
@@ -495,7 +533,9 @@ class AgentOrchestrator:
                 )
         return candidates[:12]
 
-    def _tool_query_graph(self, args: Dict[str, Any], *, state: AgentState) -> str:
+    def _tool_query_graph(
+        self, args: Dict[str, Any], *, state: AgentState, disease_scope: Optional[DiseaseScope] = None
+    ) -> str:
         question = str(args.get("question") or "").strip()
         relation = args.get("relation")
         relation_s = str(relation).strip() if relation else None
@@ -504,6 +544,7 @@ class AgentOrchestrator:
             top_k=self.settings.final_top_k,
             hops=self.settings.graph_depth,
             relation=relation_s,
+            disease_scope=disease_scope,
         )
         state.graph_hits = hits
         if not hits:

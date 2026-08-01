@@ -15,8 +15,10 @@ from backend.app.prompts import (
     GENERAL_MEDICAL_SYSTEM,
     INTENT_CLASSIFY_SYSTEM,
     SYSTEM_PROMPT,
+    agent_system_prompt_for_source,
     build_evidence_prompt,
     format_history_for_prompt,
+    system_prompt_for_source,
 )
 from backend.app.services.agent_tools import TOOL_DEFINITIONS
 from backend.app.services.dlbcl_flow_map import is_decision_flow_page
@@ -43,6 +45,31 @@ def _lexical_gate_indices(question: str, hits: List[RetrievalHit], min_keep: int
     if len(keep) < min_keep:
         keep = [idx for _, idx in scored[: min(min_keep, len(scored))]]
     return sorted(set(keep))
+
+
+def _fallback_indices(
+    question: str,
+    hits: List[RetrievalHit],
+    protected: set[int],
+    *,
+    protect_decision_pages: bool,
+) -> List[int]:
+    """Lexical gate fallback; drop decision pages unless protect is on.
+
+    When protect_decision_pages is False (discussion/evidence questions),
+    decision-flow pages must not survive an empty/failed LLM gate — they
+    would otherwise trip the evidence→flowchart soft upgrade. If stripping
+    them empties the set, keep the original lexical set to avoid blank evidence.
+    """
+    indices = sorted(set(_lexical_gate_indices(question, hits)) | protected)
+    if protect_decision_pages:
+        return indices
+    filtered = [
+        idx
+        for idx in indices
+        if not is_decision_flow_page(hits[idx - 1].document.printed_page_code)
+    ]
+    return filtered if filtered else indices
 
 
 def _history_messages(
@@ -104,10 +131,17 @@ def _parse_json_object(content: str) -> Optional[dict]:
 
 
 class QwenClient:
-    def __init__(self, api_key: str | None, base_url: str, model: str):
+    def __init__(
+        self,
+        api_key: str | None,
+        base_url: str,
+        model: str,
+        source_key: str = "nccn",
+    ):
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.model = model
+        self.source_key = (source_key or "nccn").strip().lower()
 
     def _chat(
         self,
@@ -339,8 +373,9 @@ class QwenClient:
         }
 
         if not self.api_key:
-            indices = _lexical_gate_indices(question, hits)
-            indices = sorted(set(indices) | protected)
+            indices = _fallback_indices(
+                question, hits, protected, protect_decision_pages=protect_decision_pages
+            )
             filtered = [hit for idx, hit in enumerate(hits, start=1) if idx in indices]
             return filtered, "evidence_gate_lexical_fallback", indices
 
@@ -372,13 +407,17 @@ class QwenClient:
                     indices.append(int(m.group(1)))
             indices = sorted({i for i in indices if 1 <= i <= len(hits)} | protected)
             if not indices:
-                indices = sorted(set(_lexical_gate_indices(question, hits)) | protected)
+                indices = _fallback_indices(
+                    question, hits, protected, protect_decision_pages=protect_decision_pages
+                )
                 filtered = [hit for idx, hit in enumerate(hits, start=1) if idx in indices]
                 return filtered, "evidence_gate_empty_fallback", indices
             filtered = [hits[i - 1] for i in indices]
             return filtered, None, indices
         except (requests.RequestException, KeyError, ValueError, RuntimeError, json.JSONDecodeError):
-            indices = sorted(set(_lexical_gate_indices(question, hits)) | protected)
+            indices = _fallback_indices(
+                question, hits, protected, protect_decision_pages=protect_decision_pages
+            )
             filtered = [hit for idx, hit in enumerate(hits, start=1) if idx in indices]
             return filtered, "evidence_gate_request_failed", indices
 
@@ -388,17 +427,21 @@ class QwenClient:
         history: Sequence[dict] | None = None,
     ) -> List[Dict[str, object]]:
         messages: List[Dict[str, object]] = [
-            {"role": "system", "content": AGENT_SYSTEM_PROMPT},
+            {"role": "system", "content": agent_system_prompt_for_source(self.source_key)},
         ]
         hist = format_history_for_prompt(history or [])
+        ready_hint = (
+            '{"ready": true, "route": "evidence"}'
+            if self.source_key == "csco"
+            else '{"ready": true, "route": "flowchart"|"evidence"|"hybrid"}'
+        )
         messages.append(
             {
                 "role": "user",
                 "content": (
                     f"对话历史：\n{hist}\n\n"
                     f"用户问题：{question}\n\n"
-                    "请按需调用工具收集证据；完成后回复 "
-                    '{"ready": true, "route": "flowchart"|"evidence"|"hybrid"}。'
+                    f"请按需调用工具收集证据；完成后回复 {ready_hint}。"
                 ),
             }
         )
@@ -414,9 +457,18 @@ class QwenClient:
         if not self.api_key:
             return self._fallback_answer(question, bundle, reason="no_key"), "qwen_api_unavailable"
 
-        messages: List[Dict[str, object]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages: List[Dict[str, object]] = [
+            {"role": "system", "content": system_prompt_for_source(self.source_key)}
+        ]
         messages.extend(_history_messages(history))
-        messages.append({"role": "user", "content": build_evidence_prompt(question, bundle, route=route)})
+        messages.append(
+            {
+                "role": "user",
+                "content": build_evidence_prompt(
+                    question, bundle, route=route, source_key=self.source_key
+                ),
+            }
+        )
         try:
             answer = self._chat_text(messages, temperature=0.1, timeout=90)
             return answer, None
@@ -438,9 +490,18 @@ class QwenClient:
             yield self._fallback_answer(question, bundle, reason="no_key")
             return
 
-        messages: List[Dict[str, str]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages: List[Dict[str, str]] = [
+            {"role": "system", "content": system_prompt_for_source(self.source_key)}
+        ]
         messages.extend(_history_messages(history))
-        messages.append({"role": "user", "content": build_evidence_prompt(question, bundle, route=route)})
+        messages.append(
+            {
+                "role": "user",
+                "content": build_evidence_prompt(
+                    question, bundle, route=route, source_key=self.source_key
+                ),
+            }
+        )
         payload = {
             "model": self.model,
             "messages": messages,
@@ -460,24 +521,24 @@ class QwenClient:
                     if not line:
                         continue
                     if line.startswith("data:"):
-                        data_str = line[5:].strip()
-                    else:
-                        continue
-                    if data_str == "[DONE]":
-                        break
-                    try:
-                        chunk = json.loads(data_str)
-                    except json.JSONDecodeError:
-                        continue
-                    choices = chunk.get("choices") or []
-                    if not choices:
-                        continue
-                    delta = choices[0].get("delta") or {}
-                    text = delta.get("content") or ""
-                    if text:
-                        yield text
-        except (requests.RequestException, KeyError, ValueError) as exc:
-            yield self._fallback_answer(question, bundle, reason="request_failed", detail=str(exc))
+                        data = line[5:].strip()
+                        if data == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data)
+                        except json.JSONDecodeError:
+                            continue
+                        choices = chunk.get("choices") or []
+                        if not choices:
+                            continue
+                        delta = choices[0].get("delta") or {}
+                        text = delta.get("content")
+                        if text:
+                            yield str(text)
+        except (requests.RequestException, KeyError, ValueError, RuntimeError) as exc:
+            yield self._fallback_answer(
+                question, bundle, reason="request_failed", detail=str(exc)
+            )
 
     def _fallback_answer(
         self, question: str, bundle: EvidenceBundle, reason: str = "no_key", detail: str = ""

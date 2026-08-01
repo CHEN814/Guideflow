@@ -20,8 +20,9 @@ from backend.api.routes_conversations import router as conversations_router
 from backend.app.db import get_db, get_session_factory, init_db
 from backend.app.models_db import Conversation, Message, User
 from backend.app.services.auth import get_optional_user
+from backend.app.services.neo4j_graph_service import Neo4jGraphService
 from backend.app.services.qa import QAService
-from backend.app.settings import ROOT_DIR, load_settings
+from backend.app.settings import ROOT_DIR, list_source_keys, load_settings, settings_for_source
 from backend.app.web_config import load_web_config
 
 UTF8_JSON_HEADERS = {"Content-Type": "application/json; charset=utf-8"}
@@ -234,13 +235,29 @@ class AskRequest(BaseModel):
     parent_message_id: Optional[str] = None
     # When True, only create a new assistant sibling under parent_message_id (must be user).
     regenerate: bool = False
+    # Guideline data source: nccn | csco (per-message; sources are never mixed in one retrieval)
+    data_source: str = Field(default="nccn", pattern="^(nccn|csco)$")
 
 
 def create_app() -> FastAPI:
     settings = load_settings()
     web_cfg = load_web_config()
     init_db()
-    qa_service = QAService(settings)
+
+    # Lazy multi-source registry: build QAService per data_source on first use.
+    qa_services: dict[str, QAService] = {}
+
+    def get_qa_service(source_key: str = "nccn") -> QAService:
+        key = (source_key or "nccn").strip().lower()
+        if key not in ("nccn", "csco"):
+            key = "nccn"
+        if key not in qa_services:
+            src_settings = settings_for_source(key, settings)
+            qa_services[key] = QAService(src_settings)
+        return qa_services[key]
+
+    # Eager-load default NCCN so /health and first ask stay fast / fail early.
+    qa_service = get_qa_service("nccn")
 
     app = FastAPI(title="Guideflow QA API", version="0.2.0")
     app.add_middleware(
@@ -259,8 +276,29 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     @app.get("/api/health")
-    def health() -> dict[str, str]:
-        return {"status": "ok"}
+    def health() -> dict[str, Any]:
+        return {
+            "status": "ok",
+            "sources": list_source_keys(),
+            "loaded": list(qa_services.keys()),
+        }
+
+    @app.get("/api/sources")
+    def list_sources() -> dict[str, Any]:
+        items = []
+        for key in list_source_keys():
+            src = settings_for_source(key, settings)
+            items.append(
+                {
+                    "key": key,
+                    "label": src.source_label,
+                    "enable_vlm": src.enable_vlm,
+                    "enable_flowchart": src.enable_flowchart,
+                    "enable_kg": src.enable_kg,
+                    "bm25_ready": src.bm25_index_path.exists(),
+                }
+            )
+        return {"sources": items}
 
     @app.post("/api/ask")
     async def ask(
@@ -269,8 +307,7 @@ def create_app() -> FastAPI:
         db: Session = Depends(get_db),
         user: Optional[User] = Depends(get_optional_user),
     ) -> Any:
-        nonlocal qa_service
-        service = qa_service
+        service = get_qa_service(body.data_source)
 
         history_payload = [
             {"role": turn.role, "content": turn.content}
@@ -286,8 +323,10 @@ def create_app() -> FastAPI:
                     history=history_payload,
                 )
                 payload_obj = result.to_web_payload()
+                payload_obj["data_source"] = body.data_source
             except Exception as exc:  # pragma: no cover
                 payload_obj = _fallback_payload(body.question, str(exc))
+                payload_obj["data_source"] = body.data_source
             ids = _persist_qa_turn(
                 user=user,
                 conversation_id=body.conversation_id,
@@ -312,6 +351,8 @@ def create_app() -> FastAPI:
                 ):
                     if event.get("type") == "final":
                         final_payload = event.get("payload") or {}
+                        if isinstance(final_payload, dict):
+                            final_payload["data_source"] = body.data_source
                         ids = _persist_qa_turn(
                             user=user,
                             conversation_id=body.conversation_id,
@@ -328,9 +369,11 @@ def create_app() -> FastAPI:
                     yield event
                 if final_payload is None:
                     fallback = _fallback_payload(body.question, "empty_stream")
+                    fallback["data_source"] = body.data_source
                     yield {"type": "final", "payload": fallback}
             except Exception as exc:  # pragma: no cover
                 fallback = _fallback_payload(body.question, str(exc))
+                fallback["data_source"] = body.data_source
                 yield {"type": "token", "text": fallback.get("answer_markdown", "")}
                 yield {"type": "final", "payload": fallback}
 
@@ -344,22 +387,72 @@ def create_app() -> FastAPI:
         )
 
     @app.get("/api/images/{filename}")
-    def get_image(filename: str) -> FileResponse:
+    def get_image(filename: str, source: str = "nccn") -> FileResponse:
         if not _is_safe_image_filename(filename):
             raise HTTPException(status_code=400, detail="Invalid filename")
-        current_settings = qa_service.settings
-        path = current_settings.page_image_dir / filename
-        if not path.exists() or not path.is_file():
+        # Search across loaded sources' page image dirs (and default NCCN).
+        candidates = [get_qa_service(source).settings.page_image_dir]
+        for key in list(qa_services.keys()):
+            d = qa_services[key].settings.page_image_dir
+            if d not in candidates:
+                candidates.append(d)
+        path = None
+        cache_root = None
+        for root in candidates:
+            p = root / filename
+            if p.exists() and p.is_file():
+                path = p
+                cache_root = root
+                break
+        if path is None or cache_root is None:
             raise HTTPException(status_code=404, detail="Image not found")
         resolved = path.resolve()
-        cache_root = current_settings.page_image_dir.resolve()
         try:
-            resolved.relative_to(cache_root)
+            resolved.relative_to(cache_root.resolve())
         except ValueError:
             raise HTTPException(status_code=403, detail="Access denied") from None
         return FileResponse(resolved, media_type="image/png")
 
+    @app.get("/api/graph/neighborhood")
+    def graph_neighborhood(seed: str, limit: int = 60, depth: int = 1) -> dict[str, Any]:
+        if not settings.neo4j_password:
+            raise HTTPException(status_code=400, detail="NEO4J_PASSWORD is required")
+        service = Neo4jGraphService(settings)
+        try:
+            return service.neighborhood(seed=seed, limit=limit, depth=depth)
+        finally:
+            service.close()
+
+    @app.get("/api/graph/node")
+    def graph_node(seed: str) -> dict[str, Any]:
+        if not settings.neo4j_password:
+            raise HTTPException(status_code=400, detail="NEO4J_PASSWORD is required")
+        service = Neo4jGraphService(settings)
+        try:
+            result = service.neighborhood(seed=seed, limit=40, depth=1)
+            nodes = result.get("nodes", [])
+            edges = result.get("edges", [])
+            center = next((n for n in nodes if str(n.get("id")) == str(seed)), None)
+            related_edges = [
+                e for e in edges if str(e.get("source")) == str(seed) or str(e.get("target")) == str(seed)
+            ]
+            related_ids = {str(seed)}
+            for edge in related_edges:
+                related_ids.add(str(edge.get("source")))
+                related_ids.add(str(edge.get("target")))
+            related_nodes = [n for n in nodes if str(n.get("id")) in related_ids]
+            return {
+                "center": seed,
+                "node": center or (related_nodes[0] if related_nodes else None),
+                "neighbors": related_nodes,
+                "edges": related_edges,
+                "stats": {"nodes": len(related_nodes), "edges": len(related_edges)},
+            }
+        finally:
+            service.close()
+
     app.state.qa_service = qa_service
+    app.state.get_qa_service = get_qa_service
     app.state.settings = settings
     app.state.web_config = web_cfg
     return app

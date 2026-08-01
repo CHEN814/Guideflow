@@ -1,0 +1,42 @@
+# Optional Neo4j for Guideflow knowledge-graph neighborhood API.
+# Requires APOC (used by neo4j_graph_service.import_triples via apoc.create.relationship).
+#
+# Usage (on ECS or local):
+#   docker compose -f docker-compose.neo4j.yml up -d
+# Then set in .env:
+#   NEO4J_URI=bolt://127.0.0.1:7687
+#   NEO4J_USER=neo4j
+#   NEO4J_PASSWORD=<same as NEO4J_AUTH below>
+#   NEO4J_DATABASE=neo4j
+#
+# Import triples after KG JSON exists:
+#   python -m backend.scripts.build_knowledge_pipeline
+#   # or: python scripts/build_knowledge_graph.py && use neo4j_importer
+
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: guideflow-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/change-me-strong-password
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.*
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1G
+    volumes:
+      - guideflow_neo4j_data:/data
+      - guideflow_neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  guideflow_neo4j_data:
+  guideflow_neo4j_logs:

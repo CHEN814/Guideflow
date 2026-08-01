@@ -4,13 +4,21 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, Generator, List, Optional, Tuple
 
-from backend.app.models import EvidenceBundle, FigureReference, NormalizedQuery, QAResult, RetrievalHit
+from backend.app.models import EvidenceBundle, FigureReference, GraphTriple, NormalizedQuery, QAResult, RetrievalHit
 from backend.app.settings import Settings
 from backend.app.services.agent_orchestrator import AgentOrchestrator
 from backend.app.services.agent_tools import status_event
 from backend.app.services.answer_formatter import format_answer
 from backend.app.services.bm25_store import BM25Store
-from backend.app.services.disease_scope import DiseaseScope, detect_disease_scope
+from backend.app.services.chunk_embedding_index import ChunkEmbeddingIndex
+from backend.app.services.disease_scope import (
+    COMMON_ARTICLE_IDS,
+    COMMON_MODULE_CODES,
+    DiseaseScope,
+    detect_disease_scope,
+    parse_source_scope,
+    triple_sources_in_scope,
+)
 from backend.app.services.qwen import QwenClient
 from backend.app.prompts import PAGE_SUMMARY_MARKER, build_evidence_prompt
 from backend.app.services.dlbcl_flow_map import is_decision_flow_page, normalize_page_code
@@ -31,7 +39,7 @@ from backend.app.services.page_summary_cache import PageSummaryCache
 from backend.app.services.query_normalizer import normalize_query
 from backend.app.services.reference_resolver import ReferenceResolver
 from backend.app.services.reranker import load_reranker
-from backend.app.services.retrieval import Bm25Retriever
+from backend.app.services.retrieval import HybridRetriever
 from backend.app.services.source_display import build_cite_context_payload
 from backend.app.services.tracing import TraceLogger
 from backend.app.services.verifier import verify_answer
@@ -56,6 +64,7 @@ class _AskContext:
     graph_hits: list
     graph_triples: list
     graph_context: List[str]
+    graph_seed_candidates: List[str]
     figures: List[FigureReference]
     seed_page_code: Optional[str]
     seed_meta: dict
@@ -77,12 +86,21 @@ class QAService:
         self.summary_cache = PageSummaryCache(settings.summary_cache_path)
         self._rebuild_bm25_with_summaries()
         self.reranker = load_reranker(settings.reranker_model)
-        self.retriever = Bm25Retriever(
+        self.chunk_index = None
+        try:
+            self.chunk_index = ChunkEmbeddingIndex.load(
+                settings.chunk_embedding_index_path,
+                settings.chunk_embedding_meta_path,
+            )
+        except Exception:
+            self.chunk_index = None
+        self.retriever = HybridRetriever(
             bm25=self.bm25,
             reranker=self.reranker,
             bm25_top_k=settings.bm25_top_k,
             rerank_top_k=settings.rerank_top_k,
             final_top_k=settings.final_top_k,
+            chunk_index=self.chunk_index,
         )
         self.reference_resolver = ReferenceResolver.from_path(
             settings.knowledge_base_path,
@@ -94,6 +112,7 @@ class QAService:
             api_key=settings.qwen_api_key,
             base_url=settings.qwen_base_url,
             model=settings.qwen_model,
+            source_key=getattr(settings, "source_key", "nccn") or "nccn",
         )
         self.vlm = load_multimodal_client(
             api_key=settings.vlm_api_key,
@@ -170,7 +189,10 @@ class QAService:
         standalone, topic_shift, condense_degraded = self.qwen.condense_question(question, history)
         if topic_shift:
             history = []
-        disease_scope = detect_disease_scope(standalone)
+        disease_scope = detect_disease_scope(
+            standalone,
+            source=getattr(self.settings, "source_key", "nccn") or "nccn",
+        )
         routing_mode = str(getattr(self.settings, "routing_mode", "agentic") or "agentic").lower()
 
         yield {
@@ -356,7 +378,10 @@ class QAService:
         standalone, topic_shift, condense_degraded = self.qwen.condense_question(question, history)
         if topic_shift:
             history = []
-        disease_scope = detect_disease_scope(standalone)
+        disease_scope = detect_disease_scope(
+            standalone,
+            source=getattr(self.settings, "source_key", "nccn") or "nccn",
+        )
         routing_mode = str(getattr(self.settings, "routing_mode", "agentic") or "agentic").lower()
         if routing_mode == "agentic":
             orch = AgentOrchestrator(self)
@@ -471,6 +496,7 @@ class QAService:
                 graph_hits=[],
                 graph_triples=[],
                 graph_context=[],
+                graph_seed_candidates=[],
                 figures=[],
                 seed_page_code=None,
                 seed_meta={"seed_page_code": None, "seed_source": "none"},
@@ -499,12 +525,19 @@ class QAService:
             hits, question=standalone
         )
         graph_hits = list(agent_state.graph_hits)
+        if len(graph_hits) < 2:
+            graph_hits = self._retrieve_graph_fallbacks(standalone, hits, disease_scope)
         graph_triples = []
         for hit in graph_hits:
             triple = hit.triple
             triple.score_components = getattr(hit, "components", {})
             graph_triples.append(triple)
         graph_context = self._graph_context(graph_hits)
+        graph_seed_candidates = self._graph_seed_candidates(standalone, graph_triples, hits)
+        # Decouple UI vs prompt: the full list feeds the UI/trace; only the
+        # scope-filtered, de-noised subset is injected into [G*] for generation.
+        graph_triples_prompt = self._filter_graph_for_prompt(graph_triples, disease_scope, standalone)
+        graph_context_prompt = self._graph_context_from_triples(graph_triples_prompt)
         figures = list(agent_state.figures)
         seed_meta = dict(agent_state.seed_meta or {})
         seed_page_code = agent_state.seed_page_code or seed_meta.get("seed_page_code")
@@ -525,10 +558,15 @@ class QAService:
             attached_references=attached_references,
             reference_links=reference_links,
             figures=figures,
-            graph_triples=graph_triples,
-            graph_context=graph_context,
+            graph_triples=graph_triples_prompt,
+            graph_context=graph_context_prompt,
         )
-        use_vlm = bool(figures) and self.vlm.available
+        use_vlm = (
+            bool(figures)
+            and self.vlm.available
+            and bool(getattr(self.settings, "enable_vlm", True))
+            and bool(getattr(self.settings, "enable_flowchart", True))
+        )
         trace.log(
             "multimodal_decision",
             {
@@ -558,7 +596,8 @@ class QAService:
                 "evidence_source_ids": [hit.document.source_id for hit in hits],
                 "evidence_count": len(hits),
                 "attached_reference_count": len(attached_references),
-                "graph_triple_count": len(graph_triples),
+                "graph_triple_count": len(graph_triples_prompt),
+                "graph_triple_count_ui": len(graph_triples),
                 "prompt_char_count": len(prompt_text),
                 "routing_mode": "agentic",
             },
@@ -582,6 +621,7 @@ class QAService:
             graph_hits=graph_hits,
             graph_triples=graph_triples,
             graph_context=graph_context,
+            graph_seed_candidates=graph_seed_candidates,
             figures=figures,
             seed_page_code=seed_page_code,
             seed_meta=seed_meta,
@@ -673,6 +713,7 @@ class QAService:
                 graph_hits=[],
                 graph_triples=[],
                 graph_context=[],
+                graph_seed_candidates=[],
                 figures=[],
                 seed_page_code=None,
                 seed_meta={"seed_page_code": None, "seed_source": "none"},
@@ -706,11 +747,13 @@ class QAService:
         gate_degraded: Optional[str] = None
         gated_indices: List[int] = list(range(1, len(hits) + 1))
         if self.settings.enable_evidence_gating and hits:
+            pre_gate_hits = list(hits)
             hits, gate_degraded, gated_indices = self.qwen.gate_evidence(
                 standalone,
                 hits,
                 protect_decision_pages=route in ("flowchart", "hybrid"),
             )
+            hits, disease_guard = self._reinject_disease_hits(pre_gate_hits, hits, disease_scope)
             trace.log(
                 "evidence_gated",
                 {
@@ -719,6 +762,7 @@ class QAService:
                     "kept_count": len(hits),
                     "degraded": gate_degraded,
                     "protect_decision_pages": route in ("flowchart", "hybrid"),
+                    "disease_guard": disease_guard,
                 },
             )
         else:
@@ -728,17 +772,18 @@ class QAService:
             hits, question=standalone
         )
 
-        graph_hits = self.kg_retriever.retrieve(
-            standalone,
-            top_k=self.settings.final_top_k,
-            hops=self.settings.graph_depth,
-        )
+        graph_hits = self._retrieve_graph_fallbacks(standalone, hits, disease_scope)
         graph_triples = []
         for hit in graph_hits:
             triple = hit.triple
             triple.score_components = getattr(hit, "components", {})
             graph_triples.append(triple)
         graph_context = self._graph_context(graph_hits)
+        graph_seed_candidates = self._graph_seed_candidates(standalone, graph_triples, hits)
+        # Decouple UI vs prompt (see agentic path): full list for UI, scoped
+        # de-noised subset for [G*] injection.
+        graph_triples_prompt = self._filter_graph_for_prompt(graph_triples, disease_scope, standalone)
+        graph_context_prompt = self._graph_context_from_triples(graph_triples_prompt)
 
         figures, seed_meta = self._gather_figures(
             hits=hits,
@@ -754,10 +799,15 @@ class QAService:
             attached_references=attached_references,
             reference_links=reference_links,
             figures=figures,
-            graph_triples=graph_triples,
-            graph_context=graph_context,
+            graph_triples=graph_triples_prompt,
+            graph_context=graph_context_prompt,
         )
-        use_vlm = bool(figures) and self.vlm.available
+        use_vlm = (
+            bool(figures)
+            and self.vlm.available
+            and bool(getattr(self.settings, "enable_vlm", True))
+            and bool(getattr(self.settings, "enable_flowchart", True))
+        )
         trace.log(
             "multimodal_decision",
             {
@@ -794,7 +844,8 @@ class QAService:
                 "evidence_source_ids": [hit.document.source_id for hit in hits],
                 "evidence_count": len(hits),
                 "attached_reference_count": len(attached_references),
-                "graph_triple_count": len(graph_triples),
+                "graph_triple_count": len(graph_triples_prompt),
+                "graph_triple_count_ui": len(graph_triples),
                 "prompt_char_count": len(prompt_text),
             },
         )
@@ -818,6 +869,7 @@ class QAService:
             graph_hits=graph_hits,
             graph_triples=graph_triples,
             graph_context=graph_context,
+            graph_seed_candidates=graph_seed_candidates,
             figures=figures,
             seed_page_code=seed_page_code,
             seed_meta=seed_meta,
@@ -840,8 +892,9 @@ class QAService:
         figures = ctx.figures
         attached_references = ctx.attached_references
         reference_links = ctx.reference_links
-        graph_triples = ctx.graph_triples
+        graph_triples = list(ctx.graph_triples)
         graph_context = ctx.graph_context
+        graph_seed_candidates = list(getattr(ctx, "graph_seed_candidates", []) or [])
         seed_page_code = ctx.seed_page_code
         diagnostics = ctx.diagnostics
         gate_degraded = ctx.gate_degraded
@@ -853,7 +906,7 @@ class QAService:
         hits_before = len(hits)
         answer, hits, figures, citation_remap = filter_cited_hits(answer, hits, figures)
         attached_references, reference_links = filter_attached_references(
-            hits, attached_references, reference_links
+            hits, attached_references, reference_links, answer=answer
         )
         if citation_remap or hits_before != len(hits):
             trace.log(
@@ -866,6 +919,28 @@ class QAService:
                     "attached_reference_count": len(attached_references),
                 },
             )
+
+        # Keep at least a couple of graph clues for the UI, even after citation filtering.
+        if len(graph_triples) < 2 and hits:
+            fallback_hits = self._synthesize_graph_hits_from_sources(
+                question, hits, needed=max(0, 2 - len(graph_triples))
+            )
+            graph_triples.extend([h.triple for h in fallback_hits])
+            graph_context = self._graph_context([type("_H", (), {"triple": t}) for t in graph_triples])
+            graph_seed_candidates = self._graph_seed_candidates(question, graph_triples, hits)
+        if not graph_triples:
+            graph_triples, graph_context, graph_seed_candidates = self._fallback_graph_evidence(
+                question, hits, graph_triples, graph_context, graph_seed_candidates
+            )
+        trace.log(
+            "graph_payload_debug",
+            {
+                "triple_count": len(graph_triples),
+                "seed_count": len(graph_seed_candidates),
+                "seeds": graph_seed_candidates[:8],
+                "evidence_kinds": [getattr(t, "evidence_kind", None) for t in graph_triples[:8]],
+            },
+        )
 
         figures_before = len(figures)
         figures = prune_figures_by_answer(
@@ -946,6 +1021,7 @@ class QAService:
             reference_links=reference_links,
             figures=figures,
             graph_triples=graph_triples,
+            graph_seed_candidates=graph_seed_candidates,
             generation_mode=generation_mode,
             answer_kind=ctx.answer_kind,
             standalone_question=ctx.standalone_question,
@@ -1028,6 +1104,9 @@ class QAService:
             "evidence_hits": evidence_hits,
             "rerank_comparison": rerank_comparison,
             "graph_steps": graph_steps,
+            "graph_seed_candidates": self._graph_seed_candidates(
+                question, [gh.triple for gh in graph_hits], hits
+            ),
             "verification": {},
             "panel_hint": {
                 "mode": diagnostics.get("retrieval_mode"),
@@ -1056,9 +1135,11 @@ class QAService:
         return 0
 
     def _graph_context(self, graph_hits) -> List[str]:
+        return self._graph_context_from_triples([hit.triple for hit in graph_hits])
+
+    def _graph_context_from_triples(self, triples) -> List[str]:
         lines: List[str] = []
-        for idx, hit in enumerate(graph_hits, start=1):
-            triple = hit.triple
+        for idx, triple in enumerate(triples, start=1):
             evidence_ids = ", ".join(triple.evidence_source_ids) if triple.evidence_source_ids else "无"
             lines.append(
                 f"[G{idx}] {triple.subject_name}({triple.subject_type}) --{triple.relation}--> "
@@ -1066,6 +1147,358 @@ class QAService:
                 f"来源={evidence_ids} | 状态={triple.validation_status}"
             )
         return lines
+
+    def _reinject_disease_hits(
+        self,
+        pre_gate_hits: List[RetrievalHit],
+        gated_hits: List[RetrievalHit],
+        disease_scope: Optional[DiseaseScope],
+        limit: int = 2,
+    ) -> Tuple[List[RetrievalHit], bool]:
+        """Guard against evidence gating collapsing to common-module pages only.
+
+        If a specific disease scope is active and the gated result contains no
+        disease-specific page (e.g. only NHODG/ABBR), re-add the top same-disease
+        hits from the pre-gate candidates. Returns ``(hits, changed)``."""
+        if disease_scope is None or disease_scope.key == "all":
+            return gated_hits, False
+        specific_articles = {a.lower() for a in disease_scope.article_ids} - {a.lower() for a in COMMON_ARTICLE_IDS}
+        specific_modules = {m.upper() for m in disease_scope.module_codes} - {m.upper() for m in COMMON_MODULE_CODES}
+        if not specific_articles and not specific_modules:
+            return gated_hits, False
+
+        def is_specific(hit: RetrievalHit) -> bool:
+            article, module = parse_source_scope(hit.document.source_id)
+            return (article is not None and article in specific_articles) or (
+                module is not None and module in specific_modules
+            )
+
+        if any(is_specific(hit) for hit in gated_hits):
+            return gated_hits, False
+        existing = {hit.document.source_id for hit in gated_hits}
+        additions = [
+            hit for hit in pre_gate_hits if is_specific(hit) and hit.document.source_id not in existing
+        ][:limit]
+        if not additions:
+            return gated_hits, False
+        return gated_hits + additions, True
+
+    @staticmethod
+    def _is_prompt_worthy_triple(triple) -> bool:
+        """Whether a graph triple is solid enough to *ground the answer*.
+
+        Excludes synthesized / fallback clues and edges with empty endpoints —
+        these may still be shown in the UI but must not steer the answer."""
+        if not (triple.subject_name or "").strip() or not (triple.object_name or "").strip():
+            return False
+        tid = triple.triple_id or ""
+        if tid.startswith("synth:") or tid.startswith("fallback:"):
+            return False
+        if (getattr(triple, "review_status", "") or "") == "synthetic":
+            return False
+        if (triple.validation_status or "") == "fallback":
+            return False
+        return True
+
+    @staticmethod
+    def _scope_name_terms(disease_scope: Optional[DiseaseScope]) -> set:
+        if disease_scope is None or disease_scope.key == "all":
+            return set()
+        terms = {disease_scope.key.lower()}
+        for word in re.split(r"\W+", (disease_scope.label or "").lower()):
+            # Keep disease-identifying tokens, drop generic ones.
+            if len(word) >= 4 and word not in {"cell", "large", "zone", "type", "grade"}:
+                terms.add(word)
+        return terms
+
+    def _filter_graph_for_prompt(
+        self,
+        triples,
+        disease_scope: Optional[DiseaseScope],
+        question: str,
+    ) -> list:
+        """Derive the subset of graph triples allowed to enter the [G*] prompt.
+
+        UI keeps the full list; only this scoped + de-noised subset is injected
+        into generation. Empty subset => no [G*] block (answer relies on [Sn])."""
+        q_lower = (question or "").lower()
+        scope_terms = self._scope_name_terms(disease_scope)
+        kept = []
+        for triple in triples:
+            if not self._is_prompt_worthy_triple(triple):
+                continue
+            verdict = triple_sources_in_scope(triple.evidence_source_ids, disease_scope)
+            if verdict is True:
+                kept.append(triple)
+            elif verdict is None:
+                # Unresolvable sources (e.g. Neo4j edges): require a name match to
+                # the disease scope or to an entity present in the question.
+                names = f"{triple.subject_name} {triple.object_name}".lower()
+                name_hit = any(term in names for term in scope_terms) or any(
+                    len(part) >= 3 and part in q_lower
+                    for part in re.split(r"\W+", names)
+                    if part
+                )
+                if name_hit:
+                    kept.append(triple)
+            # verdict is False (another disease) => drop from prompt
+        return kept
+
+    def _retrieve_graph_fallbacks(
+        self,
+        question: str,
+        hits: List[RetrievalHit],
+        disease_scope: Optional[DiseaseScope] = None,
+    ):
+        # Stage 1: KG JSON retrieval (already multi-hop aware).
+        seed_hits = self.kg_retriever.retrieve(
+            question,
+            top_k=max(self.settings.final_top_k, 8),
+            hops=max(1, self.settings.graph_depth + 1),
+            min_relevance=0.12,
+            disease_scope=disease_scope,
+        )
+        graph_hits = list(seed_hits)
+
+        # Expand from the best seed entities to get a small multi-hop subgraph.
+        seed_entity_ids = []
+        for hit in seed_hits[: min(3, len(seed_hits))]:
+            seed_entity_ids.extend([hit.triple.subject_id, hit.triple.object_id])
+        seed_entity_ids = [sid for sid in dict.fromkeys(seed_entity_ids) if sid]
+        if seed_entity_ids:
+            expanded = self.kg_retriever.expand_subgraph(
+                seed_entity_ids,
+                hops=max(1, self.settings.graph_depth),
+                top_k=max(self.settings.final_top_k, 10),
+                disease_scope=disease_scope,
+            )
+            for triple in expanded:
+                score = 0.72 + 0.12 * min(2, self.settings.graph_depth)
+                graph_hits.append(
+                    type(
+                        "KGHit",
+                        (),
+                        {
+                            "triple": triple,
+                            "score": score,
+                            "reason": "multi-hop",
+                            "components": {"multi_hop": 1.0},
+                        },
+                    )()
+                )
+
+        # Stage 2: Neo4j neighborhood fallback, then synthesize GraphTriples from real nodes/edges.
+        neo4j_hits = []
+        try:
+            neo4j_hits = self._retrieve_graph_from_neo4j(question, hits)
+        except Exception:
+            neo4j_hits = []
+        graph_hits.extend(neo4j_hits)
+
+        # Force at least one real graph clue if possible by probing additional seeds.
+        if len(graph_hits) < 2:
+            for seed in self._graph_seed_candidates(question, [h.triple for h in graph_hits], hits):
+                try:
+                    extra = self._retrieve_graph_from_neo4j(seed, hits)
+                except Exception:
+                    extra = []
+                graph_hits.extend(extra)
+                if len(graph_hits) >= 2:
+                    break
+
+        # If still short, synthesize deterministic graph clues from the strongest textual sources.
+        if len(graph_hits) < 2 and hits:
+            graph_hits.extend(self._synthesize_graph_hits_from_sources(question, hits, needed=2 - len(graph_hits)))
+
+        # De-duplicate by triple_id / keep best-scoring items first.
+        dedup = {}
+        for hit in sorted(graph_hits, key=lambda h: (h.score, h.triple.confidence), reverse=True):
+            dedup.setdefault(hit.triple.triple_id, hit)
+        final_hits = list(dedup.values())[: max(self.settings.final_top_k, 6)]
+        if len(final_hits) < 2 and hits:
+            final_hits.extend(self._synthesize_graph_hits_from_sources(question, hits, needed=2 - len(final_hits)))
+            dedup = {}
+            for hit in sorted(final_hits, key=lambda h: (h.score, h.triple.confidence), reverse=True):
+                dedup.setdefault(hit.triple.triple_id, hit)
+            final_hits = list(dedup.values())[: max(self.settings.final_top_k, 6)]
+        return final_hits
+
+    def _retrieve_graph_from_neo4j(self, question: str, hits: List[RetrievalHit]):
+        from backend.app.services.neo4j_graph_service import Neo4jGraphService
+
+        settings = self.settings
+        if not settings.neo4j_password:
+            return []
+        service = Neo4jGraphService(settings)
+        try:
+            seeds = self._graph_seed_candidates(question, [], hits)
+            if not seeds:
+                seeds = [question]
+            rows = []
+            seen = set()
+            for seed in seeds[:5]:
+                data = service.neighborhood(seed=seed, limit=60, depth=max(1, self.settings.graph_depth))
+                nodes = {str(n.get("id")): n for n in data.get("nodes", [])}
+                for edge in data.get("edges", []):
+                    sid = str(edge.get("source"))
+                    tid = str(edge.get("target"))
+                    rel = str(edge.get("label") or edge.get("type") or "RELATED_TO")
+                    s_node = nodes.get(sid, {})
+                    t_node = nodes.get(tid, {})
+                    subject_name = str(s_node.get("label") or s_node.get("properties", {}).get("name") or "").strip()
+                    object_name = str(t_node.get("label") or t_node.get("properties", {}).get("name") or "").strip()
+                    # Skip nameless edges (bare ids only) — they are pure noise.
+                    if not subject_name or subject_name == sid or not object_name or object_name == tid:
+                        continue
+                    evidence_text = f"Neo4j edge {rel} between {subject_name} and {object_name}"
+                    confidence = 0.8 if rel not in ("RELATED_TO", "EDGE") else 0.66
+                    triple = GraphTriple(
+                        triple_id=f"neo4j:{edge.get('id', sid + '_' + tid)}",
+                        subject_id=sid,
+                        subject_name=subject_name,
+                        subject_type=str(s_node.get("type") or "Node"),
+                        relation=rel,
+                        object_id=tid,
+                        object_name=object_name,
+                        object_type=str(t_node.get("type") or "Node"),
+                        confidence=confidence,
+                        validation_status="trusted",
+                        evidence_text=evidence_text,
+                        evidence_source_ids=[str(edge.get("id", "neo4j"))],
+                        evidence_kind="neo4j",
+                    )
+                    if triple.triple_id in seen:
+                        continue
+                    seen.add(triple.triple_id)
+                    score = confidence + (
+                        0.08
+                        if subject_name.lower() in question.lower() or object_name.lower() in question.lower()
+                        else 0.0
+                    )
+                    rows.append(
+                        type(
+                            "KGHit",
+                            (),
+                            {"triple": triple, "score": score, "reason": "neo4j", "components": {"neo4j": 1.0}},
+                        )()
+                    )
+                if len(rows) >= 3:
+                    break
+            rows.sort(key=lambda h: (h.score, h.triple.confidence), reverse=True)
+            return rows
+        finally:
+            service.close()
+
+    def _synthesize_graph_hits_from_sources(self, question: str, hits: List[RetrievalHit], needed: int = 2):
+        seeds = self._graph_seed_candidates(question, [], hits)
+        subject = seeds[0] if seeds else (hits[0].document.printed_page_code or hits[0].document.source_id)
+        objs = []
+        for hit in hits:
+            objs.append(hit.document.printed_page_code or hit.document.source_id)
+        synth_hits = []
+        for idx, obj in enumerate(objs[:needed], start=1):
+            triple = GraphTriple(
+                triple_id=f"synth:{idx}:{subject}:{obj}",
+                subject_id=f"synth:{subject}",
+                subject_name=str(subject),
+                subject_type="QuerySeed",
+                relation="MENTIONS",
+                object_id=f"synth:{obj}",
+                object_name=str(obj),
+                object_type="SourcePage",
+                confidence=0.58 + 0.03 * idx,
+                validation_status="fallback",
+                evidence_text=(hits[idx - 1].document.text or "")[:240],
+                evidence_source_ids=[hits[idx - 1].document.source_id],
+                evidence_kind="retrieval",
+                review_status="synthetic",
+            )
+            synth_hits.append(
+                type(
+                    "KGHit",
+                    (),
+                    {"triple": triple, "score": triple.confidence, "reason": "synth", "components": {"synth": 1.0}},
+                )()
+            )
+        return synth_hits[:needed]
+
+    def _fallback_graph_evidence(self, question: str, hits: List[RetrievalHit], graph_triples, graph_context, graph_seed_candidates):
+        seeds = list(graph_seed_candidates or [])
+        if not seeds:
+            seeds = self._graph_seed_candidates(question, graph_triples, hits)
+        if not graph_triples and hits:
+            graph_triples = []
+            for idx, hit in enumerate(hits[:3], start=1):
+                title = hit.document.printed_page_code or hit.document.source_id or f"Source {idx}"
+                relation = "MENTIONS" if hit.document.page_type != "clinical_guideline" else "RECOMMENDS"
+                subject = seeds[0] if seeds else title
+                object_name = title
+                triple = GraphTriple(
+                    triple_id=f"fallback:{idx}:{hit.document.source_id}",
+                    subject_id=f"fallback:{subject}",
+                    subject_name=subject,
+                    subject_type="QuerySeed",
+                    relation=relation,
+                    object_id=f"fallback:{object_name}",
+                    object_name=object_name,
+                    object_type="SourcePage",
+                    confidence=0.55 if relation == "MENTIONS" else 0.61,
+                    validation_status="fallback",
+                    evidence_text=(hit.document.text or "")[:220],
+                    evidence_source_ids=[hit.document.source_id],
+                    evidence_kind="retrieval",
+                )
+                graph_triples.append(triple)
+            graph_context = self._graph_context([type("_H", (), {"triple": t}) for t in graph_triples])
+        return graph_triples, graph_context, seeds
+
+    def _graph_seed_candidates(self, question: str, graph_triples, hits: List[RetrievalHit]) -> List[str]:
+        seeds: List[str] = []
+        seen: set[str] = set()
+
+        def add(value: Optional[str]) -> None:
+            if not value:
+                return
+            val = str(value).strip()
+            if not val:
+                return
+            if val in seen:
+                return
+            seen.add(val)
+            seeds.append(val)
+
+        alias_map = {
+            "DLBCL": ["DLBCL", "Diffuse large B-cell lymphoma", "大B细胞淋巴瘤", "弥漫大B细胞淋巴瘤"],
+            "R-CHOP": ["R-CHOP", "R CHOP", "rituximab cyclophosphamide doxorubicin vincristine prednisone"],
+            "TP53": ["TP53", "p53"],
+            "MYC": ["MYC"],
+            "BCL2": ["BCL2"],
+            "BCL6": ["BCL6"],
+            "CAR-T": ["CAR-T", "CAR T"],
+            "Pola-R-CHP": ["Pola-R-CHP", "pola-r-chp"],
+            "BCEL-3": ["BCEL-3", "BCEL A 1 OF 3", "BCEL-A 1 OF 3"],
+        }
+
+        for triple in graph_triples[:6]:
+            add(triple.subject_name)
+            add(triple.object_name)
+
+        for hit in hits[:4]:
+            add(hit.document.printed_page_code)
+            add(hit.document.module_code)
+
+        q = question.lower()
+        for canon, aliases in alias_map.items():
+            for alias in aliases:
+                if alias.lower() in q:
+                    add(canon)
+                    add(alias)
+                    break
+
+        for token in re.findall(r"[A-Za-z0-9\-\u4e00-\u9fff]{2,}", question):
+            if token.upper() in {"DLBCL", "FL", "MCL", "PMBL", "R-CHOP", "TP53", "MYC", "BCL2", "BCEL-3", "POLA-R-CHP"}:
+                add(token)
+        return seeds[:8]
 
     def _rebuild_bm25_with_summaries(self) -> None:
         """Re-tokenise the BM25 corpus with cached page summaries merged in.

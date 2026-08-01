@@ -155,8 +155,11 @@ AUTH_SECRET=生产环境请设强随机值
 # 检索调试（不调用大模型）
 python scripts/inspect_retrieval.py "ABC亚型+IPI4分，R-CHOP是否合适?" --trace
 
-# 构建知识图谱（Web 图谱路径展示依赖）
+# 构建知识图谱（Web「图谱路径」依赖 JSON）
 python scripts/build_knowledge_graph.py
+
+# （可选）导入 Neo4j，供 Tools →「Neo4j 图谱」（需已起 Neo4j+APOC，见 docs/环境配置.md）
+# python scripts/import_kg_to_neo4j.py
 
 # 运行测试
 python -m pytest -q
@@ -176,11 +179,11 @@ python -m pytest -q
 | [数据组织](docs/数据组织.md) | 知识库结构、三类主对象、参考文献关联 |
 | [技术实现](docs/技术实现.md) | 在线流水线、多模态选图、trace 说明 |
 | [前端开发指南](frontend/开发指南.md) | Web UI 功能、API、本地启动、验收清单 |
-| [项目说明 · 详细版（归档）](docs/临时文档/项目说明-详细版.md) | 旧版 README，内容多已过时，仅供对照 |
+| [项目说明 · 详细版](docs/项目说明-详细版.md) | 旧版完整 README（算法流程、输出格式等） |
 
 ## Limitations
 
 - 默认 BM25-only，语义召回依赖中→英扩展；hybrid 需额外建向量索引且延迟显著增加
 - 未配置 `VLM_API_KEY` 时，流程图问题降级为证据摘要模式（不读图）
-- 关联参考文献默认最多展开 6 条（`retrieval.max_attached_refs`）
+- 关联参考文献默认最多展开 15 条
 - **医学免责声明**：本工具仅用于指南证据整理与辅助检索，不替代临床医生判断

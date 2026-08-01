@@ -76,8 +76,17 @@ def filter_attached_references(
     hits: Sequence[RetrievalHit],
     attached_references: Sequence[ReferenceEntry],
     reference_links: Dict[str, List[str]],
+    answer: Optional[str] = None,
 ) -> Tuple[List[ReferenceEntry], Dict[str, List[str]]]:
-    """Keep attached refs only when their discussion source was retained."""
+    """Keep attached refs only when their discussion source is cited as evidence.
+
+    A reference may surface only when its discussion chunk was retained *and* the
+    body actually cites evidence via ``[Sn]``. If the answer carries no ``[Sn]``
+    marker at all, no discussion sentence was listed as evidence, so no reference
+    is shown.
+    """
+    if answer is not None and not _SN_RE.search(answer):
+        return [], {}
     kept_ids = {hit.document.source_id for hit in hits}
     filtered_links: Dict[str, List[str]] = {
         sid: nums
