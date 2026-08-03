@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.api.routes_auth import router as auth_router
+from backend.api.routes_cases import router as cases_router
 from backend.api.routes_conversations import router as conversations_router
 from backend.api.routes_feedback import router as feedback_router
 from backend.app.db import get_db, get_session_factory, init_db
@@ -269,8 +270,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(auth_router)
+    app.include_router(cases_router)
     app.include_router(conversations_router)
-    app.include_router(feedback_router)
     app.include_router(feedback_router)
 
     frontend_dir = ROOT_DIR / "frontend"

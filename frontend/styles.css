@@ -238,6 +238,9 @@ body{
 .modal-overlay{position:fixed;inset:0;background:rgba(28,20,16,.4);display:grid;place-items:center;z-index:70;padding:16px}
 .modal-card{width:min(420px,100%);background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:18px}
 #statsModal .modal-card{width:min(760px,96vw);max-height:86vh;display:flex;flex-direction:column}
+.case-modal{width:min(760px,96vw);max-height:88vh;display:flex;flex-direction:column}
+.case-form{min-height:0;overflow:auto}
+.case-form textarea{resize:vertical}
 .stats-body{overflow:auto;line-height:1.55}
 .feedback-toolbar{display:grid;grid-template-columns:minmax(180px,1fr) 160px 120px auto auto auto;gap:8px;margin-bottom:12px;align-items:center}
 .feedback-toolbar input,.feedback-toolbar select{height:38px;border:1px solid rgba(0,0,0,.1);border-radius:10px;padding:0 10px;font:inherit;color:var(--text);background:#fff;min-width:0}

@@ -41,6 +41,15 @@ const els = {
   composerBox: document.getElementById('composerBox'),
   expandInputBtn: document.getElementById('expandInputBtn'),
   dataSourceSelect: document.getElementById('dataSourceSelect'),
+  caseOpenBtn: document.getElementById('caseOpenBtn'),
+  caseModal: document.getElementById('caseModal'),
+  caseForm: document.getElementById('caseForm'),
+  caseText: document.getElementById('caseText'),
+  caseQuestion: document.getElementById('caseQuestion'),
+  caseDataSource: document.getElementById('caseDataSource'),
+  caseError: document.getElementById('caseError'),
+  caseCloseBtn: document.getElementById('caseCloseBtn'),
+  caseCancelBtn: document.getElementById('caseCancelBtn'),
   feedbackModal: document.getElementById('feedbackModal'),
   feedbackForm: document.getElementById('feedbackForm'),
   feedbackMessageId: document.getElementById('feedbackMessageId'),
@@ -2162,6 +2171,24 @@ function closeFeedbackModal() {
   showFeedbackError('');
 }
 
+function showCaseError(text) {
+  if (!els.caseError) return;
+  els.caseError.textContent = text || '';
+  els.caseError.hidden = !text;
+}
+
+function openCaseModal() {
+  showCaseError('');
+  if (els.caseDataSource) els.caseDataSource.value = state.dataSource === 'nccn' ? 'nccn' : 'csco';
+  if (els.caseModal) els.caseModal.hidden = false;
+  els.caseText?.focus();
+}
+
+function closeCaseModal() {
+  if (els.caseModal) els.caseModal.hidden = true;
+  showCaseError('');
+}
+
 function messageFromRow(node) {
   if (!node) return null;
   const idx = Number(node.dataset.msgIdx);
@@ -2518,6 +2545,25 @@ async function consumeSSE(resp, assistant, userNode = null) {
       }
     }
   }
+}
+
+function appendCaseAnalysisResult({ question, payload, dataSource }) {
+  const leaf = state.messages.length ? state.messages[state.messages.length - 1] : null;
+  const parentId = leaf && !leaf.pending ? leaf.id : null;
+  const userNode = createNode({ role: 'user', content: `病例分析：${question}`, parentId });
+  const assistant = createNode({
+    role: 'assistant',
+    content: payload.answer_markdown || '',
+    parentId: userNode.id,
+    payload,
+    pending: false,
+  });
+  assistant.dataSource = dataSource || state.dataSource;
+  state.lastPayload = payload;
+  rebuildActivePath();
+  persistChatState();
+  renderHistory();
+  renderChat();
 }
 
 function finalizeAssistant(assistant, payload, userNode = null) {
@@ -2938,6 +2984,56 @@ els.toolsBtn?.addEventListener('click', (e) => {
   els.toolsMenu.hidden = !els.toolsMenu.hidden;
 });
 els.statsCloseBtn?.addEventListener('click', () => { if (els.statsModal) els.statsModal.hidden = true; });
+els.caseOpenBtn?.addEventListener('click', openCaseModal);
+els.caseCloseBtn?.addEventListener('click', closeCaseModal);
+els.caseCancelBtn?.addEventListener('click', closeCaseModal);
+els.caseForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  showCaseError('');
+  const caseText = (els.caseText?.value || '').trim();
+  const question = (els.caseQuestion?.value || '').trim() || '请结合指南分析该病例的诊疗路径和下一步建议。';
+  const dataSource = els.caseDataSource?.value || state.dataSource || 'csco';
+  if (caseText.length < 20) {
+    showCaseError('请粘贴更完整的病例文本');
+    els.caseText?.focus();
+    return;
+  }
+  const submitBtn = els.caseForm.querySelector('button[type="submit"]');
+  const oldText = submitBtn?.textContent || '开始分析';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '分析中…';
+  }
+  try {
+    const resp = await api('/api/cases/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ case_text: caseText, question, data_source: dataSource }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      showCaseError(formatApiDetail(data) || '病例分析失败');
+      return;
+    }
+    const payload = data.qa_payload || {};
+    payload.answer_markdown = [
+      '## 病例结构化摘要',
+      data.case_summary || '',
+      '',
+      '## 指南分析',
+      data.answer_markdown || payload.answer_markdown || '',
+    ].join('\n');
+    payload.data_source = data.data_source || dataSource;
+    closeCaseModal();
+    appendCaseAnalysisResult({ question, payload, dataSource: payload.data_source });
+  } catch {
+    showCaseError('网络错误，请稍后重试');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = oldText;
+    }
+  }
+});
 els.statsBody?.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-feedback-act]');
   if (!btn) return;
