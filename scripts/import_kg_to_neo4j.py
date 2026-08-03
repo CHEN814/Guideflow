@@ -9,7 +9,7 @@ sys.path.insert(0, str(ROOT))
 
 from backend.app.services.knowledge_graph import load_knowledge_graph_bundle
 from backend.app.services.neo4j_graph_service import Neo4jGraphService
-from backend.app.settings import load_settings
+from backend.app.settings import load_settings, settings_for_source
 
 
 def main() -> None:
@@ -17,11 +17,12 @@ def main() -> None:
         description="Import knowledge_graph.json triples into Neo4j using the frontend neighborhood schema "
         "(OntologyConcept + TrustedTriple + APOC dynamic relations)."
     )
-    parser.add_argument("--kg", default=None, help="Path to knowledge_graph.json (default: settings.knowledge_graph_path).")
+    parser.add_argument("--source", choices=("nccn", "csco"), default="nccn", help="Guideline source label for imported graph.")
+    parser.add_argument("--kg", default=None, help="Path to knowledge_graph.json (default: source knowledge_graph_path).")
     parser.add_argument("--no-clear", action="store_true", help="Do not wipe the database before importing.")
     args = parser.parse_args()
 
-    settings = load_settings()
+    settings = settings_for_source(args.source, load_settings())
     if not settings.neo4j_password:
         raise SystemExit("NEO4J_PASSWORD is not set. Add it to .env before importing.")
 
@@ -31,7 +32,7 @@ def main() -> None:
 
     service = Neo4jGraphService(settings)
     try:
-        result = service.import_triples(bundle.triples, clear=not args.no_clear)
+        result = service.import_triples(bundle.triples, clear=not args.no_clear, source=args.source)
         print(f"Imported {result.get('imported', 0)} triples into Neo4j at {settings.neo4j_uri}")
     finally:
         service.close()

@@ -35,9 +35,32 @@ const els = {
   toolsBtn: document.getElementById('toolsBtn'),
   toolsMenu: document.getElementById('toolsMenu'),
   shareChatBtn: document.getElementById('shareChatBtn'),
+  statsModal: document.getElementById('statsModal'),
+  statsBody: document.getElementById('statsBody'),
+  statsCloseBtn: document.getElementById('statsCloseBtn'),
   composerBox: document.getElementById('composerBox'),
   expandInputBtn: document.getElementById('expandInputBtn'),
   dataSourceSelect: document.getElementById('dataSourceSelect'),
+  caseOpenBtn: document.getElementById('caseOpenBtn'),
+  caseModal: document.getElementById('caseModal'),
+  caseForm: document.getElementById('caseForm'),
+  caseText: document.getElementById('caseText'),
+  caseQuestion: document.getElementById('caseQuestion'),
+  caseDataSource: document.getElementById('caseDataSource'),
+  caseError: document.getElementById('caseError'),
+  caseCloseBtn: document.getElementById('caseCloseBtn'),
+  caseCancelBtn: document.getElementById('caseCancelBtn'),
+  feedbackModal: document.getElementById('feedbackModal'),
+  feedbackForm: document.getElementById('feedbackForm'),
+  feedbackMessageId: document.getElementById('feedbackMessageId'),
+  feedbackQuestion: document.getElementById('feedbackQuestion'),
+  feedbackAnswer: document.getElementById('feedbackAnswer'),
+  feedbackRating: document.getElementById('feedbackRating'),
+  feedbackCategory: document.getElementById('feedbackCategory'),
+  feedbackComment: document.getElementById('feedbackComment'),
+  feedbackError: document.getElementById('feedbackError'),
+  feedbackCloseBtn: document.getElementById('feedbackCloseBtn'),
+  feedbackCancelBtn: document.getElementById('feedbackCancelBtn'),
 };
 
 const ICON = {
@@ -1088,6 +1111,10 @@ function renderMessage(message, idx) {
       <div class="message assistant">
         <div class="tag">${escapeHtml(tag)}${srcChip}</div>
         <div class="answer">${body}</div>
+        <div class="feedback-inline-bar">
+          <span class="muted small">医生反馈</span>
+          <button type="button" data-act="open-feedback" class="btn ghost btn-feedback-inline">提交意见</button>
+        </div>
       </div>
       <div class="msg-actions">
         ${vNav}
@@ -1974,10 +2001,203 @@ async function copyShareLink(url, btn, restoreHtml, restoreLabel = '分享') {
   }
 }
 
+function renderFeedbackStats(stats) {
+  if (!stats) return '<div class="muted">暂无反馈数据</div>';
+  const items = Object.entries(stats.categories || {})
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `<li><span>${escapeHtml(k)}</span><strong>${v}</strong></li>`)
+    .join('');
+  return `
+    <div class="stats-grid">
+      <div class="stats-card"><div class="muted small">总反馈数</div><strong>${stats.total || 0}</strong></div>
+    </div>
+    <ul class="stats-list">${items}</ul>`;
+}
+
+async function openFeedbackStats() {
+  if (!els.statsModal || !els.statsBody) return;
+  const title = els.statsModal.querySelector('.modal-header h2');
+  if (title) title.textContent = '反馈统计';
+  els.statsBody.textContent = '加载中…';
+  els.statsModal.hidden = false;
+  const resp = await api('/api/feedback/summary');
+  if (!resp.ok) {
+    els.statsBody.textContent = '加载失败';
+    return;
+  }
+  const data = await resp.json();
+  els.statsBody.innerHTML = renderFeedbackStats(data);
+}
+
+let lastFeedbackList = [];
+
+function feedbackListControls(filters = {}) {
+  const category = filters.category || '';
+  const rating = filters.rating || '';
+  const q = filters.q || '';
+  const categories = ['其他', '正确性问题', '证据不足 / 漏证据', '召回问题', '表达问题', '安全性 / 风险提示问题', '交互体验问题', '肯定反馈'];
+  return `
+    <div class="feedback-toolbar">
+      <input type="search" data-feedback-filter="q" placeholder="搜索问题 / 回答 / 意见" value="${escapeHtml(q)}" />
+      <select data-feedback-filter="category">
+        <option value="">全部分类</option>
+        ${categories.map((name) => `<option value="${escapeHtml(name)}"${name === category ? ' selected' : ''}>${escapeHtml(name)}</option>`).join('')}
+      </select>
+      <select data-feedback-filter="rating">
+        <option value="">全部评分</option>
+        ${[5, 4, 3, 2, 1].map((n) => `<option value="${n}"${String(n) === String(rating) ? ' selected' : ''}>${n} 分</option>`).join('')}
+      </select>
+      <button type="button" class="btn" data-feedback-act="search">筛选</button>
+      <button type="button" class="btn" data-feedback-act="refresh">刷新</button>
+      <button type="button" class="btn" data-feedback-act="export">导出 CSV</button>
+    </div>`;
+}
+
+function renderFeedbackList(data, filters = {}) {
+  const items = Array.isArray(data?.items) ? data.items : [];
+  lastFeedbackList = items;
+  const total = Number(data?.total || items.length);
+  const empty = !items.length ? '<div class="muted feedback-empty">暂无医生反馈</div>' : '';
+  const cards = items.map((fb) => {
+    const created = fb.created_at ? new Date(fb.created_at).toLocaleString() : '';
+    return `
+      <article class="feedback-item">
+        <div class="feedback-item-head">
+          <strong>${escapeHtml(fb.primary_category || '其他')}</strong>
+          <span class="muted small">${escapeHtml(created)}</span>
+        </div>
+        <div class="feedback-meta muted small">评分：${escapeHtml(fb.rating ?? '-')} · 自动分类：${escapeHtml(fb.auto_primary || '-')}</div>
+        <div class="feedback-block"><span>医生意见</span><p>${escapeHtml(fb.comment || '-')}</p></div>
+        <details>
+          <summary>查看问题与回答摘要</summary>
+          <div class="feedback-block"><span>问题</span><p>${escapeHtml(fb.question || '-')}</p></div>
+          <div class="feedback-block"><span>回答摘要</span><p>${escapeHtml(fb.answer || '-')}</p></div>
+        </details>
+      </article>`;
+  }).join('');
+  return `${feedbackListControls(filters)}<div class="feedback-list-head muted small">共 ${total} 条，显示 ${items.length} 条</div>${empty}${cards}`;
+}
+
+function feedbackFiltersFromModal() {
+  const q = els.statsBody?.querySelector('[data-feedback-filter="q"]')?.value || '';
+  const category = els.statsBody?.querySelector('[data-feedback-filter="category"]')?.value || '';
+  const rating = els.statsBody?.querySelector('[data-feedback-filter="rating"]')?.value || '';
+  return { q: q.trim(), category, rating };
+}
+
+function feedbackListQuery(filters = {}) {
+  const params = new URLSearchParams({ limit: '50' });
+  if (filters.q) params.set('q', filters.q);
+  if (filters.category) params.set('category', filters.category);
+  if (filters.rating) params.set('rating', filters.rating);
+  return params.toString();
+}
+
+function downloadFeedbackCsv(items) {
+  const headers = ['提交时间', '评分', '反馈分类', '自动分类', '医生意见', '问题', '回答摘要'];
+  const rows = items.map((fb) => [
+    fb.created_at ? new Date(fb.created_at).toLocaleString() : '',
+    fb.rating ?? '',
+    fb.primary_category || '',
+    fb.auto_primary || '',
+    fb.comment || '',
+    fb.question || '',
+    fb.answer || '',
+  ]);
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `guideflow-feedback-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function openFeedbackList(filters = {}) {
+  if (!els.statsModal || !els.statsBody) return;
+  const title = els.statsModal.querySelector('.modal-header h2');
+  if (title) title.textContent = '反馈列表';
+  els.statsBody.innerHTML = `${feedbackListControls(filters)}<div class="muted">加载中…</div>`;
+  els.statsModal.hidden = false;
+  const resp = await api(`/api/feedback/list?${feedbackListQuery(filters)}`);
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    els.statsBody.innerHTML = `${feedbackListControls(filters)}<div class="auth-error">${escapeHtml(formatApiDetail(data) || '加载失败')}</div>`;
+    return;
+  }
+  els.statsBody.innerHTML = renderFeedbackList(data, filters);
+}
+
+function findQuestionForAssistant(message) {
+  let cur = getNode(message?.parentId);
+  while (cur) {
+    if (cur.role === 'user') return cur.content || '';
+    cur = getNode(cur.parentId);
+  }
+  return '';
+}
+
+function answerTextForFeedback(message) {
+  const text = message?.payload?.answer_markdown || message?.content || '';
+  return String(text).replace(/\s+/g, ' ').trim().slice(0, 1200);
+}
+
+function showFeedbackError(text) {
+  if (!els.feedbackError) return;
+  els.feedbackError.textContent = text || '';
+  els.feedbackError.hidden = !text;
+}
+
+function openFeedbackModal(message) {
+  if (!els.feedbackModal || !message) return;
+  showFeedbackError('');
+  if (els.feedbackMessageId) els.feedbackMessageId.value = message.serverId || '';
+  if (els.feedbackQuestion) els.feedbackQuestion.value = findQuestionForAssistant(message);
+  if (els.feedbackAnswer) els.feedbackAnswer.value = answerTextForFeedback(message);
+  if (els.feedbackRating) els.feedbackRating.value = '5';
+  if (els.feedbackCategory) els.feedbackCategory.value = '其他';
+  if (els.feedbackComment) els.feedbackComment.value = '';
+  els.feedbackModal.hidden = false;
+  els.feedbackComment?.focus();
+}
+
+function closeFeedbackModal() {
+  if (els.feedbackModal) els.feedbackModal.hidden = true;
+  showFeedbackError('');
+}
+
+function showCaseError(text) {
+  if (!els.caseError) return;
+  els.caseError.textContent = text || '';
+  els.caseError.hidden = !text;
+}
+
+function openCaseModal() {
+  showCaseError('');
+  if (els.caseDataSource) els.caseDataSource.value = state.dataSource === 'nccn' ? 'nccn' : 'csco';
+  if (els.caseModal) els.caseModal.hidden = false;
+  els.caseText?.focus();
+}
+
+function closeCaseModal() {
+  if (els.caseModal) els.caseModal.hidden = true;
+  showCaseError('');
+}
+
+function messageFromRow(node) {
+  if (!node) return null;
+  const idx = Number(node.dataset.msgIdx);
+  return state.messages[idx] || getNode(node.dataset.nodeId);
+}
+
 function bindMessageActions() {
   els.chatLog.querySelectorAll('.msg-row').forEach((node) => {
-    const idx = Number(node.dataset.msgIdx);
-    const msg = state.messages[idx] || getNode(node.dataset.nodeId);
+    const msg = messageFromRow(node);
     if (!msg) return;
 
     node.querySelectorAll('[data-act]').forEach((btn) => {
@@ -2073,6 +2293,8 @@ function bindMessageActions() {
           const url = await createShareLink({ messageId: msg.serverId || null });
           if (!url) return;
           await copyShareLink(url, btn, ICON.share, '分享此回答');
+        } else if (act === 'open-feedback') {
+          openFeedbackModal(msg);
         }
       });
     });
@@ -2249,6 +2471,7 @@ async function askQuestion(question, meta = {}) {
       assistant.content = '请求失败，请稍后重试。';
       assistant.payload = emptyAnswerPayload(assistant.content);
       state.lastPayload = assistant.payload;
+      state.lastQuestionText = q;
       rebuildActivePath();
       renderChat();
     }
@@ -2322,6 +2545,25 @@ async function consumeSSE(resp, assistant, userNode = null) {
       }
     }
   }
+}
+
+function appendCaseAnalysisResult({ question, payload, dataSource }) {
+  const leaf = state.messages.length ? state.messages[state.messages.length - 1] : null;
+  const parentId = leaf && !leaf.pending ? leaf.id : null;
+  const userNode = createNode({ role: 'user', content: `病例分析：${question}`, parentId });
+  const assistant = createNode({
+    role: 'assistant',
+    content: payload.answer_markdown || '',
+    parentId: userNode.id,
+    payload,
+    pending: false,
+  });
+  assistant.dataSource = dataSource || state.dataSource;
+  state.lastPayload = payload;
+  rebuildActivePath();
+  persistChatState();
+  renderHistory();
+  renderChat();
 }
 
 function finalizeAssistant(assistant, payload, userNode = null) {
@@ -2533,11 +2775,52 @@ function openToolsDrawer(kind, seedOverride = '') {
       renderStats(currentData);
       if (backBtn) backBtn.disabled = historyStack.length === 0;
     };
+    const renderFallbackGraph = (seedLabel = '') => {
+      const fallback = payload.graph_triples || [];
+      if (!fallback.length) {
+        canvas.innerHTML = `<div class="muted" style="padding:16px">当前没有可用图谱数据。${seedLabel ? `（seed：${escapeHtml(seedLabel)}）` : ''}<br><span class="small">提示：请先让回答命中图谱证据，或在有 Neo4j 环境时再打开图谱工具。</span></div>`;
+        return;
+      }
+      const center = seedLabel || fallback[0]?.subject_name || fallback[0]?.object_name || currentSeed || '';
+      const nodes = [];
+      const edges = [];
+      const nodeMap = new Map();
+      const addNode = (id, label, type = 'Concept') => {
+        const key = String(id || label || 'node');
+        if (nodeMap.has(key)) return nodeMap.get(key);
+        const node = { id: key, label: label || key, displayLabel: label || key, type, properties: { name: label || key } };
+        nodeMap.set(key, node);
+        nodes.push(node);
+        return node;
+      };
+      fallback.forEach((g, i) => {
+        const s = addNode(`s-${i}-${g.subject_name || 'subject'}`, g.subject_name || 'Subject');
+        const o = addNode(`o-${i}-${g.object_name || 'object'}`, g.object_name || 'Object');
+        edges.push({
+          id: `g-${i}`,
+          source: s.id,
+          target: o.id,
+          label: g.relation || 'RELATED_TO',
+          type: g.relation || 'RELATED_TO',
+          properties: {
+            confidence: g.confidence,
+            evidence_text: g.evidence_text,
+            validation_status: g.validation_status,
+          },
+        });
+      });
+      currentData = { center, nodes, edges };
+      selectedNodeId = nodes[0]?.id || '';
+      paintCanvas();
+      renderStats(currentData);
+      renderDetail(nodes[0] || null);
+      canvas.insertAdjacentHTML('afterbegin', '<div class="muted small" style="padding:12px 14px 0">当前使用回答内联图谱数据（本地回退模式）</div>');
+    };
     const navigateTo = async (seed, depth = 1, pushHistory = false) => {
       if (!seedInput || !canvas) return;
       const next = String(seed || '').trim();
       if (!next) {
-        canvas.innerHTML = '<div class="muted" style="padding:16px">请输入一个实体名（如 DLBCL、TP53、R-CHOP），不要用纯数字 ID。</div>';
+        renderFallbackGraph('');
         return;
       }
       if (pushHistory && currentSeed) historyStack.push({ seed: currentSeed, scale: currentScale, selectedNodeId });
@@ -2558,7 +2841,12 @@ function openToolsDrawer(kind, seedOverride = '') {
         }
         paintCanvas();
       } catch (err) {
-        canvas.innerHTML = `<div class="muted" style="padding:16px">加载失败：${escapeHtml(err?.message || 'unknown error')}<br><span class="small">提示：请用临床实体名作 seed（DLBCL / Biopsy / TP53），不要点纯数字文献编号。</span></div>`;
+        const msg = String(err?.message || 'unknown error');
+        if (/NEO4J_PASSWORD is required|neo4j/i.test(msg)) {
+          renderFallbackGraph(next);
+          return;
+        }
+        canvas.innerHTML = `<div class="muted" style="padding:16px">加载失败：${escapeHtml(msg)}<br><span class="small">提示：请用临床实体名作 seed（DLBCL / Biopsy / TP53），不要点纯数字文献编号。</span></div>`;
       }
     };
     const goBack = () => {
@@ -2668,6 +2956,15 @@ els.askBtn?.addEventListener('click', () => {
   }
   askQuestion(els.followUpInput.value);
 });
+els.chatLog?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act="open-feedback"]');
+  if (!btn || !els.chatLog.contains(btn)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const row = btn.closest('.msg-row');
+  const msg = messageFromRow(row);
+  if (msg?.role === 'assistant') openFeedbackModal(msg);
+});
 if (els.dataSourceSelect) {
   els.dataSourceSelect.value = state.dataSource;
   els.dataSourceSelect.addEventListener('change', () => {
@@ -2686,11 +2983,132 @@ els.toolsBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
   els.toolsMenu.hidden = !els.toolsMenu.hidden;
 });
+els.statsCloseBtn?.addEventListener('click', () => { if (els.statsModal) els.statsModal.hidden = true; });
+els.caseOpenBtn?.addEventListener('click', openCaseModal);
+els.caseCloseBtn?.addEventListener('click', closeCaseModal);
+els.caseCancelBtn?.addEventListener('click', closeCaseModal);
+els.caseForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  showCaseError('');
+  const caseText = (els.caseText?.value || '').trim();
+  const question = (els.caseQuestion?.value || '').trim() || '请结合指南分析该病例的诊疗路径和下一步建议。';
+  const dataSource = els.caseDataSource?.value || state.dataSource || 'csco';
+  if (caseText.length < 20) {
+    showCaseError('请粘贴更完整的病例文本');
+    els.caseText?.focus();
+    return;
+  }
+  const submitBtn = els.caseForm.querySelector('button[type="submit"]');
+  const oldText = submitBtn?.textContent || '开始分析';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '分析中…';
+  }
+  try {
+    const resp = await api('/api/cases/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ case_text: caseText, question, data_source: dataSource }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      showCaseError(formatApiDetail(data) || '病例分析失败');
+      return;
+    }
+    const payload = data.qa_payload || {};
+    payload.answer_markdown = [
+      '## 病例结构化摘要',
+      data.case_summary || '',
+      '',
+      '## 指南分析',
+      data.answer_markdown || payload.answer_markdown || '',
+    ].join('\n');
+    payload.data_source = data.data_source || dataSource;
+    closeCaseModal();
+    appendCaseAnalysisResult({ question, payload, dataSource: payload.data_source });
+  } catch {
+    showCaseError('网络错误，请稍后重试');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = oldText;
+    }
+  }
+});
+els.statsBody?.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-feedback-act]');
+  if (!btn) return;
+  const act = btn.dataset.feedbackAct;
+  if (act === 'export') {
+    downloadFeedbackCsv(lastFeedbackList);
+    return;
+  }
+  await openFeedbackList(feedbackFiltersFromModal());
+});
+els.statsBody?.addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter' || !e.target.closest('[data-feedback-filter]')) return;
+  e.preventDefault();
+  await openFeedbackList(feedbackFiltersFromModal());
+});
+els.feedbackCloseBtn?.addEventListener('click', closeFeedbackModal);
+els.feedbackCancelBtn?.addEventListener('click', closeFeedbackModal);
+els.feedbackForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  showFeedbackError('');
+  const messageId = els.feedbackMessageId?.value || '';
+  const comment = (els.feedbackComment?.value || '').trim();
+  if (!comment) {
+    showFeedbackError('请填写具体意见');
+    els.feedbackComment?.focus();
+    return;
+  }
+  const submitBtn = els.feedbackForm.querySelector('button[type="submit"]');
+  const oldText = submitBtn?.textContent || '提交反馈';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '提交中…';
+  }
+  try {
+    const resp = await api('/api/feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        conversation_id: state.activeConversationId,
+        message_id: messageId || null,
+        question: els.feedbackQuestion?.value || '',
+        answer: els.feedbackAnswer?.value || '',
+        rating: Number(els.feedbackRating?.value || 5),
+        category: els.feedbackCategory?.value || '其他',
+        comment,
+      }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      showFeedbackError(formatApiDetail(data) || '提交失败，请稍后重试');
+      return;
+    }
+    closeFeedbackModal();
+    alert('反馈已提交，感谢您的意见');
+  } catch {
+    showFeedbackError('网络错误，请稍后重试');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = oldText;
+    }
+  }
+});
 document.addEventListener('click', () => { els.toolsMenu.hidden = true; });
-els.toolsMenu?.addEventListener('click', (e) => {
+els.toolsMenu?.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-tool]');
   if (!btn) return;
   els.toolsMenu.hidden = true;
+  if (btn.dataset.tool === 'feedback-stats') {
+    await openFeedbackStats();
+    return;
+  }
+  if (btn.dataset.tool === 'feedback-list') {
+    await openFeedbackList();
+    return;
+  }
   openToolsDrawer(btn.dataset.tool);
 });
 

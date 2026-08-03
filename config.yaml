@@ -23,7 +23,7 @@ sources:
     enable_kg: true
   csco:
     label: "CSCO 淋巴瘤诊疗指南 2025"
-    pdf: "2025CSCO淋巴瘤诊疗指南(OCR).pdf"
+    pdf: "3.2025CSCO淋巴瘤诊疗指南(OCR).pdf"
     knowledge_base: data/processed/csco_knowledge_base.json
     bm25_index: data/indexes/csco_bm25_index.pkl
     knowledge_graph: data/processed/csco_knowledge_graph.json

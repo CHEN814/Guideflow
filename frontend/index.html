@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Guideflow · DLBCL 指南问答</title>
-  <link rel="stylesheet" href="./styles.css?v=20260717" />
+  <link rel="stylesheet" href="./styles.css?v=20260725" />
 </head>
 <body>
   <div class="app" id="appRoot">
@@ -59,6 +59,7 @@
           </label>
           <textarea id="followUpInput" placeholder="问一个临床问题……" rows="1"></textarea>
           <div class="composer-actions">
+            <button type="button" class="btn ghost case-open-btn" id="caseOpenBtn" title="粘贴病历进行结构化分析">病例分析</button>
             <button type="button" class="icon-btn composer-expand" id="expandInputBtn" title="展开输入" aria-label="展开输入">⤢</button>
             <button class="circle-btn" id="askBtn" aria-label="发送">➤</button>
           </div>
@@ -104,12 +105,89 @@
   </div>
 
   <div class="cite-popover" id="citePopover" hidden></div>
+
+  <div class="modal-overlay" id="feedbackModal" hidden>
+    <div class="modal-card feedback-modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2>医生反馈</h2>
+        <button class="icon-btn" id="feedbackCloseBtn" aria-label="关闭">✕</button>
+      </div>
+      <form id="feedbackForm" class="auth-form feedback-form">
+        <input type="hidden" id="feedbackMessageId" />
+        <label>问题描述<textarea id="feedbackQuestion" rows="2" readonly></textarea></label>
+        <label>回答摘要<textarea id="feedbackAnswer" rows="4" readonly></textarea></label>
+        <label>总体评分
+          <select id="feedbackRating">
+            <option value="5">5 - 很好</option>
+            <option value="4">4 - 较好</option>
+            <option value="3">3 - 一般</option>
+            <option value="2">2 - 不太好</option>
+            <option value="1">1 - 很差</option>
+          </select>
+        </label>
+        <label>反馈分类
+          <select id="feedbackCategory">
+            <option>其他</option>
+            <option>正确性问题</option>
+            <option>证据不足 / 漏证据</option>
+            <option>召回问题</option>
+            <option>表达问题</option>
+            <option>安全性 / 风险提示问题</option>
+            <option>交互体验问题</option>
+            <option>肯定反馈</option>
+          </select>
+        </label>
+        <label>具体意见<textarea id="feedbackComment" rows="4" placeholder="请填写医生意见"></textarea></label>
+        <div class="auth-error" id="feedbackError" hidden></div>
+        <div class="auth-actions">
+          <button type="submit" class="btn primary">提交反馈</button>
+          <button type="button" class="btn" id="feedbackCancelBtn">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="caseModal" hidden>
+    <div class="modal-card case-modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2>病例分析</h2>
+        <button class="icon-btn" id="caseCloseBtn" aria-label="关闭">✕</button>
+      </div>
+      <form id="caseForm" class="auth-form case-form">
+        <label>病例文本<textarea id="caseText" rows="10" placeholder="请粘贴入院记录、病理、免疫组化、治疗经过等文本。图片上传 OCR 将在下一阶段接入。"></textarea></label>
+        <label>想问的问题<input id="caseQuestion" value="请结合指南分析该病例的诊疗路径和下一步建议。" /></label>
+        <label>指南来源
+          <select id="caseDataSource">
+            <option value="csco">CSCO</option>
+            <option value="nccn">NCCN</option>
+          </select>
+        </label>
+        <div class="auth-error" id="caseError" hidden></div>
+        <div class="auth-actions">
+          <button type="submit" class="btn primary">开始分析</button>
+          <button type="button" class="btn" id="caseCancelBtn">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="tools-menu" id="toolsMenu" hidden>
     <button data-tool="trace">Trace 调试</button>
     <button data-tool="sources">证据来源</button>
-    <button data-tool="graph">图谱路径</button>
     <button data-tool="neo4j">Neo4j 图谱</button>
     <button data-tool="figures">流程图</button>
+    <button data-tool="feedback-stats">反馈统计</button>
+    <button data-tool="feedback-list">反馈列表</button>
+  </div>
+
+  <div class="modal-overlay" id="statsModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2>反馈统计</h2>
+        <button class="icon-btn" id="statsCloseBtn" aria-label="关闭">✕</button>
+      </div>
+      <div id="statsBody" class="stats-body muted">加载中…</div>
+    </div>
   </div>
 
   <script>
@@ -122,8 +200,8 @@
     }
     window.API_BASE = window.API_BASE ?? guideflowDefaultApiBase();
   </script>
-  <script src="./vendor/marked.min.js"></script>
-  <script src="./vendor/purify.min.js"></script>
-  <script src="./app.js"></script>
+  <script src="./vendor/marked.min.js?v=20260725"></script>
+  <script src="./vendor/purify.min.js?v=20260725"></script>
+  <script src="./app.js?v=20260731-case-text"></script>
 </body>
 </html>
