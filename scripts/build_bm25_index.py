@@ -7,19 +7,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from backend.app.settings import load_settings, source_paths
+from backend.app.settings import list_source_keys, load_settings, source_paths
 from backend.app.services.bm25_store import build_bm25_store
 from backend.app.services.store import load_knowledge_base
 
 
 def main() -> None:
     settings = load_settings()
+    known = list_source_keys()
     parser = argparse.ArgumentParser(description="Build BM25 index from a local knowledge base.")
     parser.add_argument(
         "--source",
-        choices=("nccn", "csco"),
+        choices=tuple(known),
         default="nccn",
-        help="Which guideline source to index (default: nccn).",
+        help=f"Which guideline source to index (default: nccn). Known: {', '.join(known)}",
     )
     parser.add_argument("--kb", type=Path, default=None)
     parser.add_argument("--out", type=Path, default=None)
@@ -31,12 +32,10 @@ def main() -> None:
 
     kb = load_knowledge_base(kb_path)
     docs = kb.to_search_documents()
-    # Stamp source on docs if missing (legacy NCCN JSON)
+    # Stamp source on docs if missing (legacy NCCN JSON) or mismatched.
     for doc in docs:
-        if not getattr(doc, "source", None):
+        if not getattr(doc, "source", None) or doc.source != args.source:
             doc.source = args.source
-        elif doc.source == "nccn" and args.source == "csco":
-            doc.source = "csco"
     store = build_bm25_store(docs)
     store.save(out_path)
     print(f"BM25 index written to: {out_path}")

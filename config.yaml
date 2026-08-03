@@ -10,7 +10,8 @@ paths:
   summary_cache: data/cache/page_summaries.json
   logs: logs/runs
 
-# 双数据源（NCCN / CSCO）。未列出的字段回退到上方 paths（仅 nccn）或代码默认值。
+# 多数据源（NCCN / CSCO / EHA）。未列出的字段回退到上方 paths（仅 nccn）或代码默认值。
+# 单次检索不混用；前端下拉框逐条消息选择。
 sources:
   nccn:
     label: "NCCN B 细胞淋巴瘤指南"
@@ -27,6 +28,15 @@ sources:
     knowledge_base: data/processed/csco_knowledge_base.json
     bm25_index: data/indexes/csco_bm25_index.pkl
     knowledge_graph: data/processed/csco_knowledge_graph.json
+    enable_vlm: false
+    enable_flowchart: false
+    enable_kg: false
+  eha:
+    label: "EHA 大B细胞淋巴瘤临床实践指南 2025"
+    pdf: "2025 EHA临床实践指南：大B细胞淋巴瘤的诊断、治疗和随访.pdf"
+    knowledge_base: data/processed/eha_knowledge_base.json
+    bm25_index: data/indexes/eha_bm25_index.pkl
+    knowledge_graph: data/processed/eha_knowledge_graph.json
     enable_vlm: false
     enable_flowchart: false
     enable_kg: false

@@ -73,7 +73,7 @@ class Settings:
     chunk_embedding_index_path: Path
     chunk_embedding_meta_path: Path
     # ── multi-source guideline ───────────────────────────────────────────
-    source_key: str = "nccn"          # nccn | csco
+    source_key: str = "nccn"          # nccn | csco | eha
     enable_vlm: bool = True
     enable_flowchart: bool = True
     enable_kg: bool = True
@@ -410,6 +410,18 @@ _SOURCE_DEFAULTS: dict[str, dict[str, Any]] = {
         "knowledge_graph": "data/processed/csco_knowledge_graph.json",
         "page_images": "data/cache/csco_page_images",
         "summary_cache": "data/cache/csco_page_summaries.json",
+        "enable_vlm": False,
+        "enable_flowchart": False,
+        "enable_kg": False,
+    },
+    "eha": {
+        "label": "EHA 大B细胞淋巴瘤临床实践指南 2025",
+        "pdf_glob": "*EHA*",
+        "knowledge_base": "data/processed/eha_knowledge_base.json",
+        "bm25_index": "data/indexes/eha_bm25_index.pkl",
+        "knowledge_graph": "data/processed/eha_knowledge_graph.json",
+        "page_images": "data/cache/eha_page_images",
+        "summary_cache": "data/cache/eha_page_summaries.json",
         "enable_vlm": False,
         "enable_flowchart": False,
         "enable_kg": False,

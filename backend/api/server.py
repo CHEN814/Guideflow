@@ -237,21 +237,22 @@ class AskRequest(BaseModel):
     parent_message_id: Optional[str] = None
     # When True, only create a new assistant sibling under parent_message_id (must be user).
     regenerate: bool = False
-    # Guideline data source: nccn | csco (per-message; sources are never mixed in one retrieval)
-    data_source: str = Field(default="nccn", pattern="^(nccn|csco)$")
+    # Guideline data source (per-message; sources are never mixed in one retrieval)
+    data_source: str = Field(default="nccn")
 
 
 def create_app() -> FastAPI:
     settings = load_settings()
     web_cfg = load_web_config()
     init_db()
+    known_sources = set(list_source_keys())
 
     # Lazy multi-source registry: build QAService per data_source on first use.
     qa_services: dict[str, QAService] = {}
 
     def get_qa_service(source_key: str = "nccn") -> QAService:
         key = (source_key or "nccn").strip().lower()
-        if key not in ("nccn", "csco"):
+        if key not in known_sources:
             key = "nccn"
         if key not in qa_services:
             src_settings = settings_for_source(key, settings)
@@ -315,7 +316,13 @@ def create_app() -> FastAPI:
         db: Session = Depends(get_db),
         user: Optional[User] = Depends(get_optional_user),
     ) -> Any:
-        service = get_qa_service(body.data_source)
+        src = (body.data_source or "nccn").strip().lower()
+        if src not in known_sources:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown data_source {body.data_source!r}. Known: {', '.join(sorted(known_sources))}",
+            )
+        service = get_qa_service(src)
 
         history_payload = [
             {"role": turn.role, "content": turn.content}

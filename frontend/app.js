@@ -83,15 +83,16 @@ const SUGGESTIONS = [
 ];
 
 const DATA_SOURCE_KEY = 'gf_data_source';
-const DATA_SOURCE_LABELS = { nccn: 'NCCN', csco: 'CSCO' };
+const DATA_SOURCE_LABELS = { nccn: 'NCCN', csco: 'CSCO', eha: 'EHA' };
+const DATA_SOURCE_ALLOWED = new Set(Object.keys(DATA_SOURCE_LABELS));
 
 function loadDataSource() {
   const v = (localStorage.getItem(DATA_SOURCE_KEY) || 'nccn').toLowerCase();
-  return v === 'csco' ? 'csco' : 'nccn';
+  return DATA_SOURCE_ALLOWED.has(v) ? v : 'nccn';
 }
 
 function saveDataSource(key) {
-  const v = key === 'csco' ? 'csco' : 'nccn';
+  const v = DATA_SOURCE_ALLOWED.has((key || '').toLowerCase()) ? key.toLowerCase() : 'nccn';
   localStorage.setItem(DATA_SOURCE_KEY, v);
   return v;
 }
@@ -1103,7 +1104,7 @@ function renderMessage(message, idx) {
   const tag = answerKindLabel(payload.answer_kind);
   const src = (payload.data_source || message.dataSource || '').toLowerCase();
   const srcChip = src
-    ? `<span class="source-chip ${src === 'csco' ? 'csco' : ''}">${escapeHtml(DATA_SOURCE_LABELS[src] || src)}</span>`
+    ? `<span class="source-chip ${src === 'nccn' ? '' : src}">${escapeHtml(DATA_SOURCE_LABELS[src] || src)}</span>`
     : '';
   const { vNav, delBtn } = renderBranchControls(message);
   return `

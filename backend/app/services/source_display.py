@@ -135,13 +135,21 @@ def parse_reference_citation(text: str) -> Dict[str, Optional[str]]:
     }
 
 
+_SOURCE_LABELS = {
+    "nccn": "NCCN B 细胞淋巴瘤指南",
+    "csco": "CSCO 淋巴瘤诊疗指南 2025",
+    "eha": "EHA 大B细胞淋巴瘤临床实践指南 2025",
+}
+
+
 def enrich_source_dict(doc: SearchDocument) -> Dict[str, Any]:
     """Attach display fields used by the Web References UI."""
     data = doc.to_dict()
     page_code = doc.printed_page_code or ""
     pdf_page = doc.pdf_page or 0
     src = (getattr(doc, "source", None) or "nccn").lower()
-    is_csco = src == "csco"
+    guide_label = _SOURCE_LABELS.get(src, src.upper())
+    table_like = src in ("csco", "eha")
 
     if doc.page_type == "clinical_guideline":
         citation_label = page_code or (f"p.{pdf_page}" if pdf_page else doc.source_id)
@@ -149,7 +157,7 @@ def enrich_source_dict(doc: SearchDocument) -> Dict[str, Any]:
         subtitle = extract_guideline_title(doc.text, fallback="")
         if subtitle and subtitle.upper() == citation_label.upper():
             subtitle = ""
-        source_label = "CSCO 淋巴瘤诊疗指南 2025" if is_csco else "NCCN B 细胞淋巴瘤指南"
+        source_label = guide_label
         locator = f"p.{pdf_page}" if pdf_page else ""
         badge = "指南"
     elif doc.page_type == "discussion":
@@ -158,8 +166,8 @@ def enrich_source_dict(doc: SearchDocument) -> Dict[str, Any]:
         if doc.article_id:
             display_title = f"{doc.article_id} · {display_title}"
         subtitle = ""
-        if is_csco:
-            source_label = "CSCO 淋巴瘤诊疗指南 2025"
+        if table_like:
+            source_label = guide_label
             badge = "表格" if getattr(doc, "content_type", "") == "table" else "章节"
         else:
             source_label = "NCCN 指南 · Discussion"
@@ -169,9 +177,7 @@ def enrich_source_dict(doc: SearchDocument) -> Dict[str, Any]:
         citation_label = page_code or doc.source_id
         display_title = citation_label
         subtitle = ""
-        source_label = (
-            "CSCO 淋巴瘤诊疗指南 2025" if is_csco else (doc.page_type or "Source")
-        )
+        source_label = guide_label if src in _SOURCE_LABELS else (doc.page_type or "Source")
         locator = f"p.{pdf_page}" if pdf_page else ""
         badge = doc.page_type or "Source"
 

@@ -105,6 +105,42 @@ DISEASE_SCOPES: Dict[str, DiseaseScope] = {
 }
 
 
+# EHA LBCL guideline is a single-disease paper; scopes mainly reject out-of-scope queries.
+EHA_DISEASE_SCOPES: Dict[str, DiseaseScope] = {
+    "all": DiseaseScope(key="all", label="EHA LBCL 全文", article_ids=[], module_codes=[]),
+    "dlbcl": DiseaseScope(
+        key="dlbcl",
+        label="Diffuse Large B-Cell Lymphoma / LBCL",
+        article_ids=["eha-lbcl"],
+        module_codes=[],
+    ),
+    "lbcl": DiseaseScope(
+        key="lbcl",
+        label="Large B-Cell Lymphoma",
+        article_ids=["eha-lbcl"],
+        module_codes=[],
+    ),
+    "pmbl": DiseaseScope(
+        key="pmbl",
+        label="Primary Mediastinal B-Cell Lymphoma",
+        article_ids=["eha-lbcl"],
+        module_codes=[],
+    ),
+    "hgbl": DiseaseScope(
+        key="hgbl",
+        label="High-Grade B-Cell Lymphoma",
+        article_ids=["eha-lbcl"],
+        module_codes=[],
+    ),
+    "pcnsl": DiseaseScope(
+        key="pcnsl",
+        label="Primary CNS Lymphoma (in EHA LBCL context)",
+        article_ids=["eha-lbcl"],
+        module_codes=[],
+    ),
+}
+
+
 # CSCO-only disease scopes (article_ids only; no NCCN module codes).
 CSCO_DISEASE_SCOPES: Dict[str, DiseaseScope] = {
     "all": DiseaseScope(key="all", label="CSCO 全部章节", article_ids=[], module_codes=[]),
@@ -156,8 +192,9 @@ _DISEASE_PATTERNS: List[Tuple[int, re.Pattern[str], str]] = [
     (110, re.compile(rf"原发睾丸|primary\s+testicular|{_L}PTDLBCL{_R}", re.I), "primary-testicular-dlbcl"),
     (110, re.compile(r"原发乳腺|primary\s+breast", re.I), "primary-breast-dlbcl"),
     (105, re.compile(rf"原发中枢|{_L}PCNSL{_R}|primary\s+central\s+nervous", re.I), "pcnsl"),
+    (102, re.compile(rf"{_L}LBCL{_R}|大\s*B\s*细胞淋巴瘤|large\s+b[- ]?cell\s+lymphoma", re.I), "lbcl"),
     (100, re.compile(rf"{_L}DLBCL{_R}|弥漫大\s*B\s*细胞|diffuse\s+large\s+b[- ]?cell", re.I), "dlbcl"),
-    (90, re.compile(rf"{_L}PMBL{_R}|原发纵隔|primary\s+mediastinal", re.I), "pmbl"),
+    (90, re.compile(rf"{_L}PMBL{_R}|{_L}PMBCL{_R}|原发纵隔|primary\s+mediastinal", re.I), "pmbl"),
     (90, re.compile(rf"{_L}HGBL{_R}|高级别\s*B\s*细胞|high[- ]?grade\s+b[- ]?cell|双打击|triple[- ]?hit", re.I), "hgbl"),
     (85, re.compile(rf"{_L}CLL{_R}|{_L}SLL{_R}|慢性淋巴|小淋巴细胞|chronic\s+lymphocytic", re.I), "cll"),
     (85, re.compile(rf"外周\s*T|{_L}PTCL{_R}|peripheral\s+t[- ]?cell", re.I), "ptcl"),
@@ -191,12 +228,25 @@ def with_common_modules(scope: DiseaseScope, *, source: str = "nccn") -> Disease
     """Merge shared supportive-care modules/articles into a disease scope."""
     if scope.key == "all":
         return scope
-    if (source or "nccn").lower() == "csco":
+    src = (source or "nccn").lower()
+    if src == "csco":
         articles = list(dict.fromkeys([*scope.article_ids, *CSCO_COMMON_ARTICLE_IDS]))
         return replace(scope, module_codes=[], article_ids=articles)
+    if src == "eha":
+        # Single-document source: keep article_ids as-is (usually eha-lbcl).
+        return replace(scope, module_codes=[])
     modules = list(dict.fromkeys([*scope.module_codes, *COMMON_MODULE_CODES]))
     articles = list(dict.fromkeys([*scope.article_ids, *COMMON_ARTICLE_IDS]))
     return replace(scope, module_codes=modules, article_ids=articles)
+
+
+def _registry_for_source(source: str) -> Dict[str, DiseaseScope]:
+    src = (source or "nccn").strip().lower()
+    if src == "csco":
+        return CSCO_DISEASE_SCOPES
+    if src == "eha":
+        return EHA_DISEASE_SCOPES
+    return DISEASE_SCOPES
 
 
 def parse_source_scope(source_id: str) -> Tuple[Optional[str], Optional[str]]:
@@ -258,16 +308,16 @@ def detect_disease_scope(
 ) -> DiseaseScope:
     """Detect disease scope from the question text for the active guideline source."""
     src = (source or "nccn").strip().lower()
-    registry = CSCO_DISEASE_SCOPES if src == "csco" else DISEASE_SCOPES
+    registry = _registry_for_source(src)
 
     key = (forced_key or os.getenv("TARGET_DISEASE_SCOPE", "auto") or "auto").strip().lower()
     if key not in ("", "auto"):
         scope = registry.get(key)
         if scope is None:
             scope = DISEASE_SCOPES.get(key)
-        if scope is None or (src == "csco" and key not in registry and key not in ("all",)):
-            if src == "csco":
-                return CSCO_DISEASE_SCOPES["all"]
+        if scope is None or (src in ("csco", "eha") and key not in registry and key not in ("all",)):
+            if src in ("csco", "eha"):
+                return registry["all"]
             known = ", ".join(sorted(registry))
             raise ValueError(f"Unknown disease scope {key!r}. Known: {known}")
         return with_common_modules(scope, source=src) if scope.key != "all" else scope
@@ -280,12 +330,15 @@ def detect_disease_scope(
                 best = (priority, scope_key)
     if best is None:
         return registry["all"]
-    scope = registry.get(best[1])
+    # Map LBCL → dlbcl for registries that lack an explicit lbcl key.
+    scope_key = best[1]
+    if scope_key == "lbcl" and "lbcl" not in registry and "dlbcl" in registry:
+        scope_key = "dlbcl"
+    scope = registry.get(scope_key)
     if scope is None:
         return registry["all"]
     return with_common_modules(scope, source=src)
 
 
 def list_disease_scope_keys(source: str = "nccn") -> Sequence[str]:
-    registry = CSCO_DISEASE_SCOPES if (source or "nccn").lower() == "csco" else DISEASE_SCOPES
-    return sorted(registry)
+    return sorted(_registry_for_source(source))

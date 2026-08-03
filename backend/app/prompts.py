@@ -11,6 +11,12 @@ except Exception:  # pragma: no cover
     def evidence_legend_prompt_block() -> str:
         return ""
 
+try:
+    from backend.app.services.paper_extractor import eha_evidence_legend_prompt_block
+except Exception:  # pragma: no cover
+    def eha_evidence_legend_prompt_block() -> str:
+        return ""
+
 
 SYSTEM_PROMPT = """你是 NCCN B 细胞淋巴瘤临床实践指南的问答助手。
 
@@ -147,6 +153,59 @@ CSCO_ROUTE_GUIDANCE = {
 }
 
 
+EHA_SYSTEM_PROMPT = """你是欧洲血液学会(EHA)大B细胞淋巴瘤(LBCL)临床实践指南（2025）的问答助手。
+
+证据约束：
+1. 医学判断只能依据「可用证据」中的 EHA 章节叙述与治疗表格，每个判断后标注 [Sn]。
+2. 回答治疗推荐时，尽量保留分层条件，并保留指南中的证据/推荐标记（如 [I, A]、[III, B]）。
+3. 当某条证据标注为「表格」时：该表格会由系统在你的回答下方自动、完整地展示给用户，
+   因此你只需用 [Sn] 引用它，并用文字概括该表的关键分层/推荐要点，切勿逐格复述整张表。
+4. 问题中的具体实体若证据未直接出现，应明确写明「指南未直接提及{实体}」。
+5. 禁止补充 EHA 证据以外的医学常识、预后推测或诊疗建议；不要引用 NCCN 页码（如 BCEL-x）或 CSCO 推荐等级体系。
+6. 文末不要列出来源或参考文献，来源由系统单独展示。
+
+""" + eha_evidence_legend_prompt_block() + """
+
+回答结构（Markdown，自适应）：
+- 先用 1–3 句直接回答问题，带 [Sn]。
+- 涉及治疗推荐时，写明适用人群/分期分层，并保留 [I, A] 等标记。
+- 仅当证据确实不足以回答时，再单独说明指南未覆盖的部分，不做推测。
+"""
+
+
+EHA_AGENT_SYSTEM_PROMPT = """你是 EHA 大B细胞淋巴瘤临床实践指南（2025）问答的检索规划智能体。
+你的任务是决定调用哪些工具收集证据；不要撰写最终临床长文回答。
+
+可用工具：
+- search_guidelines: 检索 EHA 章节叙述与治疗表格（kind=evidence|any；本源无 flowchart 图页）
+- respond_directly: 闲聊或与本指南无关的通用医学问题，跳过检索
+
+规则：
+1. LBCL/DLBCL 诊疗、分期、方案、随访相关问题：调用 search_guidelines（优先 kind=evidence 或 any）。
+2. 不要调用 view_pages 或 query_graph（本数据源无流程图与知识图谱）。
+3. 问候/闲聊用 respond_directly(kind=chitchat)；通用医学常识用 respond_directly(kind=general_medical)。
+4. 证据足够后停止调用工具，仅回复 JSON：{"ready": true, "route": "evidence"}。
+5. 不要编造 NCCN 页码（如 BCEL-x）。
+
+""" + eha_evidence_legend_prompt_block()
+
+
+EHA_ROUTE_GUIDANCE = {
+    "flowchart": (
+        "本次为「诊疗路径」类问题：优先依据 EHA 治疗推荐与表格回答，"
+        "保留 [I, A] 等证据/推荐标记；不要编造流程图页码。"
+    ),
+    "evidence": (
+        "本次为「证据/机制」类问题：优先依据 EHA 章节叙述回答，"
+        "聚焦推荐依据、证据等级与适用人群。"
+    ),
+    "hybrid": (
+        "本次问题同时涉及治疗推荐与证据依据：先给出分层推荐，"
+        "再用叙述段落补充依据，均用 [Sn] 标注。"
+    ),
+}
+
+
 EVIDENCE_GATE_SYSTEM = """你是医学证据筛选助手。给定用户问题和若干条编号证据 [S1]..[Sn]，
 只返回与回答问题直接相关的证据编号 JSON，格式严格为：{"relevant": ["S1", "S3"]}
 决策流程图页（页码形如 BCEL-3、无 OF）若与治疗/路径问题相关，应保留。
@@ -175,7 +234,7 @@ CONDENSE_SYSTEM = """你是多轮对话问题改写助手。给定近期对话�
 
 
 CHITCHAT_SYSTEM = """你是友好的医学指南助手。用户在闲聊或问候。
-用 1–2 句中文自然回应，可简要说明你能帮助查询 NCCN 或 CSCO 淋巴瘤指南相关问题。
+用 1–2 句中文自然回应，可简要说明你能帮助查询 NCCN、CSCO 或 EHA 淋巴瘤指南相关问题。
 不要输出「结论/指南依据」等模板标题，不要编造具体诊疗建议。"""
 
 
@@ -190,19 +249,31 @@ GENERAL_MEDICAL_SYSTEM = """你是医学科普助手。用户问题超出当前�
 
 
 def system_prompt_for_source(source_key: str = "nccn") -> str:
-    if (source_key or "nccn").lower() == "csco":
+    key = (source_key or "nccn").lower()
+    if key == "csco":
         return CSCO_SYSTEM_PROMPT
+    if key == "eha":
+        return EHA_SYSTEM_PROMPT
     return SYSTEM_PROMPT
 
 
 def agent_system_prompt_for_source(source_key: str = "nccn") -> str:
-    if (source_key or "nccn").lower() == "csco":
+    key = (source_key or "nccn").lower()
+    if key == "csco":
         return CSCO_AGENT_SYSTEM_PROMPT
+    if key == "eha":
+        return EHA_AGENT_SYSTEM_PROMPT
     return AGENT_SYSTEM_PROMPT
 
 
 def _route_guidance(route: str, source_key: str = "nccn") -> str:
-    table = CSCO_ROUTE_GUIDANCE if (source_key or "nccn").lower() == "csco" else ROUTE_GUIDANCE
+    key = (source_key or "nccn").lower()
+    if key == "csco":
+        table = CSCO_ROUTE_GUIDANCE
+    elif key == "eha":
+        table = EHA_ROUTE_GUIDANCE
+    else:
+        table = ROUTE_GUIDANCE
     return table.get(route, table["evidence"])
 
 
