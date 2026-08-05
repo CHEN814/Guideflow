@@ -42,6 +42,12 @@ frontend/.vite/
 周报.md
 docs/临时文档/
 
+# Patient cases / PHI — local only; NEVER commit, push, or deploy
+docs/临时文档/病例-本地专用/
+docs/assets/case-dlbcl-asct/
+docs/病例测试-*.md
+**/case-dlbcl-asct/
+
 # Deployment artifacts（本地打包上传用，勿提交）
 *.tgz
 
