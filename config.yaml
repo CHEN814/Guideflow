@@ -58,6 +58,18 @@ retrieval:
   final_top_k: 6
   max_attached_refs: 6
 
+# PubMed 实时文献（摘要级二级参考；默认关闭，由请求 enable_literature 打开）
+literature:
+  enabled_default: false
+  candidate_k: 30
+  final_top_k: 5
+  recent_years: 5
+  esearch_timeout_s: 2
+  efetch_timeout_s: 3
+  cache_dir: data/cache/pubmed
+  ncbi_email: guideflow@example.com
+  ncbi_tool: guideflow
+
 # 疾病范围：auto=按问题自动识别（未命中则全库）；也可指定 dlbcl/fl/mcl/.../all
 # 注册表见 backend/app/services/disease_scope.py
 disease_scope: auto

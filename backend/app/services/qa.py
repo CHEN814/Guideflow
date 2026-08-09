@@ -1,10 +1,19 @@
 from __future__ import annotations
 
 import re
+from concurrent.futures import Future
 from dataclasses import dataclass, field
-from typing import Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
-from backend.app.models import EvidenceBundle, FigureReference, GraphTriple, NormalizedQuery, QAResult, RetrievalHit
+from backend.app.models import (
+    EvidenceBundle,
+    FigureReference,
+    GraphTriple,
+    LiteratureHit,
+    NormalizedQuery,
+    QAResult,
+    RetrievalHit,
+)
 from backend.app.settings import Settings
 from backend.app.services.agent_orchestrator import AgentOrchestrator
 from backend.app.services.agent_tools import status_event
@@ -33,6 +42,12 @@ from backend.app.services.figure_anchor import compute_anchors
 from backend.app.services.figure_selection import backfill_source_indices, prune_figures_by_answer
 from backend.app.services.graph_navigator import GraphNavigator
 from backend.app.services.kg_retriever import KnowledgeGraphRetriever
+from backend.app.services.literature_format import format_literature_section
+from backend.app.services.literature_service import (
+    LiteratureSearchResult,
+    build_literature_service,
+    submit_literature_search,
+)
 from backend.app.services.multimodal_client import _split_answer_and_summary, load_multimodal_client
 from backend.app.services.page_image import PageImageRenderer
 from backend.app.services.page_summary_cache import PageSummaryCache
@@ -75,6 +90,9 @@ class _AskContext:
     early_degraded: Optional[str] = None
     agent_steps: List[dict] = field(default_factory=list)
     status_events: List[dict] = field(default_factory=list)
+    literature_future: Any = None
+    literature: List[LiteratureHit] = field(default_factory=list)
+    enable_literature: bool = False
 
 
 class QAService:
@@ -124,14 +142,21 @@ class QAService:
             cache_dir=settings.page_image_dir,
             dpi=settings.page_image_dpi,
         )
+        self.literature_service = build_literature_service(settings, qwen_client=self.qwen)
 
     def ask(
         self,
         question: str,
         trace_enabled: bool = True,
         history: Optional[List[dict]] = None,
+        enable_literature: Optional[bool] = None,
     ) -> QAResult:
-        ctx = self._prepare_ask(question, trace_enabled=trace_enabled, history=history)
+        ctx = self._prepare_ask(
+            question,
+            trace_enabled=trace_enabled,
+            history=history,
+            enable_literature=enable_literature,
+        )
         if ctx.early_answer is not None:
             return self._finalize_ask(
                 ctx,
@@ -180,11 +205,20 @@ class QAService:
         question: str,
         trace_enabled: bool = True,
         history: Optional[List[dict]] = None,
+        enable_literature: Optional[bool] = None,
     ) -> Generator[dict, None, None]:
         """True streaming: yield meta → status* → token* → final(payload)."""
         history = list(history or [])
         trace = TraceLogger(self.settings.logs_dir, enabled=trace_enabled)
-        trace.log("query_received", {"question": question, "history_turns": len(history)})
+        lit_enabled = self._resolve_enable_literature(enable_literature)
+        trace.log(
+            "query_received",
+            {
+                "question": question,
+                "history_turns": len(history),
+                "enable_literature": lit_enabled,
+            },
+        )
 
         standalone, topic_shift, condense_degraded = self.qwen.condense_question(question, history)
         if topic_shift:
@@ -194,6 +228,7 @@ class QAService:
             source=getattr(self.settings, "source_key", "nccn") or "nccn",
         )
         routing_mode = str(getattr(self.settings, "routing_mode", "agentic") or "agentic").lower()
+        literature_future = self._start_literature_future(standalone, lit_enabled)
 
         yield {
             "type": "meta",
@@ -204,7 +239,11 @@ class QAService:
             "sources": [],
             "run_id": trace.run_id,
             "routing_mode": routing_mode,
+            "enable_literature": lit_enabled,
         }
+
+        if lit_enabled:
+            yield status_event("literature", "正在检索 PubMed 相关文献…")
 
         status_events: List[dict] = []
         if routing_mode == "agentic":
@@ -250,6 +289,9 @@ class QAService:
             for event in ctx.status_events:
                 if event.get("type") == "status":
                     yield event
+
+        ctx.enable_literature = lit_enabled
+        ctx.literature_future = literature_future
 
         yield status_event("generate", "生成回答中…")
 
@@ -365,15 +407,57 @@ class QAService:
         )
         yield {"type": "final", "payload": result.to_web_payload()}
 
+    def _resolve_enable_literature(self, enable_literature: Optional[bool]) -> bool:
+        if enable_literature is None:
+            return bool(getattr(self.settings, "literature_enabled_default", False))
+        return bool(enable_literature)
+
+    def _start_literature_future(
+        self, question: str, enabled: bool
+    ) -> Optional[Future]:
+        if not enabled:
+            return None
+        try:
+            return submit_literature_search(self.literature_service, question)
+        except Exception:
+            return None
+
+    def _collect_literature(
+        self, ctx: _AskContext
+    ) -> Tuple[List[LiteratureHit], Optional[str], Dict[str, Any]]:
+        future = ctx.literature_future
+        if not ctx.enable_literature:
+            return [], None, {"enabled": False}
+        if future is None:
+            return [], "literature_unavailable", {"enabled": True, "error": "no_future"}
+        try:
+            # Bound wait so a hung NCBI call cannot block the final answer forever.
+            result: LiteratureSearchResult = future.result(timeout=12)
+        except Exception as exc:
+            return [], "literature_unavailable", {
+                "enabled": True,
+                "error": f"{type(exc).__name__}:{exc}",
+            }
+        return list(result.hits or []), result.degraded, dict(result.diagnostics or {})
+
     def _prepare_ask(
         self,
         question: str,
         trace_enabled: bool = True,
         history: Optional[List[dict]] = None,
+        enable_literature: Optional[bool] = None,
     ) -> _AskContext:
         history = list(history or [])
         trace = TraceLogger(self.settings.logs_dir, enabled=trace_enabled)
-        trace.log("query_received", {"question": question, "history_turns": len(history)})
+        lit_enabled = self._resolve_enable_literature(enable_literature)
+        trace.log(
+            "query_received",
+            {
+                "question": question,
+                "history_turns": len(history),
+                "enable_literature": lit_enabled,
+            },
+        )
 
         standalone, topic_shift, condense_degraded = self.qwen.condense_question(question, history)
         if topic_shift:
@@ -382,6 +466,7 @@ class QAService:
             standalone,
             source=getattr(self.settings, "source_key", "nccn") or "nccn",
         )
+        literature_future = self._start_literature_future(standalone, lit_enabled)
         routing_mode = str(getattr(self.settings, "routing_mode", "agentic") or "agentic").lower()
         if routing_mode == "agentic":
             orch = AgentOrchestrator(self)
@@ -394,7 +479,7 @@ class QAService:
                 trace=trace,
                 on_status=lambda e: status_events.append(e),
             )
-            return self._context_from_agent_state(
+            ctx = self._context_from_agent_state(
                 question=question,
                 standalone=standalone,
                 history=history,
@@ -405,15 +490,19 @@ class QAService:
                 agent_state=agent_state,
                 status_events=status_events,
             )
-        return self._prepare_ask_linear(
-            question=question,
-            standalone=standalone,
-            history=history,
-            topic_shift=topic_shift,
-            disease_scope=disease_scope,
-            trace=trace,
-            condense_degraded=condense_degraded,
-        )
+        else:
+            ctx = self._prepare_ask_linear(
+                question=question,
+                standalone=standalone,
+                history=history,
+                topic_shift=topic_shift,
+                disease_scope=disease_scope,
+                trace=trace,
+                condense_degraded=condense_degraded,
+            )
+        ctx.enable_literature = lit_enabled
+        ctx.literature_future = literature_future
+        return ctx
 
     def _context_from_agent_state(
         self,
@@ -902,6 +991,28 @@ class QAService:
         trace = ctx.trace
         question = ctx.question
 
+        literature_hits, literature_degraded, literature_diag = self._collect_literature(ctx)
+        ctx.literature = literature_hits
+        trace.log(
+            "literature_search",
+            {
+                "enabled": ctx.enable_literature,
+                "hit_count": len(literature_hits),
+                "degraded": literature_degraded,
+                "diagnostics": literature_diag,
+                "pmids": [h.pmid for h in literature_hits],
+                "final_term": literature_diag.get("final_term"),
+            },
+        )
+        if literature_hits and ctx.answer_kind == "guideline":
+            appendix = format_literature_section(
+                literature_hits,
+                question=ctx.standalone_question or question,
+                qwen_client=self.qwen,
+            )
+            if appendix:
+                answer = (answer or "").rstrip() + "\n\n" + appendix
+
         # Keep only evidence actually cited via [Sn]; renumber and remap figures.
         hits_before = len(hits)
         answer, hits, figures, citation_remap = filter_cited_hits(answer, hits, figures)
@@ -979,6 +1090,7 @@ class QAService:
             figures=figures,
             graph_triples=graph_triples,
             graph_context=graph_context,
+            literature=literature_hits,
         )
 
         degraded = list(diagnostics.get("degraded", []))
@@ -986,11 +1098,14 @@ class QAService:
             degraded.append(gate_degraded)
         if generation_degraded:
             degraded.append(generation_degraded)
+        if literature_degraded:
+            degraded.append(literature_degraded)
         structured_trace["answer_generated"] = {
             "answer": answer,
             "generation_mode": generation_mode,
             "used_source_ids": [hit.document.source_id for hit in hits],
             "attached_reference_ids": [entry.entry_id for entry in attached_references],
+            "literature_pmids": [hit.pmid for hit in literature_hits],
             "figure_paths": [fig.image_path for fig in figures],
             "crop_image_paths": [fig.crop_image_path for fig in figures],
             "figure_crop_methods": crop_trace.get("figures", []),
@@ -1022,6 +1137,7 @@ class QAService:
             figures=figures,
             graph_triples=graph_triples,
             graph_seed_candidates=graph_seed_candidates,
+            literature=literature_hits,
             generation_mode=generation_mode,
             answer_kind=ctx.answer_kind,
             standalone_question=ctx.standalone_question,

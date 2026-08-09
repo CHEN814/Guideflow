@@ -212,6 +212,11 @@ EVIDENCE_GATE_SYSTEM = """你是医学证据筛选助手。给定用户问题和
 不要输出其它文字。"""
 
 
+LITERATURE_BLURB_SYSTEM = """你是医学文献摘要助手。根据用户问题与若干条 PubMed 摘要条目，
+为每条写一句中性中文概述（不超过 40 字），不要给出推荐、不要评价证据等级、不要编造摘要未写明的结论。
+只输出 JSON：{"blurbs":[{"pmid":"...","text":"..."}]}"""
+
+
 INTENT_CLASSIFY_SYSTEM = """你是医学问答意图分类器。根据用户问题（及可选改写结果）判断意图，只输出 JSON：
 {"intent":"guideline"|"general_medical"|"chitchat"}
 

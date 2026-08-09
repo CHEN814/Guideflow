@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Guideflow · DLBCL 指南问答</title>
-  <link rel="stylesheet" href="./styles.css?v=20260725" />
+  <link rel="stylesheet" href="./styles.css?v=20260809-feedback" />
 </head>
 <body>
   <div class="app" id="appRoot">
@@ -50,22 +50,52 @@
 
       <div class="composer">
         <div class="composer-box" id="composerBox">
-          <label class="data-source-wrap" title="选择指南数据源（单次检索不混用）">
-            <span class="sr-only">指南来源</span>
-            <select id="dataSourceSelect" class="data-source-select" aria-label="指南数据源">
-              <option value="nccn">NCCN</option>
-              <option value="csco">CSCO</option>
-              <option value="eha">EHA</option>
-            </select>
-          </label>
           <textarea id="followUpInput" placeholder="问一个临床问题……" rows="1"></textarea>
-          <div class="composer-actions">
-            <button type="button" class="btn ghost case-open-btn" id="caseOpenBtn" title="粘贴病历进行结构化分析">病例分析</button>
-            <button type="button" class="icon-btn composer-expand" id="expandInputBtn" title="展开输入" aria-label="展开输入">⤢</button>
-            <button class="circle-btn" id="askBtn" aria-label="发送">➤</button>
+          <div class="composer-toolbar">
+            <div class="composer-toolbar-left">
+              <div class="chip-wrap" id="dataSourceWrap">
+                <button type="button" class="composer-chip is-active" id="dataSourceChip"
+                  aria-haspopup="listbox" aria-expanded="false" aria-controls="dataSourceMenu"
+                  data-tip="选择指南数据源，单次检索不混用">
+                  <svg class="chip-icon chip-icon-book" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/>
+                    <path d="M8 7h8M8 11h6"/>
+                  </svg>
+                  <span class="chip-label">指南来源</span>
+                </button>
+                <div class="source-menu" id="dataSourceMenu" hidden role="listbox" aria-label="指南数据源">
+                  <button type="button" class="source-menu-item" role="option" data-source="nccn">NCCN</button>
+                  <button type="button" class="source-menu-item" role="option" data-source="csco">CSCO</button>
+                  <button type="button" class="source-menu-item" role="option" data-source="eha">EHA</button>
+                </div>
+              </div>
+              <button type="button" class="composer-chip" id="enableLiteratureChip"
+                aria-pressed="false"
+                data-tip="联网检索 PubMed 摘要作为二级参考文献">
+                <svg class="chip-icon chip-icon-globe" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M3 12h18"/>
+                  <path d="M12 3a14 14 0 0 1 0 18"/>
+                  <path d="M12 3a14 14 0 0 0 0 18"/>
+                </svg>
+                <span class="chip-label">联网文献</span>
+              </button>
+            </div>
+            <div class="composer-toolbar-right">
+              <button type="button" class="toolbar-icon-btn" id="caseOpenBtn"
+                data-tip="粘贴病历进行结构化分析" aria-label="病例分析">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                  <rect x="9" y="3" width="6" height="4" rx="1"/>
+                  <path d="M9 12h6M9 16h4"/>
+                </svg>
+              </button>
+              <button class="circle-btn" id="askBtn" aria-label="发送">➤</button>
+            </div>
           </div>
         </div>
-        <div class="composer-hint muted small">回车发送 · Shift+回车换行 · 可切换 NCCN / CSCO 指南 · 未登录历史仅本页有效</div>
+        <div class="composer-hint muted small">回车发送 · Shift+回车换行</div>
       </div>
     </main>
   </div>
@@ -115,19 +145,25 @@
       </div>
       <form id="feedbackForm" class="auth-form feedback-form">
         <input type="hidden" id="feedbackMessageId" />
-        <label>问题描述<textarea id="feedbackQuestion" rows="2" readonly></textarea></label>
-        <label>回答摘要<textarea id="feedbackAnswer" rows="4" readonly></textarea></label>
-        <label>总体评分
-          <select id="feedbackRating">
+        <details class="feedback-context">
+          <summary>查看关联问答</summary>
+          <label>问题描述<textarea id="feedbackQuestion" rows="2" readonly></textarea></label>
+          <label>回答摘要<textarea id="feedbackAnswer" rows="4" readonly></textarea></label>
+        </details>
+        <div class="feedback-field">
+          <span class="feedback-field-label">总体评分</span>
+          <select id="feedbackRating" class="sr-only" tabindex="-1" aria-hidden="true">
             <option value="5">5 - 很好</option>
             <option value="4">4 - 较好</option>
             <option value="3">3 - 一般</option>
             <option value="2">2 - 不太好</option>
             <option value="1">1 - 很差</option>
           </select>
-        </label>
-        <label>反馈分类
-          <select id="feedbackCategory">
+          <div class="feedback-chip-row" id="feedbackRatingChips" role="radiogroup" aria-label="总体评分"></div>
+        </div>
+        <div class="feedback-field">
+          <span class="feedback-field-label">反馈分类</span>
+          <select id="feedbackCategory" class="sr-only" tabindex="-1" aria-hidden="true">
             <option>其他</option>
             <option>正确性问题</option>
             <option>证据不足 / 漏证据</option>
@@ -137,12 +173,15 @@
             <option>交互体验问题</option>
             <option>肯定反馈</option>
           </select>
+          <div class="feedback-chip-row feedback-chip-row-wrap" id="feedbackCategoryChips" role="radiogroup" aria-label="反馈分类"></div>
+        </div>
+        <label class="feedback-comment-label">具体意见
+          <textarea id="feedbackComment" rows="4" placeholder="指出不准确之处，或补充临床建议…"></textarea>
         </label>
-        <label>具体意见<textarea id="feedbackComment" rows="4" placeholder="请填写医生意见"></textarea></label>
         <div class="auth-error" id="feedbackError" hidden></div>
-        <div class="auth-actions">
-          <button type="submit" class="btn primary">提交反馈</button>
-          <button type="button" class="btn" id="feedbackCancelBtn">取消</button>
+        <div class="auth-actions feedback-actions">
+          <button type="submit" class="btn primary feedback-submit-btn">提交反馈</button>
+          <button type="button" class="link-btn" id="feedbackCancelBtn">取消</button>
         </div>
       </form>
     </div>
@@ -203,6 +242,6 @@
   </script>
   <script src="./vendor/marked.min.js?v=20260725"></script>
   <script src="./vendor/purify.min.js?v=20260725"></script>
-  <script src="./app.js?v=20260731-case-text"></script>
+  <script src="./app.js?v=20260809-feedback"></script>
 </body>
 </html>

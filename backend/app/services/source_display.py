@@ -196,6 +196,38 @@ def enrich_source_dict(doc: SearchDocument) -> Dict[str, Any]:
     return data
 
 
+def enrich_literature_dict(hit) -> Dict[str, Any]:
+    """Display enrichment for PubMed abstract-level secondary hits ([Ln])."""
+    data = hit.to_dict() if hasattr(hit, "to_dict") else dict(hit)
+    title = (data.get("title") or "").strip() or f"PMID {data.get('pmid')}"
+    journal = data.get("journal")
+    year = data.get("year")
+    pub_types = data.get("pub_types") or []
+    pmid = data.get("pmid")
+    doi = data.get("doi")
+    url = data.get("url") or (f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else None)
+
+    meta_parts = []
+    if journal:
+        meta_parts.append(journal)
+    if year:
+        meta_parts.append(str(year))
+    if pub_types:
+        meta_parts.append(pub_types[0])
+    if pmid:
+        meta_parts.append(f"PMID {pmid}")
+
+    data["display_title"] = title
+    data["badge"] = "PubMed"
+    data["source_label"] = " · ".join(meta_parts) if meta_parts else "PubMed · 仅摘要"
+    data["locator"] = f"PMID {pmid}" if pmid else ""
+    data["citation_label"] = f"L{data.get('rank') or ''}".rstrip() or "L"
+    data["url"] = url
+    data["tier_label"] = "PubMed · 仅摘要 · 未经指南收录"
+    data["doi"] = doi
+    return data
+
+
 def enrich_reference_dict(entry: ReferenceEntry) -> Dict[str, Any]:
     data = entry.to_dict()
     cleaned = clean_reference_text(entry.text)
