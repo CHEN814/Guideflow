@@ -129,3 +129,31 @@ class DoctorFeedback(Base):
     auto_primary: Mapped[str] = mapped_column(String(40), default="其他", nullable=False)
     auto_tags_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class MolecularEvidenceQueryLog(Base):
+    __tablename__ = "molecular_evidence_query_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id)
+    query_key: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+    provider_mode: Mapped[str] = mapped_column(String(20), default="mock", nullable=False)
+    input_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    normalized_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    raw_records_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    evidence_cards_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    safety_results_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    answer_markdown: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    cache_hit: Mapped[bool] = mapped_column(default=False, nullable=False)
+    cache_source_log_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class MolecularEvidenceCacheEntry(Base):
+    __tablename__ = "molecular_evidence_cache_entries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id)
+    query_key: Mapped[str] = mapped_column(String(255), index=True, unique=True, nullable=False)
+    provider_mode: Mapped[str] = mapped_column(String(20), default="mock", nullable=False)
+    payload_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)

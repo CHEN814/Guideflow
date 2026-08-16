@@ -5,7 +5,7 @@ from collections.abc import Generator
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import create_engine, event, select, text
+from sqlalchemy import create_engine, event, select, text, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -92,6 +92,49 @@ def _migrate_message_tree_columns(engine: Engine) -> None:
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_doctor_feedback_user_id ON doctor_feedback(user_id)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_doctor_feedback_conversation_id ON doctor_feedback(conversation_id)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_doctor_feedback_answer_message_id ON doctor_feedback(answer_message_id)"))
+
+        me_log_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(molecular_evidence_query_logs)")).fetchall()}
+        if not me_log_cols:
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE molecular_evidence_query_logs (
+                        id VARCHAR(36) PRIMARY KEY,
+                        query_key VARCHAR(255) NOT NULL,
+                        provider_mode VARCHAR(20) NOT NULL DEFAULT 'mock',
+                        input_json TEXT NOT NULL DEFAULT '{}',
+                        normalized_json TEXT NOT NULL DEFAULT '[]',
+                        raw_records_json TEXT NOT NULL DEFAULT '[]',
+                        evidence_cards_json TEXT NOT NULL DEFAULT '[]',
+                        safety_results_json TEXT NOT NULL DEFAULT '[]',
+                        answer_markdown TEXT NOT NULL DEFAULT '',
+                        cache_hit BOOLEAN NOT NULL DEFAULT 0,
+                        cache_source_log_id VARCHAR(36),
+                        retrieved_at DATETIME NOT NULL
+                    )
+                    """
+                )
+            )
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_molecular_evidence_query_logs_query_key ON molecular_evidence_query_logs(query_key)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_molecular_evidence_query_logs_cache_source_log_id ON molecular_evidence_query_logs(cache_source_log_id)"))
+
+        me_cache_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(molecular_evidence_cache_entries)")).fetchall()}
+        if not me_cache_cols:
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE molecular_evidence_cache_entries (
+                        id VARCHAR(36) PRIMARY KEY,
+                        query_key VARCHAR(255) NOT NULL UNIQUE,
+                        provider_mode VARCHAR(20) NOT NULL DEFAULT 'mock',
+                        payload_json TEXT NOT NULL DEFAULT '{}',
+                        retrieved_at DATETIME NOT NULL,
+                        expires_at DATETIME NOT NULL
+                    )
+                    """
+                )
+            )
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_molecular_evidence_cache_entries_query_key ON molecular_evidence_cache_entries(query_key)"))
 
 
 def _backfill_linear_message_trees() -> None:

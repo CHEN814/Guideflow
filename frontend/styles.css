@@ -242,6 +242,12 @@ body{
 .case-modal{width:min(760px,96vw);max-height:88vh;display:flex;flex-direction:column}
 .case-form{min-height:0;overflow:auto}
 .case-form textarea{resize:vertical}
+.molecular-modal{width:min(920px,96vw);max-height:90vh;display:flex;flex-direction:column}
+.molecular-form{min-height:0;overflow:auto}
+.molecular-form textarea{resize:vertical}
+.molecular-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.molecular-grid label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.molecular-grid input,.molecular-grid select{padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font:inherit;color:var(--text);width:100%}
 .stats-body{overflow:auto;line-height:1.55}
 .feedback-toolbar{display:grid;grid-template-columns:minmax(180px,1fr) 160px 120px auto auto auto;gap:8px;margin-bottom:12px;align-items:center}
 .feedback-toolbar input,.feedback-toolbar select{height:38px;border:1px solid rgba(0,0,0,.1);border-radius:10px;padding:0 10px;font:inherit;color:var(--text);background:#fff;min-width:0}

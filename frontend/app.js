@@ -34,6 +34,20 @@ const els = {
   citePopover: document.getElementById('citePopover'),
   toolsBtn: document.getElementById('toolsBtn'),
   toolsMenu: document.getElementById('toolsMenu'),
+  molecularEvidenceBtn: document.getElementById('molecularEvidenceBtn'),
+  molecularEvidenceModal: document.getElementById('molecularEvidenceModal'),
+  molecularEvidenceForm: document.getElementById('molecularEvidenceForm'),
+  molecularVariantsText: document.getElementById('molecularVariantsText'),
+  molecularDisease: document.getElementById('molecularDisease'),
+  molecularSampleType: document.getElementById('molecularSampleType'),
+  molecularGenomeBuild: document.getElementById('molecularGenomeBuild'),
+  molecularTranscript: document.getElementById('molecularTranscript'),
+  molecularVariantType: document.getElementById('molecularVariantType'),
+  molecularProviderMode: document.getElementById('molecularProviderMode'),
+  molecularQuestion: document.getElementById('molecularQuestion'),
+  molecularEvidenceError: document.getElementById('molecularEvidenceError'),
+  molecularEvidenceCloseBtn: document.getElementById('molecularEvidenceCloseBtn'),
+  molecularEvidenceCancelBtn: document.getElementById('molecularEvidenceCancelBtn'),
   shareChatBtn: document.getElementById('shareChatBtn'),
   statsModal: document.getElementById('statsModal'),
   statsBody: document.getElementById('statsBody'),
@@ -2178,6 +2192,12 @@ function showCaseError(text) {
   els.caseError.hidden = !text;
 }
 
+function showMolecularEvidenceError(text) {
+  if (!els.molecularEvidenceError) return;
+  els.molecularEvidenceError.textContent = text || '';
+  els.molecularEvidenceError.hidden = !text;
+}
+
 function openCaseModal() {
   showCaseError('');
   if (els.caseDataSource) els.caseDataSource.value = state.dataSource === 'nccn' ? 'nccn' : 'csco';
@@ -2188,6 +2208,48 @@ function openCaseModal() {
 function closeCaseModal() {
   if (els.caseModal) els.caseModal.hidden = true;
   showCaseError('');
+}
+
+function openMolecularEvidenceModal() {
+  showMolecularEvidenceError('');
+  if (els.molecularEvidenceForm) els.molecularEvidenceForm.reset?.();
+  if (els.molecularVariantsText) {
+    els.molecularVariantsText.value = els.followUpInput?.value?.trim() || 'MYD88 p.L265P, CD79B p.Y196H';
+  }
+  if (els.molecularDisease) els.molecularDisease.value = 'DLBCL';
+  if (els.molecularSampleType) els.molecularSampleType.value = 'tumor tissue';
+  if (els.molecularProviderMode) els.molecularProviderMode.value = 'mock';
+  if (els.molecularQuestion) els.molecularQuestion.value = '请输出 DLBCL 分子证据闭环结果，并提示安全边界。';
+  if (els.molecularEvidenceModal) els.molecularEvidenceModal.hidden = false;
+  els.molecularVariantsText?.focus();
+}
+
+function closeMolecularEvidenceModal() {
+  if (els.molecularEvidenceModal) els.molecularEvidenceModal.hidden = true;
+  showMolecularEvidenceError('');
+}
+
+function appendMolecularEvidenceResult({ queryLabel, payload }) {
+  const leaf = state.messages.length ? state.messages[state.messages.length - 1] : null;
+  const parentId = leaf && !leaf.pending ? leaf.id : null;
+  const userNode = createNode({
+    role: 'user',
+    content: `分子证据查询：${queryLabel}`,
+    parentId,
+  });
+  const assistant = createNode({
+    role: 'assistant',
+    content: payload.answer_markdown || '',
+    parentId: userNode.id,
+    payload,
+    pending: false,
+  });
+  state.lastPayload = payload;
+  rebuildActivePath();
+  persistChatState();
+  renderHistory();
+  renderChat();
+  return assistant;
 }
 
 function messageFromRow(node) {
@@ -3110,6 +3172,10 @@ els.toolsMenu?.addEventListener('click', async (e) => {
     await openFeedbackList();
     return;
   }
+  if (btn.dataset.tool === 'molecular-evidence') {
+    location.href = './molecular-evidence.html';
+    return;
+  }
   openToolsDrawer(btn.dataset.tool);
 });
 
@@ -3121,6 +3187,67 @@ if (els.shareChatBtn) {
     await copyShareLink(url, els.shareChatBtn, ICON.shareChat, '分享聊天');
   });
 }
+
+els.molecularEvidenceBtn?.addEventListener('click', () => {
+  location.href = './molecular-evidence.html';
+});
+els.molecularEvidenceCloseBtn?.addEventListener('click', closeMolecularEvidenceModal);
+els.molecularEvidenceCancelBtn?.addEventListener('click', closeMolecularEvidenceModal);
+els.molecularEvidenceModal?.addEventListener('mousedown', (e) => {
+  state.authOverlayDown = e.target === els.molecularEvidenceModal;
+});
+els.molecularEvidenceModal?.addEventListener('mouseup', (e) => {
+  if (state.authOverlayDown && e.target === els.molecularEvidenceModal) closeMolecularEvidenceModal();
+  state.authOverlayDown = false;
+});
+els.molecularEvidenceForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  showMolecularEvidenceError('');
+  const variantsText = String(els.molecularVariantsText?.value || '').trim();
+  if (!variantsText) {
+    showMolecularEvidenceError('请输入变异文本');
+    els.molecularVariantsText?.focus();
+    return;
+  }
+  const submitBtn = els.molecularEvidenceForm.querySelector('button[type="submit"]');
+  const oldText = submitBtn?.textContent || '查询';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '查询中…';
+  }
+  try {
+    const resp = await api('/api/molecular-evidence/query', {
+      method: 'POST',
+      body: JSON.stringify({
+        variants_text: variantsText,
+        disease: els.molecularDisease?.value || 'DLBCL',
+        sample_type: els.molecularSampleType?.value || 'tumor tissue',
+        genome_build: (els.molecularGenomeBuild?.value || '').trim() || null,
+        transcript: (els.molecularTranscript?.value || '').trim() || null,
+        variant_type: (els.molecularVariantType?.value || '').trim() || null,
+        question: (els.molecularQuestion?.value || '').trim() || null,
+        provider_mode: els.molecularProviderMode?.value || 'mock',
+      }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      showMolecularEvidenceError(formatApiDetail(data) || '查询失败');
+      return;
+    }
+    closeMolecularEvidenceModal();
+    appendMolecularEvidenceResult({
+      queryLabel: variantsText,
+      payload: data,
+    });
+  } catch {
+    showMolecularEvidenceError('网络错误，请稍后重试');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = oldText;
+    }
+  }
+});
 
 if (isMobileLayout()) {
   setSidebarCollapsed(true, { persist: false });
