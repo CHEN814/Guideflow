@@ -506,6 +506,48 @@ class GraphTriple:
 
 
 @dataclass
+class LiteratureHit:
+    """One PubMed abstract-level hit (secondary reference; not used for [Sn] judgments)."""
+
+    pmid: str
+    title: str
+    abstract: str = ""
+    journal: Optional[str] = None
+    year: Optional[str] = None
+    doi: Optional[str] = None
+    pub_types: List[str] = field(default_factory=list)
+    mesh: List[str] = field(default_factory=list)
+    score: float = 0.0
+    rank: int = 0
+    url: Optional[str] = None
+    pubmed_rank: int = 0
+    summary_zh: Optional[str] = None
+    score_components: Dict[str, float] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "LiteratureHit":
+        return cls(
+            pmid=str(data.get("pmid") or ""),
+            title=str(data.get("title") or ""),
+            abstract=str(data.get("abstract") or ""),
+            journal=data.get("journal"),
+            year=data.get("year"),
+            doi=data.get("doi"),
+            pub_types=list(data.get("pub_types") or []),
+            mesh=list(data.get("mesh") or []),
+            score=float(data.get("score") or 0.0),
+            rank=int(data.get("rank") or 0),
+            url=data.get("url"),
+            pubmed_rank=int(data.get("pubmed_rank") or 0),
+            summary_zh=data.get("summary_zh"),
+            score_components=dict(data.get("score_components") or {}),
+        )
+
+
+@dataclass
 class EvidenceBundle:
     """Primary retrieval hits plus attached references from discussion chunks."""
 
@@ -515,6 +557,7 @@ class EvidenceBundle:
     figures: List[FigureReference] = field(default_factory=list)
     graph_triples: List[GraphTriple] = field(default_factory=list)
     graph_context: List[str] = field(default_factory=list)
+    literature: List[LiteratureHit] = field(default_factory=list)
 
 
 @dataclass
@@ -531,6 +574,7 @@ class QAResult:
     figures: List[FigureReference] = field(default_factory=list)
     graph_triples: List[GraphTriple] = field(default_factory=list)
     graph_seed_candidates: List[str] = field(default_factory=list)
+    literature: List[LiteratureHit] = field(default_factory=list)
     generation_mode: str = "text"          # "text" (Qwen) | "multimodal" (VLM)
     answer_kind: str = "guideline"         # guideline | general_medical | chitchat
     standalone_question: Optional[str] = None
@@ -561,6 +605,8 @@ class QAResult:
                 data["full_image_url"] = data["image_url"]
             figures_payload.append(data)
 
+        from backend.app.services.source_display import enrich_literature_dict
+
         return {
             "question": self.question,
             "answer_markdown": self.answer,
@@ -572,6 +618,7 @@ class QAResult:
             "figures": figures_payload,
             "sources": [enrich_source_dict(doc) for doc in self.sources],
             "attached_references": [enrich_reference_dict(ref) for ref in self.attached_references],
+            "literature": [enrich_literature_dict(hit) for hit in self.literature],
             "graph_triples": [triple.to_dict() for triple in self.graph_triples],
             "graph_seed_candidates": self.graph_seed_candidates,
             "reference_links": self.reference_links,

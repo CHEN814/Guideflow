@@ -53,8 +53,10 @@ const els = {
   statsBody: document.getElementById('statsBody'),
   statsCloseBtn: document.getElementById('statsCloseBtn'),
   composerBox: document.getElementById('composerBox'),
-  expandInputBtn: document.getElementById('expandInputBtn'),
-  dataSourceSelect: document.getElementById('dataSourceSelect'),
+  dataSourceChip: document.getElementById('dataSourceChip'),
+  dataSourceMenu: document.getElementById('dataSourceMenu'),
+  dataSourceWrap: document.getElementById('dataSourceWrap'),
+  enableLiteratureChip: document.getElementById('enableLiteratureChip'),
   caseOpenBtn: document.getElementById('caseOpenBtn'),
   caseModal: document.getElementById('caseModal'),
   caseForm: document.getElementById('caseForm'),
@@ -71,6 +73,8 @@ const els = {
   feedbackAnswer: document.getElementById('feedbackAnswer'),
   feedbackRating: document.getElementById('feedbackRating'),
   feedbackCategory: document.getElementById('feedbackCategory'),
+  feedbackRatingChips: document.getElementById('feedbackRatingChips'),
+  feedbackCategoryChips: document.getElementById('feedbackCategoryChips'),
   feedbackComment: document.getElementById('feedbackComment'),
   feedbackError: document.getElementById('feedbackError'),
   feedbackCloseBtn: document.getElementById('feedbackCloseBtn'),
@@ -87,7 +91,26 @@ const ICON = {
   check: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`,
   edit: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
   trash: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
+  feedback: `<svg class="chip-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
 };
+
+const FEEDBACK_RATING_LABELS = {
+  5: '很好',
+  4: '较好',
+  3: '一般',
+  2: '不太好',
+  1: '很差',
+};
+const FEEDBACK_CATEGORIES = [
+  '其他',
+  '正确性问题',
+  '证据不足 / 漏证据',
+  '召回问题',
+  '表达问题',
+  '安全性 / 风险提示问题',
+  '交互体验问题',
+  '肯定反馈',
+];
 
 const SUGGESTIONS = [
   'DLBCL 一线治疗如何推荐？',
@@ -97,6 +120,7 @@ const SUGGESTIONS = [
 ];
 
 const DATA_SOURCE_KEY = 'gf_data_source';
+const LIT_TOGGLE_KEY = 'gf_enable_literature';
 const DATA_SOURCE_LABELS = { nccn: 'NCCN', csco: 'CSCO', eha: 'EHA' };
 const DATA_SOURCE_ALLOWED = new Set(Object.keys(DATA_SOURCE_LABELS));
 
@@ -109,6 +133,15 @@ function saveDataSource(key) {
   const v = DATA_SOURCE_ALLOWED.has((key || '').toLowerCase()) ? key.toLowerCase() : 'nccn';
   localStorage.setItem(DATA_SOURCE_KEY, v);
   return v;
+}
+
+function loadEnableLiterature() {
+  return localStorage.getItem(LIT_TOGGLE_KEY) === '1';
+}
+
+function saveEnableLiterature(on) {
+  localStorage.setItem(LIT_TOGGLE_KEY, on ? '1' : '0');
+  return !!on;
 }
 
 const state = {
@@ -126,13 +159,13 @@ const state = {
   lastPayload: null,
   isSubmitting: false,
   authMode: 'login', // login | register | reset
-  composerExpanded: false,
   authOverlayDown: false,
   citeHideTimer: null,
   citePinned: false,
   sidebarCollapsed: localStorage.getItem('gf_sidebar_collapsed') === '1',
   abortController: null,
   dataSource: loadDataSource(),
+  enableLiterature: loadEnableLiterature(),
 };
 
 const ACTIVE_CONV_KEY = 'gf_active_conversation_id';
@@ -1126,10 +1159,6 @@ function renderMessage(message, idx) {
       <div class="message assistant">
         <div class="tag">${escapeHtml(tag)}${srcChip}</div>
         <div class="answer">${body}</div>
-        <div class="feedback-inline-bar">
-          <span class="muted small">医生反馈</span>
-          <button type="button" data-act="open-feedback" class="btn ghost btn-feedback-inline">提交意见</button>
-        </div>
       </div>
       <div class="msg-actions">
         ${vNav}
@@ -1140,6 +1169,9 @@ function renderMessage(message, idx) {
           <button type="button" data-act="up" class="${feedback === 'up' ? 'active' : ''}" title="点赞" aria-label="点赞">${ICON.up}</button>
           <button type="button" data-act="down" class="${feedback === 'down' ? 'active' : ''}" title="点踩" aria-label="点踩">${ICON.down}</button>
           <button type="button" data-act="share" title="分享此回答" aria-label="分享此回答">${ICON.share}</button>
+          <button type="button" data-act="open-feedback" class="composer-chip msg-feedback-chip" data-tip="填写结构化医生反馈" aria-label="提交意见">
+            ${ICON.feedback}<span class="chip-label">提交意见</span>
+          </button>
         </span>
       </div>
     </div>`;
@@ -1254,6 +1286,7 @@ function renderFigureCard(fig, key) {
 function decorateCitations(html, payload) {
   const sources = payload.sources || [];
   const refs = payload.attached_references || [];
+  const lit = payload.literature || [];
   return html
     .replace(/\[S(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
@@ -1261,6 +1294,12 @@ function decorateCitations(html, payload) {
       const label = s.citation_label || s.printed_page_code || `S${n}`;
       const tip = escapeHtml(s.display_title || label);
       return `<button class="cite" data-cite="S" data-index="${idx}" aria-label="${tip}">${escapeHtml(label)}</button>`;
+    })
+    .replace(/\[L(\d+)\]/gi, (_, n) => {
+      const idx = Number(n) - 1;
+      const hit = lit[idx] || lit.find((x) => Number(x.rank) === Number(n)) || {};
+      const tip = escapeHtml(hit.display_title || hit.title || `L${n}`);
+      return `<button class="cite" data-cite="L" data-index="${idx}" aria-label="${tip}">L${n}</button>`;
     })
     .replace(/\[G(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
@@ -1285,8 +1324,9 @@ function answerKindLabel(kind) {
 function renderReferences(payload) {
   const sources = payload.sources || [];
   const refs = payload.attached_references || [];
+  const lit = payload.literature || [];
   const graph = payload.graph_triples || [];
-  if (!sources.length && !refs.length && !graph.length) return '';
+  if (!sources.length && !refs.length && !lit.length && !graph.length) return '';
   const items = [];
   sources.forEach((s, i) => {
     const metaParts = [s.subtitle, s.source_label, s.locator].filter(Boolean);
@@ -1304,13 +1344,24 @@ function renderReferences(payload) {
       url: r.url,
     });
   });
+  lit.forEach((l, i) => {
+    const rank = l.rank || i + 1;
+    items.push({
+      title: l.display_title || l.title || `PMID ${l.pmid}`,
+      meta: l.tier_label || l.source_label || [l.journal, l.year, l.pmid ? `PMID ${l.pmid}` : ''].filter(Boolean).join(' · ') || 'PubMed · 仅摘要',
+      badge: l.badge || 'PubMed',
+      badgeClass: 'pubmed',
+      url: l.url || (l.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/` : null),
+      cite: { type: 'L', index: i, label: `L${rank}` },
+    });
+  });
   graph.forEach((g, i) => {
     const sourceTag = g.review_status === 'synthetic' ? 'Synthetic' : (g.evidence_kind === 'neo4j' ? 'Neo4j' : 'Graph');
     items.push({
       title: `${g.subject_name || ''} → ${g.relation || ''} → ${g.object_name || ''}`,
       meta: (g.evidence_text || '').slice(0, 160) || `confidence ${Number(g.confidence || 0).toFixed(2)}`,
       badge: sourceTag,
-      cite: { type: 'G', index: i },
+      cite: { type: 'G', index: i, label: `G${i + 1}` },
     });
   });
   return `
@@ -1331,8 +1382,8 @@ function renderReferences(payload) {
       </summary>
       ${items.map((it, i) => `
         <div class="ref-item">
-          <div class="rtitle"><span class="rnum">${i + 1}.</span> ${it.cite ? `<button class="cite" data-cite="${it.cite.type}" data-index="${it.cite.index}">G${it.cite.index + 1}</button> ` : ''}${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>` : escapeHtml(it.title)}</div>
-          <div class="rmeta"><span>${escapeHtml(it.meta)}</span><span class="badge">${escapeHtml(it.badge)}</span></div>
+          <div class="rtitle"><span class="rnum">${i + 1}.</span> ${it.cite ? `<button class="cite" data-cite="${it.cite.type}" data-index="${it.cite.index}">${escapeHtml(it.cite.label || (it.cite.type + (it.cite.index + 1)))}</button> ` : ''}${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>` : escapeHtml(it.title)}</div>
+          <div class="rmeta"><span>${escapeHtml(it.meta)}</span><span class="badge${it.badgeClass ? ` ${it.badgeClass}` : ''}">${escapeHtml(it.badge)}</span></div>
         </div>`).join('')}
     </details>`;
 }
@@ -1812,7 +1863,9 @@ function bindCitations() {
     const citeKey = `${type}:${btn.dataset.index ?? ''}:${btn.dataset.ref ?? ''}`;
     pop.dataset.citeKey = citeKey;
     let html = '';
-    let seeCount = (payload.sources || []).length + (payload.attached_references || []).length;
+    let seeCount = (payload.sources || []).length
+      + (payload.attached_references || []).length
+      + (payload.literature || []).length;
     if (type === 'S') {
       const s = (payload.sources || [])[Number(btn.dataset.index)] || {};
       const metaLine = [s.subtitle, s.source_label, s.locator].filter(Boolean).join(' · ');
@@ -1821,6 +1874,15 @@ function bindCitations() {
         <div class="ref-title">${escapeHtml(s.display_title || s.printed_page_code || s.source_id || 'Source')}</div>
         <div class="ref-meta"><span>${escapeHtml(metaLine || 'NCCN B-Cell Lymphomas')}</span><span class="badge">${escapeHtml(s.badge || (s.page_type === 'clinical_guideline' ? '指南' : (s.page_type || 'Guideline')))}</span></div>
         <div class="muted small" style="margin-top:8px">${escapeHtml((s.text || s.section || '').slice(0, 180))}</div>`;
+    } else if (type === 'L') {
+      const l = (payload.literature || [])[Number(btn.dataset.index)] || {};
+      const metaLine = l.tier_label || l.source_label || [l.journal, l.year].filter(Boolean).join(' · ') || 'PubMed · 仅摘要';
+      html = `
+        <div class="ref-head"><span class="k">PubMed</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
+        <div class="ref-title">${escapeHtml(l.display_title || l.title || `PMID ${l.pmid || ''}`)}</div>
+        <div class="ref-meta"><span>${escapeHtml(metaLine)}</span><span class="badge pubmed">PubMed</span></div>
+        <div class="muted small" style="margin-top:8px;max-width:320px;white-space:pre-wrap">${escapeHtml((l.summary_zh || l.abstract || '').slice(0, 220))}</div>
+        ${l.url || l.pmid ? `<div style="margin-top:10px"><a class="btn ghost" href="${escapeHtml(l.url || `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/`)}" target="_blank" rel="noopener">打开 PubMed</a></div>` : ''}`;
     } else if (type === 'G') {
       const g = (payload.graph_triples || [])[Number(btn.dataset.index)] || {};
       html = `
@@ -1893,30 +1955,62 @@ function bindCitations() {
   });
 }
 
-function resizeComposer({ forceCompact = false } = {}) {
+function resizeComposer() {
   const el = els.followUpInput;
   if (!el) return;
-  if (state.composerExpanded) {
-    el.style.height = '180px';
-    return;
-  }
-  if (forceCompact) {
-    el.style.height = '40px';
-    return;
-  }
   el.style.height = 'auto';
-  el.style.height = `${Math.min(160, Math.max(40, el.scrollHeight))}px`;
+  el.style.height = `${Math.min(180, Math.max(48, el.scrollHeight))}px`;
 }
 
-function setComposerExpanded(expanded) {
-  state.composerExpanded = !!expanded;
-  els.composerBox?.classList.toggle('expanded', state.composerExpanded);
-  if (els.expandInputBtn) {
-    els.expandInputBtn.title = state.composerExpanded ? '收起输入' : '展开输入';
-    els.expandInputBtn.setAttribute('aria-label', els.expandInputBtn.title);
+function pulseChipIcon(icon, className) {
+  if (!icon) return;
+  icon.classList.remove(className);
+  // Restart CSS animation even when toggling rapidly.
+  void icon.offsetWidth;
+  icon.classList.add(className);
+  const onEnd = () => {
+    icon.classList.remove(className);
+    icon.removeEventListener('animationend', onEnd);
+  };
+  icon.addEventListener('animationend', onEnd);
+}
+
+function syncLiteratureChip() {
+  const chip = els.enableLiteratureChip;
+  if (!chip) return;
+  const on = !!state.enableLiterature;
+  chip.classList.toggle('is-active', on);
+  chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
+
+function closeDataSourceMenu() {
+  if (!els.dataSourceMenu || !els.dataSourceChip) return;
+  els.dataSourceMenu.hidden = true;
+  els.dataSourceChip.setAttribute('aria-expanded', 'false');
+}
+
+function syncDataSourceMenu() {
+  if (!els.dataSourceMenu) return;
+  els.dataSourceMenu.querySelectorAll('[data-source]').forEach((btn) => {
+    const selected = btn.getAttribute('data-source') === state.dataSource;
+    btn.classList.toggle('is-selected', selected);
+    btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+  });
+}
+
+function openDataSourceMenu() {
+  if (!els.dataSourceMenu || !els.dataSourceChip) return;
+  syncDataSourceMenu();
+  els.dataSourceMenu.hidden = false;
+  els.dataSourceChip.setAttribute('aria-expanded', 'true');
+}
+
+function setDataSource(key, { animate = false } = {}) {
+  state.dataSource = saveDataSource(key);
+  syncDataSourceMenu();
+  if (animate) {
+    pulseChipIcon(els.dataSourceChip?.querySelector('.chip-icon-book'), 'is-pop');
   }
-  // Collapsing always returns to the compact initial size, regardless of content length.
-  resizeComposer({ forceCompact: !state.composerExpanded });
 }
 
 function bindPasswordToggle(btn, input) {
@@ -2168,15 +2262,53 @@ function showFeedbackError(text) {
   els.feedbackError.hidden = !text;
 }
 
-function openFeedbackModal(message) {
+function setFeedbackRating(value) {
+  const v = String(value || '5');
+  if (els.feedbackRating) els.feedbackRating.value = v;
+  els.feedbackRatingChips?.querySelectorAll('[data-rating]').forEach((btn) => {
+    const on = btn.getAttribute('data-rating') === v;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+
+function setFeedbackCategory(value) {
+  const v = value || '其他';
+  if (els.feedbackCategory) els.feedbackCategory.value = v;
+  els.feedbackCategoryChips?.querySelectorAll('[data-category]').forEach((btn) => {
+    const on = btn.getAttribute('data-category') === v;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+
+function ensureFeedbackChips() {
+  if (els.feedbackRatingChips && !els.feedbackRatingChips.dataset.ready) {
+    els.feedbackRatingChips.innerHTML = [5, 4, 3, 2, 1].map((n) => (
+      `<button type="button" class="composer-chip feedback-pick-chip" role="radio" data-rating="${n}" aria-checked="false" title="${FEEDBACK_RATING_LABELS[n]}">${n}<span class="feedback-pick-hint">${FEEDBACK_RATING_LABELS[n]}</span></button>`
+    )).join('');
+    els.feedbackRatingChips.dataset.ready = '1';
+  }
+  if (els.feedbackCategoryChips && !els.feedbackCategoryChips.dataset.ready) {
+    els.feedbackCategoryChips.innerHTML = FEEDBACK_CATEGORIES.map((c) => (
+      `<button type="button" class="composer-chip feedback-pick-chip" role="radio" data-category="${escapeHtml(c)}" aria-checked="false">${escapeHtml(c)}</button>`
+    )).join('');
+    els.feedbackCategoryChips.dataset.ready = '1';
+  }
+}
+
+function openFeedbackModal(message, opts = {}) {
   if (!els.feedbackModal || !message) return;
   showFeedbackError('');
+  ensureFeedbackChips();
   if (els.feedbackMessageId) els.feedbackMessageId.value = message.serverId || '';
   if (els.feedbackQuestion) els.feedbackQuestion.value = findQuestionForAssistant(message);
   if (els.feedbackAnswer) els.feedbackAnswer.value = answerTextForFeedback(message);
-  if (els.feedbackRating) els.feedbackRating.value = '5';
-  if (els.feedbackCategory) els.feedbackCategory.value = '其他';
+  setFeedbackRating(opts.fromDown ? '2' : '5');
+  setFeedbackCategory('其他');
   if (els.feedbackComment) els.feedbackComment.value = '';
+  const context = els.feedbackModal.querySelector('.feedback-context');
+  if (context) context.open = false;
   els.feedbackModal.hidden = false;
   els.feedbackComment?.focus();
 }
@@ -2352,6 +2484,9 @@ function bindMessageActions() {
           msg.feedback = value;
           persistChatState();
           renderChat();
+          if (act === 'down' && value === 'down') {
+            openFeedbackModal(msg, { fromDown: true });
+          }
         } else if (act === 'share') {
           const url = await createShareLink({ messageId: msg.serverId || null });
           if (!url) return;
@@ -2390,6 +2525,7 @@ function emptyAnswerPayload(text) {
     sources: [],
     figures: [],
     attached_references: [],
+    literature: [],
     reference_links: {},
     graph_triples: [],
   };
@@ -2420,7 +2556,7 @@ async function askQuestion(question, meta = {}) {
   state.isSubmitting = true;
   setAskBtnMode('stop');
   if (els.followUpInput) els.followUpInput.value = '';
-  setComposerExpanded(false);
+  resizeComposer();
 
   let assistant = null;
   let userNode = null;
@@ -2515,6 +2651,7 @@ async function askQuestion(question, meta = {}) {
         parent_message_id: parentMessageId,
         regenerate,
         data_source: state.dataSource || 'nccn',
+        enable_literature: !!state.enableLiterature,
       }),
       signal: state.abortController.signal,
     });
@@ -2967,11 +3104,35 @@ els.authToggleModeBtn?.addEventListener('click', () => {
 els.authForgotBtn?.addEventListener('click', () => openAuthModal('reset'));
 bindPasswordToggle(els.authPwToggle, els.authPassword);
 bindPasswordToggle(els.authNewPwToggle, els.authNewPassword);
-els.expandInputBtn?.addEventListener('click', () => {
-  setComposerExpanded(!state.composerExpanded);
-  els.followUpInput?.focus();
-});
 els.followUpInput?.addEventListener('input', () => resizeComposer());
+els.dataSourceChip?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (!els.dataSourceMenu) return;
+  if (els.dataSourceMenu.hidden) openDataSourceMenu();
+  else closeDataSourceMenu();
+});
+els.dataSourceMenu?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-source]');
+  if (!btn || !els.dataSourceMenu.contains(btn)) return;
+  e.stopPropagation();
+  setDataSource(btn.getAttribute('data-source'), { animate: true });
+  closeDataSourceMenu();
+});
+els.enableLiteratureChip?.addEventListener('click', () => {
+  state.enableLiterature = saveEnableLiterature(!state.enableLiterature);
+  syncLiteratureChip();
+  if (state.enableLiterature) {
+    pulseChipIcon(els.enableLiteratureChip?.querySelector('.chip-icon-globe'), 'is-spinning');
+  }
+});
+document.addEventListener('click', (e) => {
+  if (!els.dataSourceMenu || els.dataSourceMenu.hidden) return;
+  if (els.dataSourceWrap?.contains(e.target)) return;
+  closeDataSourceMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDataSourceMenu();
+});
 els.authForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   showAuthError('');
@@ -3028,12 +3189,8 @@ els.chatLog?.addEventListener('click', (e) => {
   const msg = messageFromRow(row);
   if (msg?.role === 'assistant') openFeedbackModal(msg);
 });
-if (els.dataSourceSelect) {
-  els.dataSourceSelect.value = state.dataSource;
-  els.dataSourceSelect.addEventListener('change', () => {
-    state.dataSource = saveDataSource(els.dataSourceSelect.value);
-  });
-}
+syncLiteratureChip();
+syncDataSourceMenu();
 els.followUpInput?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -3114,6 +3271,16 @@ els.statsBody?.addEventListener('keydown', async (e) => {
 });
 els.feedbackCloseBtn?.addEventListener('click', closeFeedbackModal);
 els.feedbackCancelBtn?.addEventListener('click', closeFeedbackModal);
+els.feedbackRatingChips?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-rating]');
+  if (!btn || !els.feedbackRatingChips.contains(btn)) return;
+  setFeedbackRating(btn.getAttribute('data-rating'));
+});
+els.feedbackCategoryChips?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-category]');
+  if (!btn || !els.feedbackCategoryChips.contains(btn)) return;
+  setFeedbackCategory(btn.getAttribute('data-category'));
+});
 els.feedbackForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   showFeedbackError('');
@@ -3262,6 +3429,6 @@ mobileMQ.addEventListener('change', (e) => {
     if (els.sidebarBackdrop) els.sidebarBackdrop.hidden = true;
   }
 });
-setComposerExpanded(false);
+resizeComposer();
 renderChat();
 refreshMe();

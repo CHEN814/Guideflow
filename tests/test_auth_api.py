@@ -23,7 +23,7 @@ def client(monkeypatch, tmp_path):
         def __init__(self, settings):
             self.settings = settings
 
-        def ask(self, question, trace_enabled=True, history=None):
+        def ask(self, question, trace_enabled=True, history=None, enable_literature=None):
             from backend.app.models import QAResult
 
             return QAResult(
@@ -36,7 +36,7 @@ def client(monkeypatch, tmp_path):
                 degraded=[],
             )
 
-        def ask_stream(self, question, trace_enabled=True, history=None):
+        def ask_stream(self, question, trace_enabled=True, history=None, enable_literature=None):
             yield {"type": "meta", "route": "evidence", "generation_mode": "text", "sources": [], "run_id": "test"}
             yield {"type": "token", "text": "## 结论\n"}
             yield {"type": "token", "text": "测试流式"}
@@ -47,6 +47,7 @@ def client(monkeypatch, tmp_path):
                 "sources": [],
                 "figures": [],
                 "attached_references": [],
+                "literature": [],
                 "reference_links": {},
                 "graph_triples": [],
                 "verification": {"status": "ok"},

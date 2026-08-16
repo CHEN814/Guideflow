@@ -78,6 +78,17 @@ class Settings:
     enable_flowchart: bool = True
     enable_kg: bool = True
     source_label: str = "NCCN B 细胞淋巴瘤指南"
+    # ── PubMed secondary literature (abstract-only) ──────────────────────
+    literature_enabled_default: bool = False
+    literature_candidate_k: int = 30
+    literature_final_top_k: int = 5
+    literature_recent_years: int = 5
+    literature_esearch_timeout_s: float = 2.0
+    literature_efetch_timeout_s: float = 3.0
+    literature_cache_dir: Path = Path("data/cache/pubmed")
+    ncbi_email: str = "guideflow@example.com"
+    ncbi_api_key: Optional[str] = None
+    ncbi_tool: str = "guideflow"
 
 
 def _first_pdf(root_dir: Path) -> Path:
@@ -386,6 +397,40 @@ def load_settings() -> Settings:
         enable_flowchart=True,
         enable_kg=True,
         source_label="NCCN B 细胞淋巴瘤指南",
+        literature_enabled_default=_as_bool(
+            _cfg_or_env(cfg, "LITERATURE_ENABLED_DEFAULT", "false", "literature", "enabled_default"),
+            default=False,
+        ),
+        literature_candidate_k=int(
+            _cfg_or_env(cfg, "LITERATURE_CANDIDATE_K", "30", "literature", "candidate_k")
+        ),
+        literature_final_top_k=int(
+            _cfg_or_env(cfg, "LITERATURE_FINAL_TOP_K", "5", "literature", "final_top_k")
+        ),
+        literature_recent_years=int(
+            _cfg_or_env(cfg, "LITERATURE_RECENT_YEARS", "5", "literature", "recent_years")
+        ),
+        literature_esearch_timeout_s=float(
+            _cfg_or_env(cfg, "LITERATURE_ESEARCH_TIMEOUT_S", "2", "literature", "esearch_timeout_s")
+        ),
+        literature_efetch_timeout_s=float(
+            _cfg_or_env(cfg, "LITERATURE_EFETCH_TIMEOUT_S", "3", "literature", "efetch_timeout_s")
+        ),
+        literature_cache_dir=_resolve_path(
+            _cfg_or_env(
+                cfg,
+                "LITERATURE_CACHE_DIR",
+                ROOT_DIR / "data" / "cache" / "pubmed",
+                "literature",
+                "cache_dir",
+            ),
+            ROOT_DIR,
+        ),
+        ncbi_email=str(
+            _cfg_or_env(cfg, "NCBI_EMAIL", "guideflow@example.com", "literature", "ncbi_email")
+        ),
+        ncbi_api_key=os.getenv("NCBI_API_KEY") or None,
+        ncbi_tool=str(_cfg_or_env(cfg, "NCBI_TOOL", "guideflow", "literature", "ncbi_tool")),
     )
 
 

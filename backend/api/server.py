@@ -240,6 +240,8 @@ class AskRequest(BaseModel):
     regenerate: bool = False
     # Guideline data source (per-message; sources are never mixed in one retrieval)
     data_source: str = Field(default="nccn")
+    # Parallel PubMed abstract search (secondary refs; default off)
+    enable_literature: bool = False
 
 
 def create_app() -> FastAPI:
@@ -338,12 +340,15 @@ def create_app() -> FastAPI:
                     body.question,
                     trace_enabled=body.trace,
                     history=history_payload,
+                    enable_literature=bool(body.enable_literature),
                 )
                 payload_obj = result.to_web_payload()
                 payload_obj["data_source"] = body.data_source
+                payload_obj["enable_literature"] = bool(body.enable_literature)
             except Exception as exc:  # pragma: no cover
                 payload_obj = _fallback_payload(body.question, str(exc))
                 payload_obj["data_source"] = body.data_source
+                payload_obj["enable_literature"] = bool(body.enable_literature)
             ids = _persist_qa_turn(
                 user=user,
                 conversation_id=body.conversation_id,
@@ -365,11 +370,13 @@ def create_app() -> FastAPI:
                     body.question,
                     trace_enabled=body.trace,
                     history=history_payload,
+                    enable_literature=bool(body.enable_literature),
                 ):
                     if event.get("type") == "final":
                         final_payload = event.get("payload") or {}
                         if isinstance(final_payload, dict):
                             final_payload["data_source"] = body.data_source
+                            final_payload["enable_literature"] = bool(body.enable_literature)
                         ids = _persist_qa_turn(
                             user=user,
                             conversation_id=body.conversation_id,
