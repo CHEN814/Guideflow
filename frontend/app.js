@@ -3340,7 +3340,8 @@ els.toolsMenu?.addEventListener('click', async (e) => {
     return;
   }
   if (btn.dataset.tool === 'molecular-evidence') {
-    location.href = './molecular-evidence.html';
+    e.preventDefault();
+    location.href = molecularEvidenceHref();
     return;
   }
   openToolsDrawer(btn.dataset.tool);
@@ -3355,8 +3356,14 @@ if (els.shareChatBtn) {
   });
 }
 
-els.molecularEvidenceBtn?.addEventListener('click', () => {
-  location.href = './molecular-evidence.html';
+function molecularEvidenceHref() {
+  const path = window.location.pathname || '/app/';
+  const dir = path.endsWith('/') ? path : path.replace(/[^/]+$/, '');
+  return `${dir}molecular-evidence.html`;
+}
+els.molecularEvidenceBtn?.addEventListener('click', (e) => {
+  e.preventDefault();
+  location.href = molecularEvidenceHref();
 });
 els.molecularEvidenceCloseBtn?.addEventListener('click', closeMolecularEvidenceModal);
 els.molecularEvidenceCancelBtn?.addEventListener('click', closeMolecularEvidenceModal);

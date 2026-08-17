@@ -90,6 +90,7 @@ body{
   font-size:22px;line-height:1;font-weight:600;display:grid;place-items:center;padding:0
 }
 .btn{border:1px solid var(--line);background:var(--panel-strong);border-radius:14px;padding:10px 14px;font-weight:600;color:var(--text);cursor:pointer;box-shadow:0 8px 24px rgba(72,48,31,.06)}
+a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .btn.primary{background:linear-gradient(145deg,var(--brand),var(--brand-2));color:#fff;border-color:transparent}
 .btn.ghost{background:rgba(255,255,255,.7)}
 .btn:disabled{opacity:.55;cursor:not-allowed}
@@ -381,8 +382,8 @@ body{
 .status-steps li.active .dot{background:var(--brand);box-shadow:0 0 0 3px rgba(229,111,61,.18)}
 .status-steps li.done .dot{background:rgba(116,107,100,.45)}
 .tools-menu{position:fixed;right:24px;top:64px;z-index:60;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column;min-width:160px}
-.tools-menu button{border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}
-.tools-menu button:hover{background:rgba(229,111,61,.08)}
+.tools-menu button,.tools-menu a{border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600;color:inherit;text-decoration:none}
+.tools-menu button:hover,.tools-menu a:hover{background:rgba(229,111,61,.08)}
 .drawer-overlay{position:fixed;inset:0;background:rgba(28,20,16,.38);backdrop-filter:blur(4px);display:flex;justify-content:flex-end;z-index:55}
 .drawer-panel{width:min(720px,100%);height:100%;background:#fff;box-shadow:-20px 0 50px rgba(0,0,0,.18);display:flex;flex-direction:column}
 .drawer-header{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}

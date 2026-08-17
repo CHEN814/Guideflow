@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Guideflow · DLBCL 指南问答</title>
-  <link rel="stylesheet" href="./styles.css?v=20260809-feedback" />
+  <link rel="stylesheet" href="./styles.css?v=20260817-molecular" />
 </head>
 <body>
   <div class="app" id="appRoot">
@@ -39,7 +39,7 @@
       <div class="header">
         <h1>Guideflow</h1>
         <div class="header-actions">
-          <button class="btn ghost" id="molecularEvidenceBtn" title="分子证据模块">分子证据</button>
+          <a class="btn ghost" id="molecularEvidenceBtn" href="./molecular-evidence.html" title="分子证据模块">分子证据</a>
           <button class="icon-btn header-share-btn" id="shareChatBtn" title="分享聊天" aria-label="分享聊天" hidden></button>
           <button class="btn ghost" id="toolsBtn" title="调试工具">⚙ 工具</button>
         </div>
@@ -219,7 +219,7 @@
     <button data-tool="figures">流程图</button>
     <button data-tool="feedback-stats">反馈统计</button>
     <button data-tool="feedback-list">反馈列表</button>
-    <button data-tool="molecular-evidence">分子证据模块</button>
+    <a data-tool="molecular-evidence" href="./molecular-evidence.html">分子证据模块</a>
   </div>
 
   <div class="modal-overlay" id="molecularEvidenceModal" hidden>
@@ -270,6 +270,6 @@
   </script>
   <script src="./vendor/marked.min.js?v=20260725"></script>
   <script src="./vendor/purify.min.js?v=20260725"></script>
-  <script src="./app.js?v=20260809-feedback"></script>
+  <script src="./app.js?v=20260817-molecular"></script>
 </body>
 </html>
