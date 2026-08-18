@@ -69,12 +69,32 @@ OUTCOME_HINTS: Dict[str, List[str]] = {
 }
 
 CONCEPT_EXTRACT_SYSTEM = """你是生物医学检索助手。从中文临床问题中抽取 PubMed 检索概念，只输出 JSON：
-{"disease":["..."],"biomarker":["..."],"intervention":["..."],"outcome":["..."],"population":[],"focus":"prognosis|therapy|diagnosis|other"}
+{"disease":["..."],"biomarker":["..."],"intervention":["..."],"outcome":["..."],"population":[],"line_of_therapy":[],"focus":"prognosis|therapy|diagnosis|other"}
 规则：
 1. disease/biomarker/intervention/outcome 用英文术语或标准缩写（如 DLBCL、TP53、CAR-T、R-CHOP）。
-2. 若问题未涉及某字段，用空数组。
-3. 不要编造 MeSH 正式主题词；不要输出检索式本身。
-4. 只输出一个 JSON 对象。"""
+2. line_of_therapy 仅从下列取值中选（可多选，没有则空数组）：first-line, second-line, third-line-plus, post-transplant, CNS, elderly-unfit。
+3. 若问题未涉及某字段，用空数组。
+4. 不要编造 MeSH 正式主题词；不要输出检索式本身。
+5. 只输出一个 JSON 对象。"""
+
+# Canonical therapy-line codes → PubMed tiab phrases
+LINE_OF_THERAPY_VOCAB: Dict[str, List[str]] = {
+    "first-line": ["first-line", "newly diagnosed", "frontline", "untreated"],
+    "second-line": ["second-line", "relapsed", "refractory", "R/R", "relapsed/refractory"],
+    "third-line-plus": ["third-line", "third line or later", "heavily pretreated", "multiple relapsed"],
+    "post-transplant": ["post-transplant", "after ASCT", "after autologous transplant", "post-ASCT"],
+    "CNS": ["CNS lymphoma", "secondary CNS", "CNS involvement", "CNS relapse"],
+    "elderly-unfit": ["elderly", "unfit", "frail", "comorbid"],
+}
+
+_LINE_RULES = [
+    ("first-line", re.compile(r"一线|初治|新诊断|front[- ]?line|first[- ]line|newly diagnosed|untreated", re.I)),
+    ("second-line", re.compile(r"二线|复发难治|复发/难治|r/?r\b|relapsed|refractory|second[- ]line", re.I)),
+    ("third-line-plus", re.compile(r"三线|三线及以上|后线|heavily pretreated|third[- ]line", re.I)),
+    ("post-transplant", re.compile(r"移植后|ASCT后|post[- ]?transplant|post[- ]?ASCT|after ASCT", re.I)),
+    ("CNS", re.compile(r"中枢|CNS|脑实质|脑膜", re.I)),
+    ("elderly-unfit", re.compile(r"老年|不耐受|体弱|unfit|frail|elderly", re.I)),
+]
 
 
 @dataclass
@@ -84,15 +104,64 @@ class LiteratureConcepts:
     intervention: List[str] = field(default_factory=list)
     outcome: List[str] = field(default_factory=list)
     population: List[str] = field(default_factory=list)
+    line_of_therapy: List[str] = field(default_factory=list)
     focus: str = "other"
     disease_keys: List[str] = field(default_factory=list)
     source: str = "rules"  # rules | llm
 
     def english_tokens(self) -> List[str]:
         tokens: List[str] = []
-        for group in (self.disease, self.biomarker, self.intervention, self.outcome, self.population):
+        for group in (
+            self.disease,
+            self.biomarker,
+            self.intervention,
+            self.outcome,
+            self.population,
+        ):
             tokens.extend(group)
+        for code in self.line_of_therapy:
+            tokens.extend(LINE_OF_THERAPY_VOCAB.get(code, [code]))
         return [t for t in tokens if t]
+
+
+def detect_line_of_therapy(question: str) -> List[str]:
+    found: List[str] = []
+    for code, pattern in _LINE_RULES:
+        if pattern.search(question or ""):
+            found.append(code)
+    # Prefer more specific lines: third-line implies second-line context but keep both if present.
+    return found
+
+
+def _normalize_line_codes(raw: Sequence[str]) -> List[str]:
+    allowed = set(LINE_OF_THERAPY_VOCAB)
+    out: List[str] = []
+    for item in raw or []:
+        code = str(item).strip().lower().replace("_", "-")
+        aliases = {
+            "1l": "first-line",
+            "1st-line": "first-line",
+            "frontline": "first-line",
+            "2l": "second-line",
+            "2nd-line": "second-line",
+            "rr": "second-line",
+            "r/r": "second-line",
+            "3l": "third-line-plus",
+            "3rd-line": "third-line-plus",
+            "posttransplant": "post-transplant",
+            "asct": "post-transplant",
+            "cns-lymphoma": "CNS",
+            "elderly": "elderly-unfit",
+            "unfit": "elderly-unfit",
+        }
+        code = aliases.get(code, code)
+        if code == "cns":
+            code = "CNS"
+        if code in allowed and code not in out:
+            out.append(code)
+        elif code.upper() == "CNS" and "CNS" not in out:
+            out.append("CNS")
+    return out
 
 
 def _or_clause(terms: Sequence[str], field_tag: str) -> str:
@@ -332,6 +401,7 @@ def extract_concepts_rule(question: str) -> LiteratureConcepts:
         intervention=_dedupe(intervention),
         outcome=_dedupe(outcome),
         population=[],
+        line_of_therapy=detect_line_of_therapy(question),
         focus=focus,
         disease_keys=disease_keys,
         source="rules",
@@ -369,6 +439,7 @@ def extract_concepts_llm(question: str, qwen_client: Any) -> Optional[Literature
         intervention=[str(x) for x in (data.get("intervention") or []) if x],
         outcome=[str(x) for x in (data.get("outcome") or []) if x],
         population=[str(x) for x in (data.get("population") or []) if x],
+        line_of_therapy=_normalize_line_codes(data.get("line_of_therapy") or []),
         focus=str(data.get("focus") or "other"),
         disease_keys=detect_disease_keys(question + " " + " ".join(str(x) for x in (data.get("disease") or []))),
         source="llm",
@@ -385,6 +456,12 @@ def extract_concepts_llm(question: str, qwen_client: Any) -> Optional[Literature
         concepts.disease = rules.disease
     if not concepts.disease_keys:
         concepts.disease_keys = rules.disease_keys
+    # Prefer union of line codes from rules + LLM
+    line_merged = list(concepts.line_of_therapy)
+    for code in rules.line_of_therapy:
+        if code not in line_merged:
+            line_merged.append(code)
+    concepts.line_of_therapy = line_merged
     return concepts
 
 
@@ -393,6 +470,22 @@ def extract_concepts(question: str, qwen_client: Any = None) -> LiteratureConcep
     if llm is not None:
         return llm
     return extract_concepts_rule(question)
+
+
+def _line_of_therapy_block(concepts: LiteratureConcepts) -> str:
+    terms: List[str] = []
+    for code in concepts.line_of_therapy or []:
+        terms.extend(LINE_OF_THERAPY_VOCAB.get(code, []))
+    # Deduplicate while preserving order
+    seen = set()
+    uniq: List[str] = []
+    for t in terms:
+        key = t.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append(t)
+    return _or_clause(uniq, "tiab")
 
 
 def build_pubmed_query(
@@ -411,6 +504,7 @@ def build_pubmed_query(
     intervention = _simple_block(concepts.intervention, tiab_only=tiab_only)
     outcome_mesh = "Prognosis" if concepts.focus == "prognosis" else None
     outcome = _simple_block(concepts.outcome, mesh=outcome_mesh, tiab_only=tiab_only)
+    line_block = _line_of_therapy_block(concepts)
 
     and_parts: List[str] = [disease]
 
@@ -429,10 +523,13 @@ def build_pubmed_query(
         _append_mid(and_parts)
         if outcome:
             and_parts.append(outcome)
+        # Optional therapy-line block — improves precision for DLBCL line-specific questions.
+        if line_block:
+            and_parts.append(line_block)
         years = recent_years
     elif level == 2:
         _append_mid(and_parts)
-        # drop outcome; widen years
+        # drop outcome and line filter; widen years
         years = max(recent_years * 2, 10)
     else:
         # L3: disease AND (biomarker/intervention), tiab only, no year filter

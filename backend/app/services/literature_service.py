@@ -61,6 +61,7 @@ class LiteratureSearchService:
                 "biomarker": concepts.biomarker,
                 "intervention": concepts.intervention,
                 "outcome": concepts.outcome,
+                "line_of_therapy": concepts.line_of_therapy,
                 "focus": concepts.focus,
                 "disease_keys": concepts.disease_keys,
             }

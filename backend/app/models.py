@@ -522,13 +522,32 @@ class LiteratureHit:
     url: Optional[str] = None
     pubmed_rank: int = 0
     summary_zh: Optional[str] = None
-    score_components: Dict[str, float] = field(default_factory=dict)
+    score_components: Dict[str, Any] = field(default_factory=dict)
+    # Doctor-facing evidence enrichment
+    evidence_tier: Optional[str] = None  # E1–E5
+    study_design_zh: Optional[str] = None
+    journal_if: Optional[float] = None
+    journal_quartile: Optional[str] = None
+    journal_cas_tier: Optional[int] = None
+    journal_tier: Optional[str] = None  # T0/T1/T2/T2G/T3
+    in_guideline: bool = False
+    guideline_ref: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "LiteratureHit":
+        jcr_if = data.get("journal_if")
+        try:
+            jcr_if_f = float(jcr_if) if jcr_if is not None else None
+        except (TypeError, ValueError):
+            jcr_if_f = None
+        cas = data.get("journal_cas_tier")
+        try:
+            cas_i = int(cas) if cas is not None else None
+        except (TypeError, ValueError):
+            cas_i = None
         return cls(
             pmid=str(data.get("pmid") or ""),
             title=str(data.get("title") or ""),
@@ -544,6 +563,14 @@ class LiteratureHit:
             pubmed_rank=int(data.get("pubmed_rank") or 0),
             summary_zh=data.get("summary_zh"),
             score_components=dict(data.get("score_components") or {}),
+            evidence_tier=data.get("evidence_tier"),
+            study_design_zh=data.get("study_design_zh"),
+            journal_if=jcr_if_f,
+            journal_quartile=data.get("journal_quartile"),
+            journal_cas_tier=cas_i,
+            journal_tier=data.get("journal_tier"),
+            in_guideline=bool(data.get("in_guideline")),
+            guideline_ref=data.get("guideline_ref"),
         )
 
 

@@ -49,11 +49,19 @@ const els = {
   molecularEvidenceCloseBtn: document.getElementById('molecularEvidenceCloseBtn'),
   molecularEvidenceCancelBtn: document.getElementById('molecularEvidenceCancelBtn'),
   shareChatBtn: document.getElementById('shareChatBtn'),
+  headerTitle: document.getElementById('headerTitle'),
+  evidenceDrawer: document.getElementById('evidenceDrawer'),
+  evidenceDrawerBody: document.getElementById('evidenceDrawerBody'),
+  evidenceDrawerTitle: document.getElementById('evidenceDrawerTitle'),
+  evidenceDrawerCloseBtn: document.getElementById('evidenceDrawerCloseBtn'),
+  evidenceBackdrop: document.getElementById('evidenceBackdrop'),
   statsModal: document.getElementById('statsModal'),
   statsBody: document.getElementById('statsBody'),
   statsCloseBtn: document.getElementById('statsCloseBtn'),
   composerBox: document.getElementById('composerBox'),
   dataSourceChip: document.getElementById('dataSourceChip'),
+  dataSourceChipLabel: document.getElementById('dataSourceChipLabel'),
+  dataSourceChipIcon: document.getElementById('dataSourceChipIcon'),
   dataSourceMenu: document.getElementById('dataSourceMenu'),
   dataSourceWrap: document.getElementById('dataSourceWrap'),
   enableLiteratureChip: document.getElementById('enableLiteratureChip'),
@@ -123,6 +131,12 @@ const DATA_SOURCE_KEY = 'gf_data_source';
 const LIT_TOGGLE_KEY = 'gf_enable_literature';
 const DATA_SOURCE_LABELS = { nccn: 'NCCN', csco: 'CSCO', eha: 'EHA' };
 const DATA_SOURCE_ALLOWED = new Set(Object.keys(DATA_SOURCE_LABELS));
+// Distinct icons per guideline (chip + dropdown).
+const GUIDE_ICONS = {
+  nccn: `<svg class="chip-icon chip-icon-guide" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>`,
+  csco: `<svg class="chip-icon chip-icon-guide" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/><path d="M8 7h8M8 11h6"/></svg>`,
+  eha: `<svg class="chip-icon chip-icon-guide" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/><circle cx="12" cy="12" r="2.2"/></svg>`,
+};
 
 function loadDataSource() {
   const v = (localStorage.getItem(DATA_SOURCE_KEY) || 'nccn').toLowerCase();
@@ -166,6 +180,7 @@ const state = {
   abortController: null,
   dataSource: loadDataSource(),
   enableLiterature: loadEnableLiterature(),
+  evidenceMsgId: null,
 };
 
 const ACTIVE_CONV_KEY = 'gf_active_conversation_id';
@@ -605,6 +620,7 @@ function openLocalConversation(id) {
   const list = loadLocalConversations();
   const conv = list.find((c) => c.id === id);
   if (!conv) return;
+  closeEvidence();
   state.activeConversationId = conv.id;
   if (conv.tree?.messages?.length) {
     buildTreeFromMessages(conv.tree.messages, conv.tree.activeRootId);
@@ -1002,6 +1018,7 @@ async function openConversation(id) {
     openLocalConversation(id);
     return;
   }
+  closeEvidence();
   const resp = await api(`/api/conversations/${id}`);
   if (!resp.ok) return;
   const data = await resp.json();
@@ -1018,6 +1035,7 @@ function newChat({ skipSave = false } = {}) {
   if (!skipSave && !state.user) {
     upsertLocalConversationFromState();
   }
+  closeEvidence();
   state.activeConversationId = null;
   resetTree();
   state.lastPayload = null;
@@ -1037,8 +1055,18 @@ function updateShareChatBtn() {
   els.shareChatBtn.hidden = !hasAssistant;
 }
 
+function updateHeaderTitle() {
+  if (!els.headerTitle) return;
+  const conv = state.conversations.find((c) => c.id === state.activeConversationId);
+  const title = (conv?.title || '').trim();
+  els.headerTitle.textContent = title && title !== '新对话' ? title : '';
+  els.headerTitle.title = els.headerTitle.textContent;
+}
+
 function renderChat() {
+  updateHeaderTitle();
   if (!state.messages.length) {
+    closeEvidence();
     els.chatLog.innerHTML = `
       <div class="empty-state">
         <h2>面向 DLBCL 的 NCCN 指南问答</h2>
@@ -1059,6 +1087,11 @@ function renderChat() {
   bindFigures();
   bindTables();
   updateShareChatBtn();
+  if (state.evidenceMsgId) {
+    const stillThere = findMessageByEvidenceId(state.evidenceMsgId);
+    if (stillThere?.payload) openEvidence(state.evidenceMsgId);
+    else closeEvidence();
+  }
   const editingInput = els.chatLog.querySelector('.user-edit-input');
   if (editingInput) {
     editingInput.focus();
@@ -1154,12 +1187,17 @@ function renderMessage(message, idx) {
     ? `<span class="source-chip ${src === 'nccn' ? '' : src}">${escapeHtml(DATA_SOURCE_LABELS[src] || src)}</span>`
     : '';
   const { vNav, delBtn } = renderBranchControls(message);
+  const msgId = message.serverId || message.id || '';
+  const evidenceBar = renderEvidenceBar(payload, msgId);
   return `
-    <div class="msg-row assistant" data-msg-idx="${idx}" data-node-id="${escapeHtml(message.id || '')}" data-msg-id="${escapeHtml(message.serverId || message.id || '')}">
-      <div class="message assistant">
-        <div class="tag">${escapeHtml(tag)}${srcChip}</div>
-        <div class="answer">${body}</div>
+    <div class="msg-row assistant" data-msg-idx="${idx}" data-node-id="${escapeHtml(message.id || '')}" data-msg-id="${escapeHtml(msgId)}">
+      <div class="answer-layout">
+        <div class="message assistant">
+          <div class="tag">${escapeHtml(tag)}${srcChip}</div>
+          <div class="answer">${body}</div>
+        </div>
       </div>
+      ${evidenceBar}
       <div class="msg-actions">
         ${vNav}
         <span class="msg-actions-icons">
@@ -1238,7 +1276,6 @@ function renderAnswerBody(payload, fallbackText) {
     html += `<div class="answer-block"><h3>相关流程图</h3>${unanchored.map((f, i) => renderFigureCard(f, `u-${i}`)).join('')}</div>`;
   }
   html += `<p class="ai-disclaimer">本回答由 AI 生成，内容仅供参考，请仔细甄别</p>`;
-  html += renderReferences(payload);
   return html;
 }
 
@@ -1287,31 +1324,37 @@ function decorateCitations(html, payload) {
   const sources = payload.sources || [];
   const refs = payload.attached_references || [];
   const lit = payload.literature || [];
+  const { citeMap } = collectEvidenceGroups(payload);
+  const citeBtn = (type, index, ref, tip, fallbackNo) => {
+    const key = type === 'R' ? `R-${ref}` : `${type}-${index}`;
+    const n = citeMap[key] || fallbackNo;
+    const indexAttr = index != null ? ` data-index="${index}"` : '';
+    const refAttr = ref != null && ref !== '' ? ` data-ref="${escapeHtml(String(ref))}"` : '';
+    return `<button class="cite" data-cite="${type}"${indexAttr}${refAttr} aria-label="${tip}">${n}</button>`;
+  };
   return html
     .replace(/\[S(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
       const s = sources[idx] || {};
-      const label = s.citation_label || s.printed_page_code || `S${n}`;
-      const tip = escapeHtml(s.display_title || label);
-      return `<button class="cite" data-cite="S" data-index="${idx}" aria-label="${tip}">${escapeHtml(label)}</button>`;
+      const tip = escapeHtml(s.display_title || s.citation_label || s.printed_page_code || `S${n}`);
+      return citeBtn('S', idx, null, tip, n);
     })
     .replace(/\[L(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
       const hit = lit[idx] || lit.find((x) => Number(x.rank) === Number(n)) || {};
-      const tip = escapeHtml(hit.display_title || hit.title || `L${n}`);
-      return `<button class="cite" data-cite="L" data-index="${idx}" aria-label="${tip}">L${n}</button>`;
+      const tip = escapeHtml(hit.display_title || hit.title || `文献${n}`);
+      return citeBtn('L', idx, null, tip, n);
     })
     .replace(/\[G(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
-      return `<button class="cite" data-cite="G" data-index="${idx}">G${n}</button>`;
+      return citeBtn('G', idx, null, `G${n}`, n);
     })
-    .replace(/(?<!\w)G(\d+)(?!\w)/g, (_, n) => `<button class="cite" data-cite="G" data-index="${Number(n) - 1}">G${n}</button>`)
+    .replace(/(?<!\w)G(\d+)(?!\w)/g, (_, n) => citeBtn('G', Number(n) - 1, null, `G${n}`, n))
     .replace(/\[(\d{1,3})\]/g, (m, n) => {
       const hit = refs.find((r) => String(r.ref_number) === String(n));
       if (!hit) return m;
-      const label = hit.author_year || hit.citation_label || n;
-      const tip = escapeHtml(hit.display_title || label);
-      return `<button class="cite" data-cite="R" data-ref="${escapeHtml(String(n))}" aria-label="${tip}">${escapeHtml(label)}</button>`;
+      const tip = escapeHtml(hit.display_title || hit.author_year || hit.citation_label || n);
+      return citeBtn('R', null, n, tip, n);
     });
 }
 
@@ -1321,71 +1364,198 @@ function answerKindLabel(kind) {
   return 'AI 回答 · 证据约束';
 }
 
-function renderReferences(payload) {
+function collectEvidenceGroups(payload) {
   const sources = payload.sources || [];
   const refs = payload.attached_references || [];
   const lit = payload.literature || [];
   const graph = payload.graph_triples || [];
-  if (!sources.length && !refs.length && !lit.length && !graph.length) return '';
-  const items = [];
-  sources.forEach((s, i) => {
+  const guideline = sources.map((s, i) => {
     const metaParts = [s.subtitle, s.source_label, s.locator].filter(Boolean);
-    items.push({
+    return {
       title: s.display_title || s.printed_page_code || s.source_id || `Source ${i + 1}`,
       meta: metaParts.join(' · ') || (s.page_type || 'source'),
       badge: s.badge || (s.page_type === 'clinical_guideline' ? '指南' : (s.page_type || 'Source')),
-    });
+      cite: { type: 'S', index: i, label: s.citation_label || s.printed_page_code || `S${i + 1}` },
+      anchor: `S-${i}`,
+    };
   });
-  refs.forEach((r) => {
-    items.push({
-      title: r.display_title || r.paper_title || (r.text || '').replace(/\s+/g, ' ').trim(),
-      meta: r.source_label || [r.journal, r.year, r.authors].filter(Boolean).join('. ') || 'Literature',
-      badge: r.badge || '文献',
-      url: r.url,
-    });
-  });
-  lit.forEach((l, i) => {
-    const rank = l.rank || i + 1;
-    items.push({
-      title: l.display_title || l.title || `PMID ${l.pmid}`,
-      meta: l.tier_label || l.source_label || [l.journal, l.year, l.pmid ? `PMID ${l.pmid}` : ''].filter(Boolean).join(' · ') || 'PubMed · 仅摘要',
-      badge: l.badge || 'PubMed',
-      badgeClass: 'pubmed',
-      url: l.url || (l.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/` : null),
-      cite: { type: 'L', index: i, label: `L${rank}` },
-    });
-  });
-  graph.forEach((g, i) => {
+  const graphItems = graph.map((g, i) => {
     const sourceTag = g.review_status === 'synthetic' ? 'Synthetic' : (g.evidence_kind === 'neo4j' ? 'Neo4j' : 'Graph');
-    items.push({
+    return {
       title: `${g.subject_name || ''} → ${g.relation || ''} → ${g.object_name || ''}`,
       meta: (g.evidence_text || '').slice(0, 160) || `confidence ${Number(g.confidence || 0).toFixed(2)}`,
       badge: sourceTag,
       cite: { type: 'G', index: i, label: `G${i + 1}` },
+      anchor: `G-${i}`,
+    };
+  });
+  const literature = [];
+  refs.forEach((r) => {
+    literature.push({
+      title: r.display_title || r.paper_title || (r.text || '').replace(/\s+/g, ' ').trim(),
+      meta: r.source_label || [r.journal, r.year, r.authors].filter(Boolean).join('. ') || 'Literature',
+      badge: r.badge || '文献',
+      url: r.url,
+      cite: {
+        type: 'R',
+        ref: r.ref_number,
+        label: r.author_year || r.citation_label || String(r.ref_number || ''),
+      },
+      anchor: `R-${r.ref_number}`,
     });
   });
+  lit.forEach((l, i) => {
+    const rank = l.rank || i + 1;
+    const metaPrimary = l.journal_meta || [l.journal, l.year].filter(Boolean).join(' · ');
+    const metaSecondary = l.tier_label || 'PubMed · 仅摘要';
+    literature.push({
+      title: l.display_title || l.title || `PMID ${l.pmid}`,
+      meta: metaPrimary ? `${metaPrimary}\n${metaSecondary}` : metaSecondary,
+      metaPrimary,
+      metaSecondary,
+      badge: l.badge || 'PubMed',
+      badgeClass: 'pubmed',
+      url: l.url || (l.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/` : null),
+      // label unused in sidebar (global refNo shown); kept for citeMap / popovers
+      cite: { type: 'L', index: i, label: String(rank) },
+      anchor: `L-${i}`,
+    });
+  });
+  const citeMap = {};
+  let refNo = 0;
+  [...guideline, ...graphItems, ...literature].forEach((it) => {
+    refNo += 1;
+    it.refNo = refNo;
+    if (it.anchor) citeMap[it.anchor] = refNo;
+  });
+  return { guideline, graph: graphItems, literature, citeMap, total: refNo };
+}
+
+function renderCiteChip(cite) {
+  if (!cite) return '';
+  const label = escapeHtml(cite.label || `${cite.type}${Number(cite.index) + 1}`);
+  const indexAttr = cite.index != null ? ` data-index="${cite.index}"` : '';
+  const refAttr = cite.ref != null && cite.ref !== '' ? ` data-ref="${escapeHtml(String(cite.ref))}"` : '';
+  return `<button class="cite" data-cite="${escapeHtml(cite.type)}"${indexAttr}${refAttr}>${label}</button> `;
+}
+
+function renderRefItem(it) {
+  const title = it.url
+    ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>`
+    : escapeHtml(it.title);
+  // Doctor view: global refNo only (matches body cite buttons). No「文献n」chip, no E-tier / 已进指南 badges.
+  const metaHtml = it.metaPrimary || it.metaSecondary
+    ? `<div class="rmeta-lines">
+        ${it.metaPrimary ? `<div class="rmeta-line rmeta-journal">${escapeHtml(it.metaPrimary)}</div>` : ''}
+        ${it.metaSecondary ? `<div class="rmeta-line rmeta-status">${escapeHtml(it.metaSecondary)}</div>` : ''}
+      </div>`
+    : `<span>${escapeHtml(it.meta || '')}</span>`;
+  const num = it.refNo != null ? it.refNo : '';
+  const cite = it.cite || {};
+  const indexAttr = cite.index != null ? ` data-index="${cite.index}"` : '';
+  const refAttr = cite.ref != null && cite.ref !== '' ? ` data-ref="${escapeHtml(String(cite.ref))}"` : '';
+  const typeAttr = cite.type ? ` data-cite="${escapeHtml(cite.type)}"` : '';
+  const numHtml = num !== ''
+    ? (cite.type
+      ? `<button type="button" class="rnum cite"${typeAttr}${indexAttr}${refAttr}>${num}.</button> `
+      : `<span class="rnum">${num}.</span> `)
+    : '';
   return `
-    <details class="refs-block" open>
+    <div class="ref-item" data-ref-anchor="${escapeHtml(it.anchor || '')}">
+      <div class="rtitle">${numHtml}${title}</div>
+      <div class="rmeta">${metaHtml}<span class="badge${it.badgeClass ? ` ${it.badgeClass}` : ''}">${escapeHtml(it.badge)}</span></div>
+    </div>`;
+}
+
+function renderRefGroup(key, title, items, open) {
+  if (!items.length) return '';
+  return `
+    <details class="refs-group" data-refs-group="${escapeHtml(key)}"${open ? ' open' : ''}>
       <summary>
-        <span class="refs-summary-left">
-          <svg class="refs-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <text x="1" y="5" font-size="5" fill="currentColor" font-family="sans-serif">1</text>
-            <line x1="7" y1="3.5" x2="15" y2="3.5" stroke="currentColor" stroke-width="1.2"/>
-            <text x="1" y="10" font-size="5" fill="currentColor" font-family="sans-serif">2</text>
-            <line x1="7" y1="8.5" x2="15" y2="8.5" stroke="currentColor" stroke-width="1.2"/>
-            <text x="1" y="15" font-size="5" fill="currentColor" font-family="sans-serif">3</text>
-            <line x1="7" y1="13.5" x2="15" y2="13.5" stroke="currentColor" stroke-width="1.2"/>
-          </svg>
-          <span>References & Graph</span>
-        </span>
+        <span class="refs-group-title">${escapeHtml(title)}</span>
         <span class="muted small">${items.length}</span>
       </summary>
-      ${items.map((it, i) => `
-        <div class="ref-item">
-          <div class="rtitle"><span class="rnum">${i + 1}.</span> ${it.cite ? `<button class="cite" data-cite="${it.cite.type}" data-index="${it.cite.index}">${escapeHtml(it.cite.label || (it.cite.type + (it.cite.index + 1)))}</button> ` : ''}${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>` : escapeHtml(it.title)}</div>
-          <div class="rmeta"><span>${escapeHtml(it.meta)}</span><span class="badge${it.badgeClass ? ` ${it.badgeClass}` : ''}">${escapeHtml(it.badge)}</span></div>
-        </div>`).join('')}
+      <div class="refs-group-body">
+        ${items.map((it) => renderRefItem(it)).join('')}
+      </div>
     </details>`;
+}
+
+function renderEvidenceBar(payload, msgId) {
+  const groups = collectEvidenceGroups(payload);
+  if (!groups.total) return '';
+  const parts = [];
+  if (groups.guideline.length) parts.push(`指南 ${groups.guideline.length}`);
+  if (groups.graph.length) parts.push(`图谱 ${groups.graph.length}`);
+  if (groups.literature.length) parts.push(`文献 ${groups.literature.length}`);
+  return `
+    <button type="button" class="evidence-bar" data-act="open-evidence" data-msg-id="${escapeHtml(msgId || '')}" aria-label="查看证据">
+      <svg class="refs-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+        <text x="1" y="5" font-size="5" fill="currentColor" font-family="sans-serif">1</text>
+        <line x1="7" y1="3.5" x2="15" y2="3.5" stroke="currentColor" stroke-width="1.2"/>
+        <text x="1" y="10" font-size="5" fill="currentColor" font-family="sans-serif">2</text>
+        <line x1="7" y1="8.5" x2="15" y2="8.5" stroke="currentColor" stroke-width="1.2"/>
+        <text x="1" y="15" font-size="5" fill="currentColor" font-family="sans-serif">3</text>
+        <line x1="7" y1="13.5" x2="15" y2="13.5" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      <span>证据 ${groups.total}</span>
+      ${parts.length ? `<span class="evidence-bar-parts">· ${parts.join(' · ')}</span>` : ''}
+    </button>`;
+}
+
+function renderEvidenceBody(payload) {
+  const groups = collectEvidenceGroups(payload);
+  if (!groups.total) return '<div class="muted small" style="padding:12px 2px">暂无证据</div>';
+  return `
+    <div class="refs-panel" aria-label="证据列表">
+      ${renderRefGroup('guideline', '指南证据', groups.guideline, true)}
+      ${renderRefGroup('graph', '图谱', groups.graph, false)}
+      ${renderRefGroup('literature', '文献', groups.literature, false)}
+    </div>`;
+}
+
+function findMessageByEvidenceId(msgId) {
+  if (!msgId) return null;
+  return state.messages.find((m) => String(m.serverId || m.id || '') === String(msgId)) || null;
+}
+
+function closeEvidence() {
+  state.evidenceMsgId = null;
+  els.appRoot?.classList.remove('evidence-open');
+  if (els.evidenceBackdrop) els.evidenceBackdrop.hidden = true;
+  if (els.evidenceDrawerBody) els.evidenceDrawerBody.innerHTML = '';
+  if (els.evidenceDrawerTitle) els.evidenceDrawerTitle.textContent = '证据';
+}
+
+function openEvidence(msgId, anchorKey = '') {
+  const message = findMessageByEvidenceId(msgId) || state.messages.filter((m) => m.role === 'assistant').slice(-1)[0];
+  const payload = message?.payload || state.lastPayload;
+  if (!payload) return;
+  const resolvedId = message ? String(message.serverId || message.id || '') : String(msgId || '');
+  state.evidenceMsgId = resolvedId;
+  const groups = collectEvidenceGroups(payload);
+  if (els.evidenceDrawerTitle) els.evidenceDrawerTitle.textContent = groups.total ? `证据 ${groups.total}` : '证据';
+  if (els.evidenceDrawerBody) els.evidenceDrawerBody.innerHTML = renderEvidenceBody(payload);
+  els.appRoot?.classList.add('evidence-open');
+  if (els.evidenceBackdrop) els.evidenceBackdrop.hidden = false;
+
+  const panel = els.evidenceDrawerBody;
+  if (!panel) return;
+  const type = anchorKey ? String(anchorKey).split('-')[0] : '';
+  const groupKey = type === 'S' ? 'guideline' : type === 'G' ? 'graph' : (type === 'L' || type === 'R') ? 'literature' : '';
+  if (groupKey) {
+    const group = panel.querySelector(`details[data-refs-group="${groupKey}"]`);
+    if (group) group.open = true;
+  }
+  panel.querySelectorAll('.ref-item.is-flash').forEach((el) => el.classList.remove('is-flash'));
+  if (anchorKey) {
+    const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(anchorKey) : anchorKey;
+    const item = panel.querySelector(`[data-ref-anchor="${esc}"]`);
+    if (item) {
+      item.classList.add('is-flash');
+      requestAnimationFrame(() => item.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+    }
+  }
 }
 
 function bindFigures() {
@@ -1828,7 +1998,6 @@ function bindNeo4jGraphInteractions(root, onSelect, onExpand) {
 }
 
 function bindCitations() {
-  const payload = state.lastPayload || {};
   const pop = els.citePopover;
   if (!pop) return;
 
@@ -1851,21 +2020,34 @@ function bindCitations() {
       state.citeHideTimer = null;
     }, 160);
   };
-  const scrollToRefs = () => {
+  const payloadForBtn = (btn) => {
+    const row = btn?.closest?.('.msg-row');
+    const msg = messageFromRow(row);
+    return msg?.payload || state.lastPayload || {};
+  };
+  const scrollToRefs = (btn) => {
     hidePopover();
-    document.querySelector('.refs-block')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const row = btn?.closest?.('.msg-row');
+    const msgId = row?.dataset?.msgId || state.evidenceMsgId || '';
+    const type = btn?.dataset?.cite;
+    let key = '';
+    if (type === 'S' || type === 'G' || type === 'L') key = `${type}-${btn.dataset.index}`;
+    else if (type === 'R') key = `R-${btn.dataset.ref}`;
+    openEvidence(msgId, key);
   };
 
   const showFor = (btn, { pin = false } = {}) => {
     clearHide();
     state.citePinned = !!pin;
+    const payload = payloadForBtn(btn);
     const type = btn.dataset.cite;
     const citeKey = `${type}:${btn.dataset.index ?? ''}:${btn.dataset.ref ?? ''}`;
     pop.dataset.citeKey = citeKey;
     let html = '';
     let seeCount = (payload.sources || []).length
       + (payload.attached_references || []).length
-      + (payload.literature || []).length;
+      + (payload.literature || []).length
+      + (payload.graph_triples || []).length;
     if (type === 'S') {
       const s = (payload.sources || [])[Number(btn.dataset.index)] || {};
       const metaLine = [s.subtitle, s.source_label, s.locator].filter(Boolean).join(' · ');
@@ -1876,17 +2058,19 @@ function bindCitations() {
         <div class="muted small" style="margin-top:8px">${escapeHtml((s.text || s.section || '').slice(0, 180))}</div>`;
     } else if (type === 'L') {
       const l = (payload.literature || [])[Number(btn.dataset.index)] || {};
-      const metaLine = l.tier_label || l.source_label || [l.journal, l.year].filter(Boolean).join(' · ') || 'PubMed · 仅摘要';
+      const journalLine = l.journal_meta || [l.journal, l.year].filter(Boolean).join(' · ');
+      const metaLine = l.tier_label || 'PubMed · 仅摘要';
       html = `
         <div class="ref-head"><span class="k">PubMed</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
         <div class="ref-title">${escapeHtml(l.display_title || l.title || `PMID ${l.pmid || ''}`)}</div>
-        <div class="ref-meta"><span>${escapeHtml(metaLine)}</span><span class="badge pubmed">PubMed</span></div>
+        <div class="ref-meta"><span class="rmeta-journal">${escapeHtml(journalLine || metaLine)}</span><span class="badge pubmed">PubMed</span></div>
+        ${journalLine ? `<div class="muted small" style="margin-top:4px">${escapeHtml(metaLine)}</div>` : ''}
         <div class="muted small" style="margin-top:8px;max-width:320px;white-space:pre-wrap">${escapeHtml((l.summary_zh || l.abstract || '').slice(0, 220))}</div>
-        ${l.url || l.pmid ? `<div style="margin-top:10px"><a class="btn ghost" href="${escapeHtml(l.url || `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/`)}" target="_blank" rel="noopener">打开 PubMed</a></div>` : ''}`;
+        ${l.url || l.pmid ? `<div><a class="cite-ext-link" href="${escapeHtml(l.url || `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/`)}" target="_blank" rel="noopener">打开 PubMed<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M10 14L19 5"/><path d="M19 12v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></a></div>` : ''}`;
     } else if (type === 'G') {
       const g = (payload.graph_triples || [])[Number(btn.dataset.index)] || {};
       html = `
-        <div class="ref-head"><span class="k">Graph</span><button type="button" class="see" data-see-all>See All</button></div>
+        <div class="ref-head"><span class="k">Graph</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
         <div class="ref-title">${escapeHtml(g.subject_name || '')} → ${escapeHtml(g.relation || '')} → ${escapeHtml(g.object_name || '')}</div>
         <div class="ref-meta"><span>confidence ${Number(g.confidence || 0).toFixed(2)}</span><span class="badge">${escapeHtml(g.validation_status || 'graph')}</span></div>
         <div class="muted small" style="margin-top:8px;max-width:320px;white-space:pre-wrap">${escapeHtml((g.evidence_text || '').slice(0, 220))}</div>
@@ -1899,19 +2083,23 @@ function bindCitations() {
       html = `
         <div class="ref-head"><span class="k">Reference</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
         <div class="ref-title">${escapeHtml(r.display_title || (r.text || '').slice(0, 160))}</div>
-        <div class="ref-meta"><span>${escapeHtml(metaLine)}</span><span class="badge">${escapeHtml(r.badge || '文献')}</span></div>`;
+        <div class="ref-meta"><span>${escapeHtml(metaLine)}</span><span class="badge">${escapeHtml(r.badge || '文献')}</span></div>
+        ${r.url || r.pmid ? `<div><a class="cite-ext-link" href="${escapeHtml(r.url || `https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/`)}" target="_blank" rel="noopener">打开来源<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M10 14L19 5"/><path d="M19 12v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></a></div>` : ''}`;
     }
     pop.innerHTML = html;
     pop.hidden = false;
     const rect = btn.getBoundingClientRect();
-    const left = Math.min(window.innerWidth - 380, Math.max(8, rect.left));
+    const popW = Math.min(360, window.innerWidth * 0.92);
+    let left = rect.left;
+    if (left + popW + 12 > window.innerWidth) left = Math.max(8, rect.right - popW);
+    left = Math.min(window.innerWidth - popW - 8, Math.max(8, left));
     const top = Math.min(window.innerHeight - 200, rect.bottom + 8);
     pop.style.left = `${left}px`;
     pop.style.top = `${top}px`;
     pop.querySelector('[data-see-all]')?.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      scrollToRefs();
+      scrollToRefs(btn);
     });
     pop.querySelector('[data-open-neo4j]')?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1983,6 +2171,18 @@ function syncLiteratureChip() {
   chip.setAttribute('aria-pressed', on ? 'true' : 'false');
 }
 
+function syncDataSourceChip() {
+  const key = state.dataSource || 'nccn';
+  const label = DATA_SOURCE_LABELS[key] || key.toUpperCase();
+  if (els.dataSourceChipLabel) els.dataSourceChipLabel.textContent = label;
+  if (els.dataSourceChipIcon) els.dataSourceChipIcon.innerHTML = GUIDE_ICONS[key] || GUIDE_ICONS.nccn;
+  if (els.dataSourceChip) {
+    els.dataSourceChip.classList.add('is-active');
+    els.dataSourceChip.setAttribute('data-source-active', key);
+    els.dataSourceChip.title = `当前指南：${label}`;
+  }
+}
+
 function closeDataSourceMenu() {
   if (!els.dataSourceMenu || !els.dataSourceChip) return;
   els.dataSourceMenu.hidden = true;
@@ -1992,9 +2192,15 @@ function closeDataSourceMenu() {
 function syncDataSourceMenu() {
   if (!els.dataSourceMenu) return;
   els.dataSourceMenu.querySelectorAll('[data-source]').forEach((btn) => {
-    const selected = btn.getAttribute('data-source') === state.dataSource;
+    const src = btn.getAttribute('data-source');
+    const selected = src === state.dataSource;
     btn.classList.toggle('is-selected', selected);
     btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+    const iconSlot = btn.querySelector('[data-guide-icon]');
+    if (iconSlot && !iconSlot.dataset.ready) {
+      iconSlot.innerHTML = GUIDE_ICONS[src] || '';
+      iconSlot.dataset.ready = '1';
+    }
   });
 }
 
@@ -2007,9 +2213,10 @@ function openDataSourceMenu() {
 
 function setDataSource(key, { animate = false } = {}) {
   state.dataSource = saveDataSource(key);
+  syncDataSourceChip();
   syncDataSourceMenu();
   if (animate) {
-    pulseChipIcon(els.dataSourceChip?.querySelector('.chip-icon-book'), 'is-pop');
+    pulseChipIcon(els.dataSourceChip?.querySelector('.chip-icon-guide'), 'is-pop');
   }
 }
 
@@ -2493,6 +2700,8 @@ function bindMessageActions() {
           await copyShareLink(url, btn, ICON.share, '分享此回答');
         } else if (act === 'open-feedback') {
           openFeedbackModal(msg);
+        } else if (act === 'open-evidence') {
+          openEvidence(btn.dataset.msgId || msg.serverId || msg.id || '');
         }
       });
     });
@@ -3190,6 +3399,7 @@ els.chatLog?.addEventListener('click', (e) => {
   if (msg?.role === 'assistant') openFeedbackModal(msg);
 });
 syncLiteratureChip();
+syncDataSourceChip();
 syncDataSourceMenu();
 els.followUpInput?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -3339,12 +3549,22 @@ els.toolsMenu?.addEventListener('click', async (e) => {
     await openFeedbackList();
     return;
   }
-  if (btn.dataset.tool === 'molecular-evidence') {
-    e.preventDefault();
-    location.href = molecularEvidenceHref();
+  if (btn.dataset.tool === 'sources') {
+    const lastAssistant = [...state.messages].reverse().find((m) => m.role === 'assistant' && m.payload);
+    if (!lastAssistant) {
+      alert('请先完成一次问答');
+      return;
+    }
+    openEvidence(lastAssistant.serverId || lastAssistant.id || '');
     return;
   }
   openToolsDrawer(btn.dataset.tool);
+});
+
+els.evidenceDrawerCloseBtn?.addEventListener('click', closeEvidence);
+els.evidenceBackdrop?.addEventListener('click', closeEvidence);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && els.appRoot?.classList.contains('evidence-open')) closeEvidence();
 });
 
 if (els.shareChatBtn) {

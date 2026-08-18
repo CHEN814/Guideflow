@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Guideflow · DLBCL 指南问答</title>
-  <link rel="stylesheet" href="./styles.css?v=20260817-molecular" />
+  <link rel="stylesheet" href="./styles.css?v=20260818-composer-ui" />
 </head>
 <body>
   <div class="app" id="appRoot">
@@ -37,11 +37,15 @@
 
     <main class="main">
       <div class="header">
-        <h1>Guideflow</h1>
+        <h1 class="header-title" id="headerTitle"></h1>
         <div class="header-actions">
-          <a class="btn ghost" id="molecularEvidenceBtn" href="./molecular-evidence.html" title="分子证据模块">分子证据</a>
-          <button class="icon-btn header-share-btn" id="shareChatBtn" title="分享聊天" aria-label="分享聊天" hidden></button>
-          <button class="btn ghost" id="toolsBtn" title="调试工具">⚙ 工具</button>
+          <button type="button" class="header-action" id="shareChatBtn" title="分享聊天" aria-label="分享聊天" hidden></button>
+          <button type="button" class="header-action" id="toolsBtn" title="设置与调试" aria-label="设置">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -58,17 +62,22 @@
                 <button type="button" class="composer-chip is-active" id="dataSourceChip"
                   aria-haspopup="listbox" aria-expanded="false" aria-controls="dataSourceMenu"
                   data-tip="选择指南数据源，单次检索不混用">
-                  <svg class="chip-icon chip-icon-book" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                    <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/>
-                    <path d="M8 7h8M8 11h6"/>
-                  </svg>
-                  <span class="chip-label">指南来源</span>
+                  <span class="chip-icon chip-icon-guide" id="dataSourceChipIcon" aria-hidden="true"></span>
+                  <span class="chip-label" id="dataSourceChipLabel">NCCN</span>
                 </button>
                 <div class="source-menu" id="dataSourceMenu" hidden role="listbox" aria-label="指南数据源">
-                  <button type="button" class="source-menu-item" role="option" data-source="nccn">NCCN</button>
-                  <button type="button" class="source-menu-item" role="option" data-source="csco">CSCO</button>
-                  <button type="button" class="source-menu-item" role="option" data-source="eha">EHA</button>
+                  <button type="button" class="source-menu-item" role="option" data-source="nccn">
+                    <span class="source-menu-icon" data-guide-icon="nccn" aria-hidden="true"></span>
+                    <span>NCCN</span>
+                  </button>
+                  <button type="button" class="source-menu-item" role="option" data-source="csco">
+                    <span class="source-menu-icon" data-guide-icon="csco" aria-hidden="true"></span>
+                    <span>CSCO</span>
+                  </button>
+                  <button type="button" class="source-menu-item" role="option" data-source="eha">
+                    <span class="source-menu-icon" data-guide-icon="eha" aria-hidden="true"></span>
+                    <span>EHA</span>
+                  </button>
                 </div>
               </div>
               <button type="button" class="composer-chip" id="enableLiteratureChip"
@@ -82,6 +91,16 @@
                 </svg>
                 <span class="chip-label">联网文献</span>
               </button>
+              <a class="composer-chip" id="molecularEvidenceBtn" href="./molecular-evidence.html"
+                data-tip="打开分子证据模块（变异解释 / CIViC / ClinVar）"
+                aria-label="分子证据">
+                <svg class="chip-icon chip-icon-molecule" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 4c5 5 3 11 8 16"/>
+                  <path d="M20 4c-5 5-3 11-8 16"/>
+                  <path d="M8.2 8.2h7.6M7.2 12h9.6M8.2 15.8h7.6"/>
+                </svg>
+                <span class="chip-label">分子证据</span>
+              </a>
             </div>
             <div class="composer-toolbar-right">
               <button type="button" class="toolbar-icon-btn" id="caseOpenBtn"
@@ -99,7 +118,26 @@
         <div class="composer-hint muted small">回车发送 · Shift+回车换行</div>
       </div>
     </main>
+
+    <aside class="evidence-drawer" id="evidenceDrawer" aria-label="证据面板">
+      <div class="evidence-drawer-head">
+        <span class="refs-summary-left">
+          <svg class="refs-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <text x="1" y="5" font-size="5" fill="currentColor" font-family="sans-serif">1</text>
+            <line x1="7" y1="3.5" x2="15" y2="3.5" stroke="currentColor" stroke-width="1.2"/>
+            <text x="1" y="10" font-size="5" fill="currentColor" font-family="sans-serif">2</text>
+            <line x1="7" y1="8.5" x2="15" y2="8.5" stroke="currentColor" stroke-width="1.2"/>
+            <text x="1" y="15" font-size="5" fill="currentColor" font-family="sans-serif">3</text>
+            <line x1="7" y1="13.5" x2="15" y2="13.5" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+          <span id="evidenceDrawerTitle">证据</span>
+        </span>
+        <button class="icon-btn" id="evidenceDrawerCloseBtn" title="关闭证据" aria-label="关闭证据">✕</button>
+      </div>
+      <div class="evidence-drawer-body" id="evidenceDrawerBody"></div>
+    </aside>
   </div>
+  <button class="evidence-backdrop" id="evidenceBackdrop" hidden aria-label="关闭证据面板"></button>
 
   <div class="modal-overlay" id="authModal" hidden>
     <div class="modal-card" role="dialog" aria-modal="true">
@@ -213,13 +251,12 @@
   </div>
 
   <div class="tools-menu" id="toolsMenu" hidden>
-    <button data-tool="trace">Trace 调试</button>
-    <button data-tool="sources">证据来源</button>
-    <button data-tool="neo4j">Neo4j 图谱</button>
-    <button data-tool="figures">流程图</button>
-    <button data-tool="feedback-stats">反馈统计</button>
-    <button data-tool="feedback-list">反馈列表</button>
-    <a data-tool="molecular-evidence" href="./molecular-evidence.html">分子证据模块</a>
+    <button type="button" data-tool="trace">Trace 调试</button>
+    <button type="button" data-tool="sources">证据来源</button>
+    <button type="button" data-tool="neo4j">Neo4j 图谱</button>
+    <button type="button" data-tool="figures">流程图</button>
+    <button type="button" data-tool="feedback-stats">反馈统计</button>
+    <button type="button" data-tool="feedback-list">反馈列表</button>
   </div>
 
   <div class="modal-overlay" id="molecularEvidenceModal" hidden>
@@ -270,6 +307,6 @@
   </script>
   <script src="./vendor/marked.min.js?v=20260725"></script>
   <script src="./vendor/purify.min.js?v=20260725"></script>
-  <script src="./app.js?v=20260817-molecular"></script>
+  <script src="./app.js?v=20260818-composer-ui"></script>
 </body>
 </html>

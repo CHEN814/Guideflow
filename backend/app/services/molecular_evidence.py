@@ -246,6 +246,14 @@ class EvidenceCard:
     matched_variant: Optional[str] = None
     original_claim: Optional[str] = None
     safety_flags: list[str] = field(default_factory=list)
+    # Framework-aligned labels (orthogonal to internal L1–L5).
+    # AMP/ASCO/CAP 2017 Tier I–IV: somatic clinical significance.
+    amp_tier: Optional[str] = None
+    # ESMO ESCAT I–V: actionability scale for precision oncology.
+    escat_level: Optional[str] = None
+    # ACMG/AMP 2015: germline pathogenicity only (P/LP/VUS/LB/B).
+    acmg_class: Optional[str] = None
+    framework_note: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -895,6 +903,9 @@ class ClinVarProvider:
             "access_status": "metadata_only",
             "evidence_type": evidence_type,
             "evidence_level": self._clinvar_to_internal_level(item),
+            "germline_classification": germline.get("description"),
+            "oncogenicity_classification": oncogenicity.get("description"),
+            "clinical_impact_classification": clinical_impact.get("description"),
             "disease": disease,
             "direction": "database_record",
             "record_status": "live_metadata",
@@ -1463,6 +1474,13 @@ class EvidenceCardBuilder:
         evidence_level = str(raw.get("evidence_level") or "L5")
         evidence_level = self._normalize_internal_level(evidence_level, disease_match, str(raw.get("record_status") or ""))
         safety_flags = self._initial_safety_flags(raw, disease_match, evidence_level)
+        frameworks = self._map_framework_labels(
+            provider=record.provider,
+            evidence_level=evidence_level,
+            evidence_type=str(raw.get("evidence_type") or ""),
+            disease_match=disease_match,
+            raw=raw,
+        )
         return EvidenceCard(
             evidence_id=f"ev_{uuid.uuid4().hex[:12]}",
             claim=str(raw.get("claim") or "该数据库记录提供变异解释线索，但需要结合疾病匹配和证据等级判断。"),
@@ -1493,7 +1511,86 @@ class EvidenceCardBuilder:
             matched_variant=raw.get("matched_variant") or f"{variant.gene} {variant.protein_hgvs or variant.cdna_hgvs or variant.unresolved_position or ''}".strip(),
             original_claim=raw.get("original_claim"),
             safety_flags=safety_flags,
+            amp_tier=frameworks.get("amp_tier"),
+            escat_level=frameworks.get("escat_level"),
+            acmg_class=frameworks.get("acmg_class"),
+            framework_note=frameworks.get("framework_note"),
         )
+
+    def _map_framework_labels(
+        self,
+        *,
+        provider: str,
+        evidence_level: str,
+        evidence_type: str,
+        disease_match: str,
+        raw: dict[str, Any],
+    ) -> dict[str, Optional[str]]:
+        """Map internal L1–L5 onto AMP/ASCO/CAP, ESCAT, and ACMG where applicable.
+
+        ACMG/AMP 2015 applies to *germline pathogenicity*, not therapy papers.
+        Somatic clinical significance uses AMP/ASCO/CAP Tier I–IV and ESMO ESCAT.
+        """
+        level = (evidence_level or "L5").upper()
+        etype = (evidence_type or "").lower()
+        provider_l = (provider or "").lower()
+
+        # Internal L → AMP Tier (somatic clinical significance)
+        amp_map = {"L1": "I", "L2": "I/II", "L3": "II", "L4": "III", "L5": "IV"}
+        amp_tier = amp_map.get(level, "IV")
+
+        # ESCAT actionability (therapy-oriented); prognostic/diagnostic stay descriptive.
+        if any(k in etype for k in ("predictive", "therapeutic", "therapy")):
+            escat_map = {"L1": "I-A", "L2": "I-B", "L3": "II-B", "L4": "III-A", "L5": "V"}
+            escat_level = escat_map.get(level, "V")
+        elif "prognostic" in etype:
+            escat_level = "IV" if level in {"L1", "L2", "L3"} else "V"
+        else:
+            escat_level = None
+
+        acmg_class = None
+        note_parts = [
+            "内部等级 L1–L5 为产品统一尺度",
+            "体细胞临床意义对齐 AMP/ASCO/CAP 2017 Tier",
+        ]
+        if escat_level:
+            note_parts.append("可靶向/预测性证据同时标注 ESMO ESCAT")
+
+        # ClinVar germline pathogenicity → ACMG class labels
+        if provider_l == "clinvar" and "germline" in etype:
+            text = " ".join(
+                str(v)
+                for v in [
+                    raw.get("germline_classification"),
+                    raw.get("classification"),
+                    raw.get("claim"),
+                ]
+                if v
+            ).lower()
+            if "likely pathogenic" in text:
+                acmg_class = "LP"
+            elif re.search(r"(?<!likely )\bpathogenic\b", text):
+                acmg_class = "P"
+            elif "likely benign" in text:
+                acmg_class = "LB"
+            elif re.search(r"(?<!likely )\bbenign\b", text):
+                acmg_class = "B"
+            elif "uncertain" in text or "vus" in text or "conflicting" in text:
+                acmg_class = "VUS"
+            if acmg_class:
+                note_parts.append("ClinVar 胚系致病性对齐 ACMG/AMP 2015 五类")
+            else:
+                note_parts.append("ClinVar 记录未解析出明确 ACMG 分类")
+
+        if disease_match not in {"DLBCL直接证据", "LBCL近似证据"}:
+            note_parts.append("非 DLBCL 直接证据，框架标签仅供参考")
+
+        return {
+            "amp_tier": f"Tier {amp_tier}",
+            "escat_level": escat_level,
+            "acmg_class": acmg_class,
+            "framework_note": "；".join(note_parts) + "。",
+        }
 
     def _normalize_internal_level(self, level: str, disease_match: str, record_status: str) -> str:
         level = (level or "L5").upper()
@@ -1627,7 +1724,18 @@ class AnswerComposer:
         if cards:
             for idx, card in enumerate(sorted(cards, key=self._card_rank), start=1):
                 lines.append(f"{idx}. **{card.claim}**")
-                lines.append(f"   - 来源：[{card.source_id}]({card.source_url})；疾病匹配：{card.disease_match}；证据状态：{card.access_status}；证据等级：{card.evidence_level}")
+                fw = []
+                if card.amp_tier:
+                    fw.append(f"AMP/ASCO/CAP {card.amp_tier}")
+                if card.escat_level:
+                    fw.append(f"ESCAT {card.escat_level}")
+                if card.acmg_class:
+                    fw.append(f"ACMG {card.acmg_class}")
+                fw_bit = f"；框架：{' / '.join(fw)}" if fw else ""
+                lines.append(
+                    f"   - 来源：[{card.source_id}]({card.source_url})；疾病匹配：{card.disease_match}；"
+                    f"证据状态：{card.access_status}；内部等级：{card.evidence_level}{fw_bit}"
+                )
                 if card.drug:
                     lines.append(f"   - 药物/干预线索：{card.drug}")
                 if card.limitations:

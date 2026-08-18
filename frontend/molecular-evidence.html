@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Guideflow · 分子证据模块</title>
-  <link rel="stylesheet" href="./styles.css?v=20260814" />
+  <link rel="stylesheet" href="./styles.css?v=20260818-uirevamp" />
   <style>
     .me-shell {
       display: grid;
@@ -1330,7 +1330,10 @@
                     <strong>${escapeHtml(card.source_title || card.source_id || 'Evidence')}</strong>
                     <div class="evidence-meta" style="margin-top:6px">
                       <span class="provider-badge ${escapeHtml(String(card.provider || 'mock').toLowerCase())}">${escapeHtml(providerLabel(card.provider || '-'))}</span>
-                      <span>证据等级：${escapeHtml(card.evidence_level || '-')}</span>
+                      <span>内部等级：${escapeHtml(card.evidence_level || '-')}</span>
+                      ${card.amp_tier ? `<span title="AMP/ASCO/CAP 2017">AMP ${escapeHtml(card.amp_tier)}</span>` : ''}
+                      ${card.escat_level ? `<span title="ESMO ESCAT">ESCAT ${escapeHtml(card.escat_level)}</span>` : ''}
+                      ${card.acmg_class ? `<span title="ACMG/AMP 2015 胚系致病性">ACMG ${escapeHtml(card.acmg_class)}</span>` : ''}
                       <span>疾病匹配：${escapeHtml(card.disease_match || '-')}</span>
                     </div>
                   </div>
