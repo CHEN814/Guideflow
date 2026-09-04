@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import urllib.parse
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field
@@ -117,6 +118,28 @@ MOCK_KNOWLEDGE: dict[str, list[dict[str, Any]]] = {
             "applicability": "用于数据库层面的变异解释，需要结合 DLBCL 直接证据。",
             "limitations": "不能把 ClinVar 致癌性分类直接转化为治疗推荐。",
         },
+        {
+            "provider": "MyVariant",
+            "provider_record_id": "MOCK-MYVARIANT-MYD88-L265P-001",
+            "source_title": "MyVariant.info mock annotation: MYD88 L265P",
+            "source_url": "https://myvariant.info/",
+            "source_version": "mock-mvp",
+            "publication_or_release_date": "2026-08-12",
+            "access_status": "metadata_only",
+            "evidence_type": "population frequency / functional prediction",
+            "evidence_level": "L5",
+            "disease": "unknown",
+            "direction": "annotation",
+            "record_status": "mock_accepted",
+            "rsid": "rs387907274",
+            "allele_freq": 1.2e-05,
+            "functional_predictions": "REVEL 0.95（可能致病）、CADD 26.8（高危害）",
+            "claim": "MyVariant 聚合注释显示该变异为罕见变异（群体等位基因频率约 0.001%），多个功能预测工具（REVEL/CADD）提示可能显著影响蛋白功能；该注释用于变异解读的辅助参考，不单独构成治疗或诊断结论。",
+            "population": "gnomAD/ExAC 等群体数据库汇总，非 DLBCL 患者队列。",
+            "intervention_and_outcome": "不适用；群体频率与功能预测不构成治疗证据。",
+            "applicability": "用于变异注释与优先级参考，需结合 ClinVar/CIViC 的疾病特异性证据。",
+            "limitations": "MVP mock 注释，需接入实时 MyVariant.info 数据并核对版本。",
+        },
     ],
     "CD79B|P.Y196H": [
         {
@@ -138,6 +161,28 @@ MOCK_KNOWLEDGE: dict[str, list[dict[str, Any]]] = {
             "intervention_and_outcome": "涉及 BTK 抑制剂研究时需核验治疗线次、联合用药和疗效终点。",
             "applicability": "适用于 DLBCL 分子证据解释，不构成患者级用药建议。",
             "limitations": "当前为 MVP mock 证据，需后续接入 CIViC 实时记录和原文核验。",
+        },
+        {
+            "provider": "MyVariant",
+            "provider_record_id": "MOCK-MYVARIANT-CD79B-Y196H-001",
+            "source_title": "MyVariant.info mock annotation: CD79B Y196H",
+            "source_url": "https://myvariant.info/",
+            "source_version": "mock-mvp",
+            "publication_or_release_date": "2026-08-12",
+            "access_status": "metadata_only",
+            "evidence_type": "population frequency / functional prediction",
+            "evidence_level": "L5",
+            "disease": "unknown",
+            "direction": "annotation",
+            "record_status": "mock_accepted",
+            "rsid": "rs771727818",
+            "allele_freq": 5.0e-05,
+            "functional_predictions": "REVEL 0.88（可能致病）、CADD 24.1（高危害）",
+            "claim": "MyVariant 聚合注释显示该变异为罕见变异（群体等位基因频率约 0.005%），功能预测提示可能影响蛋白功能；该注释仅用于变异解读的辅助参考，不单独构成治疗或诊断结论。",
+            "population": "gnomAD/ExAC 等群体数据库汇总，非 DLBCL 患者队列。",
+            "intervention_and_outcome": "不适用；群体频率与功能预测不构成治疗证据。",
+            "applicability": "用于变异注释与优先级参考，需结合 ClinVar/CIViC 的疾病特异性证据。",
+            "limitations": "MVP mock 注释，需接入实时 MyVariant.info 数据并核对版本。",
         }
     ],
     "TP53|P.R248Q": [
@@ -163,6 +208,28 @@ MOCK_KNOWLEDGE: dict[str, list[dict[str, Any]]] = {
             "intervention_and_outcome": "不适用；该记录不是 DLBCL 治疗试验。",
             "applicability": "仅可作为变异解释线索；若用于 DLBCL 预后判断需查找 DLBCL 直接群体研究。",
             "limitations": "不能把跨肿瘤数据库记录直接外推为 DLBCL 患者级预后结论。",
+        },
+        {
+            "provider": "MyVariant",
+            "provider_record_id": "MOCK-MYVARIANT-TP53-R248Q-001",
+            "source_title": "MyVariant.info mock annotation: TP53 R248Q",
+            "source_url": "https://myvariant.info/",
+            "source_version": "mock-mvp",
+            "publication_or_release_date": "2026-08-12",
+            "access_status": "metadata_only",
+            "evidence_type": "population frequency / functional prediction",
+            "evidence_level": "L5",
+            "disease": "unknown",
+            "direction": "annotation",
+            "record_status": "mock_accepted",
+            "rsid": "rs11540652",
+            "allele_freq": 1.0e-06,
+            "functional_predictions": "REVEL 0.99（可能致病）、CADD 31.5（高危害）",
+            "claim": "MyVariant 聚合注释显示该变异为极罕见变异（群体等位基因频率约 0.0001%），功能预测提示显著影响蛋白功能；该注释仅用于变异解读的辅助参考，不单独构成治疗或诊断结论。",
+            "population": "gnomAD/ExAC 等群体数据库汇总，非 DLBCL 患者队列。",
+            "intervention_and_outcome": "不适用；群体频率与功能预测不构成治疗证据。",
+            "applicability": "用于变异注释与优先级参考，需结合 ClinVar/CIViC 的疾病特异性证据。",
+            "limitations": "MVP mock 注释，需接入实时 MyVariant.info 数据并核对版本。",
         }
     ],
 }
@@ -187,6 +254,7 @@ class NormalizedVariant:
     missing_fields: list[str] = field(default_factory=list)
     unresolved_position: Optional[str] = None
     molecular_annotation: dict[str, Any] = field(default_factory=dict)
+    enrichment: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -246,6 +314,14 @@ class EvidenceCard:
     matched_variant: Optional[str] = None
     original_claim: Optional[str] = None
     safety_flags: list[str] = field(default_factory=list)
+    # Framework-aligned labels (orthogonal to internal L1–L5).
+    # AMP/ASCO/CAP 2017 Tier I–IV: somatic clinical significance.
+    amp_tier: Optional[str] = None
+    # ESMO ESCAT I–V: actionability scale for precision oncology.
+    escat_level: Optional[str] = None
+    # ACMG/AMP 2015: germline pathogenicity only (P/LP/VUS/LB/B).
+    acmg_class: Optional[str] = None
+    framework_note: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -261,6 +337,7 @@ class SafetyGateResult:
     required_warnings: list[str] = field(default_factory=list)
     blocked_outputs: list[str] = field(default_factory=list)
     reasons: list[str] = field(default_factory=list)
+    variant_id: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -268,43 +345,93 @@ class SafetyGateResult:
 
 @dataclass
 class MolecularEvidenceResult:
+    """Query result. Internal fields keep the flat pieces that the composer,
+    audit log and card builder operate on; to_dict() emits a structured,
+    variant-centered payload consumed by the API and frontend."""
+
+    meta: dict[str, Any]
+    query: dict[str, Any]
     variants: list[NormalizedVariant]
     raw_records: list[RawEvidenceRecord]
     evidence_cards: list[EvidenceCard]
     safety_gate_results: list[SafetyGateResult]
     answer_markdown: str
     doctor_summary: dict[str, Any]
-    missing_information: list[str]
+    missing: dict[str, list[str]]
+    missing_by_variant: dict[str, dict[str, list[str]]]
     global_warnings: list[str]
-    retrieved_at: str
-    provider_mode: str = "mock"
-    cache_hit: bool = False
-    cache_key: Optional[str] = None
-    cache_entry_id: Optional[str] = None
-    query_log_id: Optional[str] = None
-    agent_trace: list[dict[str, Any]] = field(default_factory=list)
-    provider_status: dict[str, dict[str, Any]] = field(default_factory=dict)
-    required_providers: list[str] = field(default_factory=lambda: ["ClinVar", "CIViC"])
+    audit: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
+        variant_gates: dict[str, dict[str, Any]] = {}
+        card_gates: dict[str, dict[str, Any]] = {}
+        for gate in self.safety_gate_results:
+            if gate.variant_id and not gate.evidence_id:
+                variant_gates[gate.variant_id] = gate.to_dict()
+            if gate.evidence_id:
+                card_gates[gate.evidence_id] = gate.to_dict()
+        evidence: list[dict[str, Any]] = []
+        for card in self.evidence_cards:
+            item = card.to_dict()
+            item["gate"] = card_gates.get(card.evidence_id)
+            evidence.append(item)
+        variants: list[dict[str, Any]] = []
+        for variant in self.variants:
+            item = variant.to_dict()
+            item["evidence_summary"] = self._evidence_summary_for(variant.variant_id)
+            item["gate"] = variant_gates.get(variant.variant_id)
+            item["missing"] = self.missing_by_variant.get(
+                variant.variant_id, {"blocking": [], "advisory": []}
+            )
+            variants.append(item)
         return {
-            "variants": [item.to_dict() for item in self.variants],
-            "raw_records": [item.to_dict() for item in self.raw_records],
-            "evidence_cards": [item.to_dict() for item in self.evidence_cards],
-            "safety_gate_results": [item.to_dict() for item in self.safety_gate_results],
-            "answer_markdown": self.answer_markdown,
-            "doctor_summary": self.doctor_summary,
-            "missing_information": self.missing_information,
-            "global_warnings": self.global_warnings,
-            "retrieved_at": self.retrieved_at,
-            "provider_mode": self.provider_mode,
-            "cache_hit": self.cache_hit,
-            "cache_key": self.cache_key,
-            "cache_entry_id": self.cache_entry_id,
-            "query_log_id": self.query_log_id,
-            "agent_trace": self.agent_trace,
-            "provider_status": self.provider_status,
-            "required_providers": self.required_providers,
+            "meta": dict(self.meta),
+            "query": dict(self.query),
+            "variants": variants,
+            "evidence": evidence,
+            "safety": {
+                "variant_gates": [
+                    g.to_dict() for g in self.safety_gate_results if g.variant_id and not g.evidence_id
+                ],
+                "card_gates": [g.to_dict() for g in self.safety_gate_results if g.evidence_id],
+            },
+            "answer": {"markdown": self.answer_markdown},
+            "summary": dict(self.doctor_summary),
+            "missing": {
+                "blocking": list(self.missing.get("blocking") or []),
+                "advisory": list(self.missing.get("advisory") or []),
+            },
+            "global_warnings": list(self.global_warnings),
+            "audit": {
+                "raw_records": [item.to_dict() for item in self.raw_records],
+                "agent_trace": list(self.audit.get("agent_trace") or []),
+                "provider_status": dict(self.audit.get("provider_status") or {}),
+                "resolver_status": dict(self.audit.get("resolver_status") or {}),
+            },
+        }
+
+    def _evidence_summary_for(self, variant_id: str) -> dict[str, Any]:
+        cards = [card for card in self.evidence_cards if card.variant_id == variant_id]
+        match_counts = {"direct": 0, "near": 0, "proxy": 0, "unknown": 0}
+        providers: dict[str, int] = {}
+        levels: dict[str, int] = {}
+        for card in cards:
+            disease_match = card.disease_match or ""
+            if disease_match == "DLBCL直接证据":
+                match_counts["direct"] += 1
+            elif disease_match == "LBCL近似证据":
+                match_counts["near"] += 1
+            elif "外推" in disease_match:
+                match_counts["proxy"] += 1
+            else:
+                match_counts["unknown"] += 1
+            providers[card.provider] = providers.get(card.provider, 0) + 1
+            levels[card.evidence_level] = levels.get(card.evidence_level, 0) + 1
+        return {
+            "total": len(cards),
+            **match_counts,
+            "providers": providers,
+            "levels": levels,
         }
 
 
@@ -406,7 +533,7 @@ class MolecularInputParser:
             if key not in seen:
                 seen.add(key)
                 variants.append(parsed)
-        return variants
+        return self._consolidate_variants(variants)
 
     def _variant_chunks(self, text: str) -> list[str]:
         normalized = (text or "").replace("\r", "\n")
@@ -497,6 +624,66 @@ class MolecularInputParser:
             missing_fields=["protein_hgvs 或 cdna_hgvs"],
         )
 
+    @staticmethod
+    def _completeness_score(variant: NormalizedVariant) -> int:
+        """Rank how much site-level information a parse carries.
+
+        cDNA + transcript + genomic coordinates beat a bare protein mention.
+        Used only to pick the representative parse when the same gene + protein
+        change appears in multiple input lines.
+        """
+        score = 0
+        if variant.protein_hgvs:
+            score += 1
+        if variant.cdna_hgvs:
+            score += 4
+        if variant.transcript:
+            score += 2
+        if variant.genomic_hgvs:
+            score += 2
+        if variant.genome_build:
+            score += 1
+        if variant.mapping_status == "unique":
+            score += 1
+        return score
+
+    def _consolidate_variants(self, variants: list[NormalizedVariant]) -> list[NormalizedVariant]:
+        """Merge repeated parses of the same gene + protein variant.
+
+        A report line like ``TP53 NM_000546.6:c.743G>A, p.Arg248Gln`` followed
+        by a protein-only line ``TP53 p.R248Q`` yields two variants that look
+        identical to the reader but differ in mapping depth (unique vs
+        protein_level_only). Keep the most complete parse as the single
+        representative and retain every raw input line for audit. Equally
+        complete parses (e.g. two transcripts for the same protein change) are
+        intentionally kept apart because their site-level annotations differ.
+        """
+        if len(variants) < 2:
+            return variants
+        groups: dict[tuple[str, str], list[NormalizedVariant]] = {}
+        standalone: list[NormalizedVariant] = []
+        for variant in variants:
+            if variant.gene and variant.protein_hgvs:
+                groups.setdefault((variant.gene.upper(), variant.protein_hgvs.upper()), []).append(variant)
+            else:
+                standalone.append(variant)
+        merged: list[NormalizedVariant] = []
+        for group in groups.values():
+            group.sort(key=self._completeness_score, reverse=True)
+            best = group[0]
+            raw_parts = [best.raw_input]
+            for variant in group[1:]:
+                if self._completeness_score(variant) >= self._completeness_score(best):
+                    merged.append(variant)
+                    continue
+                if variant.raw_input:
+                    raw_parts.append(variant.raw_input)
+            clean_raw = [part for part in dict.fromkeys(raw_parts) if part and part.strip()]
+            if len(clean_raw) > 1:
+                best.raw_input = "；".join(clean_raw)
+            merged.append(best)
+        return merged + standalone
+
 
 class MappingValidator:
     def validate(self, variant: NormalizedVariant) -> NormalizedVariant:
@@ -519,28 +706,28 @@ class MappingValidator:
             variant.warnings = [f"缺少关键字段：{', '.join(missing)}。"]
             return variant
         if variant.unresolved_position and not variant.protein_hgvs:
-            warnings.append("输入仅包含蛋白位点线索，但缺少完整蛋白 HGVS；不能给出位点级确定性结论。")
+            warnings.append("输入仅包含蛋白位点线索，缺少完整蛋白 HGVS；系统已尝试通过解析器补充，若仍未命中则不能给出位点级确定性结论。")
             variant.mapping_status = "ambiguous"
             variant.requires_confirmation = True
         elif variant.cdna_hgvs and not variant.transcript:
-            warnings.append("存在核酸 HGVS，但缺少转录本，不能唯一解释核酸位点。")
+            warnings.append("存在核酸 HGVS 但缺少转录本；系统已尝试通过解析器补充转录本与基因组坐标，若仍未命中则不能唯一解释核酸位点。")
             variant.mapping_status = "ambiguous"
             variant.requires_confirmation = True
         elif variant.genomic_hgvs and not variant.genome_build:
-            warnings.append("存在基因组坐标，但缺少 GRCh37/GRCh38，不能唯一映射。")
+            warnings.append("存在基因组坐标但缺少 GRCh37/GRCh38；系统已尝试通过解析器补充，若仍未命中则不能唯一映射。")
             variant.mapping_status = "ambiguous"
             variant.requires_confirmation = True
         elif variant.protein_hgvs and not variant.cdna_hgvs:
-            warnings.append("当前仅完成蛋白层面识别，系统不会猜测转录本、核酸 HGVS 或基因组坐标。")
+            warnings.append("当前完成蛋白层面识别；系统可尝试通过解析器补充转录本、核酸 HGVS 与基因组坐标，解析失败时不会猜测。")
             variant.mapping_status = "protein_level_only"
             variant.requires_confirmation = False
         else:
             variant.mapping_status = "unique"
             variant.requires_confirmation = False
         if not variant.genome_build:
-            warnings.append("缺少 GRCh37/GRCh38；涉及基因组坐标或精确位点解释时需补充。")
+            warnings.append("缺少 GRCh37/GRCh38；系统可尝试通过解析器补充，涉及基因组坐标或精确位点解释时需补充。")
         if not variant.transcript:
-            warnings.append("缺少转录本；系统不会自动猜测转录本。")
+            warnings.append("缺少转录本；系统可尝试通过解析器补充，不会自动猜测。")
         if annotation.get("protein_effect") == "loss_of_function":
             warnings.append("该变异可能导致蛋白功能丢失（LOF）。")
         if annotation.get("protein_effect") == "gain_of_function":
@@ -895,6 +1082,9 @@ class ClinVarProvider:
             "access_status": "metadata_only",
             "evidence_type": evidence_type,
             "evidence_level": self._clinvar_to_internal_level(item),
+            "germline_classification": germline.get("description"),
+            "oncogenicity_classification": oncogenicity.get("description"),
+            "clinical_impact_classification": clinical_impact.get("description"),
             "disease": disease,
             "direction": "database_record",
             "record_status": "live_metadata",
@@ -1187,6 +1377,212 @@ class CivicProvider:
         )
 
 
+def _extract_myvariant_hits(data: Any) -> list[dict[str, Any]]:
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    if isinstance(data, dict):
+        if isinstance(data.get("hits"), list):
+            return [item for item in data["hits"] if isinstance(item, dict)]
+        if data.get("query") is not None or data.get("_id") is not None:
+            return [data]
+    return []
+
+
+def _nested_get(item: dict[str, Any], *path: str) -> Any:
+    current: Any = item
+    for key in path:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    return current
+
+
+class MyVariantProvider:
+    """Optional extended source: aggregated variant annotation (rsID, population
+    frequency, functional predictions, ClinVar summary) via MyVariant.info."""
+
+    provider_name = "MyVariant"
+    base_url = "https://myvariant.info/v1"
+
+    def __init__(self, *, timeout_seconds: float = 10.0) -> None:
+        self.timeout_seconds = timeout_seconds
+
+    def search(self, variant: NormalizedVariant) -> list[RawEvidenceRecord]:
+        if variant.mapping_status in {"ambiguous", "insufficient", "conflicting"}:
+            return []
+        query = self._build_query(variant)
+        if not query:
+            return []
+        retrieved_at = utc_now_iso()
+        try:
+            with httpx.Client(timeout=self.timeout_seconds, follow_redirects=True) as client:
+                response = client.get(f"{self.base_url}/variant/hgvs/{urllib.parse.quote(query, safe=':')}")
+                response.raise_for_status()
+                data = response.json()
+        except Exception as exc:
+            return [self._error_record(str(exc), retrieved_at)]
+        if isinstance(data, dict) and data.get("notfound"):
+            return []
+        records: list[RawEvidenceRecord] = []
+        seen: set[str] = set()
+        for hit in _extract_myvariant_hits(data)[:5]:
+            raw = self._normalize_hit(hit, variant)
+            if not raw:
+                continue
+            record_id = str(raw.get("provider_record_id") or "")
+            if record_id in seen:
+                continue
+            seen.add(record_id)
+            records.append(
+                RawEvidenceRecord(
+                    provider=self.provider_name,
+                    provider_record_id=record_id,
+                    provider_version="MyVariant.info API live",
+                    raw_response=raw,
+                    retrieved_at=retrieved_at,
+                )
+            )
+        return records
+
+    def _build_query(self, variant: NormalizedVariant) -> Optional[str]:
+        if variant.protein_hgvs:
+            return f"{variant.gene}:{variant.protein_hgvs}"
+        if variant.cdna_hgvs:
+            return f"{variant.gene}:{variant.cdna_hgvs}"
+        return None
+
+    def _normalize_hit(self, hit: dict[str, Any], variant: NormalizedVariant) -> Optional[dict[str, Any]]:
+        if not hit:
+            return None
+        label = " ".join(item for item in [
+            variant.gene,
+            variant.protein_hgvs or variant.cdna_hgvs or variant.unresolved_position,
+        ] if item)
+        record_id = str(hit.get("_id") or hit.get("query") or f"MYVARIANT-{uuid.uuid4().hex[:10]}")
+        rsid = str(_nested_get(hit, "dbsnp", "rsid") or _nested_get(hit, "clinvar", "rsid") or hit.get("rsid") or "").strip()
+        allele_freq = self._allele_frequency(hit)
+        predictions = self._functional_predictions(hit)
+        clinvar_summary = self._clinvar_summary(hit)
+        genomic_hgvs = self._genomic_hgvs(hit)
+        claim_parts = [f"MyVariant 聚合注释提供了 {label} 的变异附加信息"]
+        if rsid:
+            claim_parts.append(f"dbSNP 编号 {rsid}")
+        if allele_freq is not None:
+            claim_parts.append(f"群体等位基因频率约 {allele_freq:.2e}（罕见）")
+        if predictions:
+            claim_parts.append(f"功能预测：{'；'.join(predictions)}")
+        if clinvar_summary:
+            claim_parts.append(f"ClinVar 概要：{clinvar_summary}")
+        claim = "；".join(claim_parts) + "。该注释用于变异解读的辅助参考，不单独构成治疗或诊断结论。"
+        return {
+            "provider": self.provider_name,
+            "provider_record_id": record_id,
+            "source_title": f"MyVariant.info annotation: {label}",
+            "source_title_zh": f"MyVariant 变异注释：{label}",
+            "source_url": "https://myvariant.info/",
+            "source_version": "MyVariant.info API live",
+            "publication_or_release_date": None,
+            "access_status": "metadata_only",
+            "evidence_type": "population frequency / functional prediction",
+            "evidence_level": "L5",
+            "disease": "unknown",
+            "direction": "annotation",
+            "record_status": "live_metadata",
+            "review_status": "聚合注释（gnomAD/dbNSFP/CADD/ClinVar 等）",
+            "matched_variant": label,
+            "claim": claim,
+            "population": "gnomAD/ExAC 等群体数据库汇总，非 DLBCL 患者队列。",
+            "intervention_and_outcome": "不适用；群体频率与功能预测不构成治疗证据。",
+            "applicability": "用于变异注释与优先级参考，需结合 ClinVar/CIViC 的疾病特异性证据。",
+            "limitations": "MyVariant 聚合结果需按版本核对；功能预测为计算推断，不能替代实验验证和临床判断。",
+            "submission_conflict": False,
+            "rsid": rsid or None,
+            "allele_freq": allele_freq,
+            "genomic_hgvs": genomic_hgvs,
+        }
+
+    def _allele_frequency(self, hit: dict[str, Any]) -> Optional[float]:
+        for source in ("gnomad_exome", "gnomad_genome", "exac"):
+            af = _nested_get(hit, source, "af")
+            if isinstance(af, (int, float)) and af >= 0:
+                return float(af)
+        return None
+
+    def _functional_predictions(self, hit: dict[str, Any]) -> list[str]:
+        predictions: list[str] = []
+        dbnsfp = hit.get("dbnsfp") if isinstance(hit.get("dbnsfp"), dict) else {}
+        revel = _nested_get(dbnsfp, "revel_score")
+        if isinstance(revel, (int, float)):
+            predictions.append(f"REVEL {revel:.2f}")
+        cadd = hit.get("cadd")
+        if isinstance(cadd, list) and cadd:
+            phred = cadd[0].get("phred") if isinstance(cadd[0], dict) else None
+            if isinstance(phred, (int, float)):
+                predictions.append(f"CADD {phred:.1f}")
+        elif isinstance(cadd, dict) and isinstance(cadd.get("phred"), (int, float)):
+            predictions.append(f"CADD {cadd['phred']:.1f}")
+        polyphen = _nested_get(dbnsfp, "polyphen2", "hdiv", "pred")
+        if polyphen:
+            predictions.append(f"Polyphen {polyphen}")
+        sift = _nested_get(dbnsfp, "sift", "pred")
+        if sift:
+            predictions.append(f"SIFT {sift}")
+        return predictions[:4]
+
+    def _clinvar_summary(self, hit: dict[str, Any]) -> Optional[str]:
+        clinvar = hit.get("clinvar")
+        if not isinstance(clinvar, dict):
+            return None
+        significance = clinvar.get("clinical_significance")
+        if isinstance(significance, list) and significance:
+            values = [str(item) for item in significance]
+            return "、".join(values[:4])
+        return None
+
+    def _genomic_hgvs(self, hit: dict[str, Any]) -> Optional[str]:
+        raw = hit.get("hgvs")
+        entries: list[str] = []
+        if isinstance(raw, str):
+            entries = [raw]
+        elif isinstance(raw, dict):
+            entries = [str(value) for value in raw.values()]
+        elif isinstance(raw, list):
+            entries = [str(value) for value in raw]
+        for entry in entries:
+            if re.match(r"^chr[^:]+:g\.", entry, re.IGNORECASE):
+                return entry
+        vcf = hit.get("vcf")
+        if isinstance(vcf, dict) and all(vcf.get(key) for key in ("chrom", "pos", "ref", "alt")):
+            return f"chr{vcf['chrom']}:g.{vcf['pos']}{vcf['ref']}>{vcf['alt']}"
+        return None
+
+    def _error_record(self, error: str, retrieved_at: str) -> RawEvidenceRecord:
+        return RawEvidenceRecord(
+            provider=self.provider_name,
+            provider_record_id="MYVARIANT_QUERY_ERROR",
+            provider_version="MyVariant.info API live",
+            raw_response={
+                "provider": self.provider_name,
+                "provider_record_id": "MYVARIANT_QUERY_ERROR",
+                "source_title": "MyVariant query error",
+                "source_url": "https://myvariant.info/",
+                "source_version": "MyVariant.info API live",
+                "access_status": "not_accessible",
+                "evidence_level": "L5",
+                "evidence_type": "query_error",
+                "disease": "unknown",
+                "record_status": "error",
+                "claim": "MyVariant 查询失败，不能据此形成确定性分子证据结论。",
+                "population": "无法获取。",
+                "intervention_and_outcome": "无法获取。",
+                "applicability": "不能作为证据使用。",
+                "limitations": error,
+                "submission_conflict": False,
+            },
+            retrieved_at=retrieved_at,
+        )
+
+
 class CompositeEvidenceProvider:
     provider_name = "composite"
 
@@ -1209,25 +1605,193 @@ class _ProviderView:
         return [record for record in self.provider.search(variant) if record.provider == self.provider_name]
 
 
+class VariantResolver(Protocol):
+    """Resolves missing variant coordinates (transcript / cDNA HGVS / genomic HGVS / GRCh build)."""
+
+    resolver_name: str
+
+    def resolve(self, variant: NormalizedVariant) -> Optional[dict[str, Any]]:
+        """Return resolved fields or None when the variant cannot be mapped."""
+
+
+MOCK_RESOLUTION: dict[str, dict[str, str]] = {
+    "MYD88|P.L265P": {
+        "protein_hgvs": "p.L265P",
+        "cdna_hgvs": "c.794T>C",
+        "transcript": "NM_002468.5",
+        "genomic_hgvs": "chr3:g.38181403T>C",
+        "genome_build": "GRCh38",
+    },
+    "CD79B|P.Y196H": {
+        "protein_hgvs": "p.Y196H",
+        "cdna_hgvs": "c.586T>C",
+        "transcript": "NM_001039933.4",
+        "genomic_hgvs": "chr17:g.63916223T>C",
+        "genome_build": "GRCh38",
+    },
+    "TP53|P.R248Q": {
+        "protein_hgvs": "p.R248Q",
+        "cdna_hgvs": "c.743G>A",
+        "transcript": "NM_000546.6",
+        "genomic_hgvs": "chr17:g.7674222G>A",
+        "genome_build": "GRCh38",
+    },
+}
+
+
+class MockVariantResolver:
+    """Deterministic resolver backed by MOCK_RESOLUTION; used by mock / fallback paths."""
+
+    resolver_name = "mock"
+
+    def resolve(self, variant: NormalizedVariant) -> Optional[dict[str, Any]]:
+        candidates: list[str] = [f"{variant.gene}|{(variant.protein_hgvs or '').upper()}"]
+        if variant.unresolved_position and variant.gene == "TP53" and variant.unresolved_position.upper().startswith("R248"):
+            candidates.append("TP53|P.R248Q")
+        if variant.protein_hgvs:
+            for key, fields in MOCK_RESOLUTION.items():
+                if (
+                    key.split("|", 1)[0] == variant.gene.upper()
+                    and (fields.get("protein_hgvs") or "").upper() == variant.protein_hgvs.upper()
+                ):
+                    candidates.append(key)
+        if not variant.protein_hgvs and variant.cdna_hgvs:
+            compact_cdna = variant.cdna_hgvs.upper().replace(" ", "")
+            for key, fields in MOCK_RESOLUTION.items():
+                if (
+                    key.split("|", 1)[0] == variant.gene.upper()
+                    and (fields.get("cdna_hgvs") or "").upper().replace(" ", "") == compact_cdna
+                ):
+                    candidates.append(key)
+        for key in candidates:
+            fields = MOCK_RESOLUTION.get(key)
+            if fields is None:
+                continue
+            result = dict(fields)
+            result["source"] = self.resolver_name
+            result["query"] = variant.raw_input
+            result["warnings"] = ["本地解析器补充了转录本/核酸 HGVS/基因组坐标，坐标仅供流程演示，正式解读前请核对参考基因组版本与检测报告。"]
+            return result
+        return None
+
+
+class MyVariantResolver:
+    """Live resolver via MyVariant.info HGVS endpoint (GRCh37 coordinates)."""
+
+    resolver_name = "MyVariant.info"
+    base_url = "https://myvariant.info/v1"
+
+    def __init__(self, *, timeout_seconds: float = 10.0) -> None:
+        self.timeout_seconds = timeout_seconds
+
+    def resolve(self, variant: NormalizedVariant) -> Optional[dict[str, Any]]:
+        query = self._build_query(variant)
+        if not query:
+            return None
+        try:
+            with httpx.Client(timeout=self.timeout_seconds, follow_redirects=True) as client:
+                response = client.get(f"{self.base_url}/variant/hgvs/{urllib.parse.quote(query, safe=':')}")
+                response.raise_for_status()
+                data = response.json()
+        except Exception as exc:
+            return {
+                "source": self.resolver_name,
+                "query": query,
+                "warnings": [f"在线坐标解析失败：{type(exc).__name__}: {exc}"],
+                "error": str(exc),
+            }
+        if isinstance(data, dict) and data.get("notfound"):
+            return None
+        for hit in _extract_myvariant_hits(data):
+            resolved = self._resolution_from_hit(hit, variant)
+            if resolved:
+                resolved["source"] = self.resolver_name
+                resolved["query"] = query
+                resolved.setdefault("genome_build", "GRCh37")
+                resolved["warnings"] = ["在线解析器补充了转录本/核酸 HGVS/基因组坐标；MyVariant.info 默认提供 GRCh37 坐标，如需 GRCh38 请核对后再使用。"]
+                return resolved
+        return None
+
+    def _build_query(self, variant: NormalizedVariant) -> Optional[str]:
+        if variant.protein_hgvs:
+            return f"{variant.gene}:{variant.protein_hgvs}"
+        if variant.cdna_hgvs:
+            return f"{variant.gene}:{variant.cdna_hgvs}"
+        return None
+
+    def _resolution_from_hit(self, hit: dict[str, Any], variant: NormalizedVariant) -> Optional[dict[str, Any]]:
+        result: dict[str, Any] = {}
+        raw = hit.get("hgvs")
+        if isinstance(raw, str):
+            entries = [raw]
+        elif isinstance(raw, dict):
+            entries = [str(value) for value in raw.values()]
+        elif isinstance(raw, list):
+            entries = [str(value) for value in raw]
+        else:
+            entries = []
+        for entry in entries:
+            entry = str(entry or "")
+            if re.match(r"^chr[^:]+:g\.", entry, re.IGNORECASE):
+                result.setdefault("genomic_hgvs", entry)
+            cdna = re.search(r"\b(NM_\d+(?:\.\d+)?):(c\.[A-Za-z0-9>_delinsdup*]+)", entry, re.IGNORECASE)
+            if cdna:
+                result.setdefault("transcript", cdna.group(1).upper())
+                result.setdefault("cdna_hgvs", cdna.group(2))
+        if not result.get("genomic_hgvs"):
+            vcf = hit.get("vcf")
+            if isinstance(vcf, dict) and all(vcf.get(key) for key in ("chrom", "pos", "ref", "alt")):
+                result["genomic_hgvs"] = f"chr{vcf['chrom']}:g.{vcf['pos']}{vcf['ref']}>{vcf['alt']}"
+        return result or None
+
+
+class CompositeVariantResolver:
+    """Tries resolvers in order; used by hybrid mode (live first, mock as fallback)."""
+
+    resolver_name = "composite"
+
+    def __init__(self, resolvers: list[VariantResolver]) -> None:
+        self.resolvers = resolvers
+
+    def resolve(self, variant: NormalizedVariant) -> Optional[dict[str, Any]]:
+        for resolver in self.resolvers:
+            try:
+                result = resolver.resolve(variant)
+            except Exception:
+                result = None
+            if result:
+                result.setdefault("source", resolver.resolver_name)
+                return result
+        return None
+
+
 class MolecularEvidenceAgent:
-    """Deterministic agent that executes every required molecular database tool."""
+    """Deterministic agent that enriches variants then executes every required molecular database tool."""
 
     REQUIRED_PROVIDERS = ("ClinVar", "CIViC")
 
-    def __init__(self, *, provider_mode: str = "live", providers: Optional[list[EvidenceProvider]] = None) -> None:
+    def __init__(
+        self,
+        *,
+        provider_mode: str = "live",
+        providers: Optional[list[EvidenceProvider]] = None,
+        resolver: Optional[VariantResolver] = None,
+    ) -> None:
         self.provider_mode = provider_mode
         self.providers = providers or [ClinVarProvider(), CivicProvider()]
+        self.resolver = resolver
         self.required_providers = self.REQUIRED_PROVIDERS
 
     def run(
         self, variants: list[NormalizedVariant]
-    ) -> tuple[list[RawEvidenceRecord], list[dict[str, Any]], dict[str, dict[str, Any]]]:
+    ) -> tuple[list[RawEvidenceRecord], list[dict[str, Any]], dict[str, dict[str, Any]], dict[str, Any]]:
         trace: list[dict[str, Any]] = [{
             "step": "plan",
             "required_providers": list(self.required_providers),
             "variant_count": len(variants),
             "policy": "all_required_providers_must_be_queried",
             "execution": "parallel",
+            "resolve_missing_coordinates": self.resolver is not None,
         }]
         status = {
             name: {
@@ -1240,10 +1804,53 @@ class MolecularEvidenceAgent:
             }
             for name in self.required_providers
         }
+        resolver_status: dict[str, Any] = {
+            "enabled": self.resolver is not None,
+            "resolver": self.resolver.resolver_name if self.resolver is not None else None,
+            "queried": False,
+            "attempted_count": 0,
+            "resolved_count": 0,
+            "unresolved_count": 0,
+            "state": "disabled" if self.resolver is None else "pending",
+        }
         provider_names = {provider.provider_name for provider in self.providers}
         missing_tools = [name for name in self.required_providers if name not in provider_names]
         if missing_tools:
             raise RuntimeError(f"required molecular provider tools are not configured: {', '.join(missing_tools)}")
+
+        validator = MappingValidator()
+        if self.resolver is not None:
+            for variant in variants:
+                if not self._needs_enrichment(variant):
+                    continue
+                resolver_status["queried"] = True
+                resolver_status["attempted_count"] += 1
+                resolved = self.resolver.resolve(variant)
+                if resolved:
+                    self._apply_resolution(variant, resolved)
+                    validator.validate(variant)
+                    resolver_status["resolved_count"] += 1
+                    trace.append({
+                        "step": "resolve_variant",
+                        "resolver": self.resolver.resolver_name,
+                        "variant_id": variant.variant_id,
+                        "variant": self._variant_label(variant),
+                        "status": "resolved",
+                        "mapping_status": variant.mapping_status,
+                        "resolved_fields": variant.enrichment.get("resolved_fields", {}),
+                    })
+                else:
+                    resolver_status["unresolved_count"] += 1
+                    trace.append({
+                        "step": "resolve_variant",
+                        "resolver": self.resolver.resolver_name,
+                        "variant_id": variant.variant_id,
+                        "variant": self._variant_label(variant),
+                        "status": "unresolved",
+                        "mapping_status": variant.mapping_status,
+                    })
+            if resolver_status["queried"]:
+                resolver_status["state"] = "resolved" if resolver_status["resolved_count"] else "unresolved"
 
         tasks = [(variant, provider) for variant in variants for provider in self.providers]
         outcomes: list[tuple[NormalizedVariant, EvidenceProvider, list[RawEvidenceRecord], Optional[str]]] = []
@@ -1262,7 +1869,7 @@ class MolecularEvidenceAgent:
                         outcomes.append((variant, provider, [], f"{type(exc).__name__}: {exc}"))
 
         records: list[RawEvidenceRecord] = []
-        seen_records: set[tuple[str, str, str]] = set()
+        seen_records: set[tuple[str, str]] = set()
         outcomes.sort(key=lambda item: (item[0].variant_id, item[1].provider_name))
         for variant, provider, provider_records, exception_text in outcomes:
             provider_name = provider.provider_name
@@ -1286,7 +1893,7 @@ class MolecularEvidenceAgent:
                 if is_error:
                     records.append(record)
                     continue
-                record_key = (record.provider, record.provider_record_id, variant.variant_id)
+                record_key = (record.provider, record.provider_record_id)
                 if record_key in seen_records:
                     duplicate_count += 1
                     continue
@@ -1326,9 +1933,41 @@ class MolecularEvidenceAgent:
             "step": "complete",
             "required_providers_queried": True,
             "completion_state": "degraded" if degraded else "complete",
+            "resolver": resolver_status,
             "providers": status,
         })
-        return records, trace, status
+        return records, trace, status, resolver_status
+
+    def _needs_enrichment(self, variant: NormalizedVariant) -> bool:
+        """A variant needs coordinate resolution when it is missing resolvable fields.
+
+        Truly insufficient inputs (no protein / cDNA at all) are left untouched:
+        there is nothing for a resolver to look up.
+        """
+        if not variant.gene:
+            return False
+        if variant.mapping_status in {"ambiguous", "insufficient", "conflicting"}:
+            return bool(variant.protein_hgvs or variant.cdna_hgvs or variant.unresolved_position)
+        if variant.mapping_status == "protein_level_only":
+            return True
+        return variant.mapping_status == "unique" and not variant.genomic_hgvs
+
+    def _apply_resolution(self, variant: NormalizedVariant, resolved: dict[str, Any]) -> None:
+        for field in ("protein_hgvs", "cdna_hgvs", "genomic_hgvs", "genome_build", "transcript"):
+            value = resolved.get(field)
+            if value:
+                setattr(variant, field, str(value))
+        resolved_fields = {
+            field: getattr(variant, field)
+            for field in ("protein_hgvs", "cdna_hgvs", "genomic_hgvs", "genome_build", "transcript")
+            if getattr(variant, field)
+        }
+        variant.enrichment = {
+            "source": resolved.get("source") or (self.resolver.resolver_name if self.resolver else "unknown"),
+            "query": resolved.get("query") or variant.raw_input,
+            "resolved_fields": resolved_fields,
+            "warnings": resolved.get("warnings") or [],
+        }
 
     def _is_error_record(self, record: RawEvidenceRecord) -> bool:
         return (
@@ -1463,6 +2102,13 @@ class EvidenceCardBuilder:
         evidence_level = str(raw.get("evidence_level") or "L5")
         evidence_level = self._normalize_internal_level(evidence_level, disease_match, str(raw.get("record_status") or ""))
         safety_flags = self._initial_safety_flags(raw, disease_match, evidence_level)
+        frameworks = self._map_framework_labels(
+            provider=record.provider,
+            evidence_level=evidence_level,
+            evidence_type=str(raw.get("evidence_type") or ""),
+            disease_match=disease_match,
+            raw=raw,
+        )
         return EvidenceCard(
             evidence_id=f"ev_{uuid.uuid4().hex[:12]}",
             claim=str(raw.get("claim") or "该数据库记录提供变异解释线索，但需要结合疾病匹配和证据等级判断。"),
@@ -1493,7 +2139,86 @@ class EvidenceCardBuilder:
             matched_variant=raw.get("matched_variant") or f"{variant.gene} {variant.protein_hgvs or variant.cdna_hgvs or variant.unresolved_position or ''}".strip(),
             original_claim=raw.get("original_claim"),
             safety_flags=safety_flags,
+            amp_tier=frameworks.get("amp_tier"),
+            escat_level=frameworks.get("escat_level"),
+            acmg_class=frameworks.get("acmg_class"),
+            framework_note=frameworks.get("framework_note"),
         )
+
+    def _map_framework_labels(
+        self,
+        *,
+        provider: str,
+        evidence_level: str,
+        evidence_type: str,
+        disease_match: str,
+        raw: dict[str, Any],
+    ) -> dict[str, Optional[str]]:
+        """Map internal L1–L5 onto AMP/ASCO/CAP, ESCAT, and ACMG where applicable.
+
+        ACMG/AMP 2015 applies to *germline pathogenicity*, not therapy papers.
+        Somatic clinical significance uses AMP/ASCO/CAP Tier I–IV and ESMO ESCAT.
+        """
+        level = (evidence_level or "L5").upper()
+        etype = (evidence_type or "").lower()
+        provider_l = (provider or "").lower()
+
+        # Internal L → AMP Tier (somatic clinical significance)
+        amp_map = {"L1": "I", "L2": "I/II", "L3": "II", "L4": "III", "L5": "IV"}
+        amp_tier = amp_map.get(level, "IV")
+
+        # ESCAT actionability (therapy-oriented); prognostic/diagnostic stay descriptive.
+        if any(k in etype for k in ("predictive", "therapeutic", "therapy")):
+            escat_map = {"L1": "I-A", "L2": "I-B", "L3": "II-B", "L4": "III-A", "L5": "V"}
+            escat_level = escat_map.get(level, "V")
+        elif "prognostic" in etype:
+            escat_level = "IV" if level in {"L1", "L2", "L3"} else "V"
+        else:
+            escat_level = None
+
+        acmg_class = None
+        note_parts = [
+            "内部等级 L1–L5 为产品统一尺度",
+            "体细胞临床意义对齐 AMP/ASCO/CAP 2017 Tier",
+        ]
+        if escat_level:
+            note_parts.append("可靶向/预测性证据同时标注 ESMO ESCAT")
+
+        # ClinVar germline pathogenicity → ACMG class labels
+        if provider_l == "clinvar" and "germline" in etype:
+            text = " ".join(
+                str(v)
+                for v in [
+                    raw.get("germline_classification"),
+                    raw.get("classification"),
+                    raw.get("claim"),
+                ]
+                if v
+            ).lower()
+            if "likely pathogenic" in text:
+                acmg_class = "LP"
+            elif re.search(r"(?<!likely )\bpathogenic\b", text):
+                acmg_class = "P"
+            elif "likely benign" in text:
+                acmg_class = "LB"
+            elif re.search(r"(?<!likely )\bbenign\b", text):
+                acmg_class = "B"
+            elif "uncertain" in text or "vus" in text or "conflicting" in text:
+                acmg_class = "VUS"
+            if acmg_class:
+                note_parts.append("ClinVar 胚系致病性对齐 ACMG/AMP 2015 五类")
+            else:
+                note_parts.append("ClinVar 记录未解析出明确 ACMG 分类")
+
+        if disease_match not in {"DLBCL直接证据", "LBCL近似证据"}:
+            note_parts.append("非 DLBCL 直接证据，框架标签仅供参考")
+
+        return {
+            "amp_tier": f"Tier {amp_tier}",
+            "escat_level": escat_level,
+            "acmg_class": acmg_class,
+            "framework_note": "；".join(note_parts) + "。",
+        }
 
     def _normalize_internal_level(self, level: str, disease_match: str, record_status: str) -> str:
         level = (level or "L5").upper()
@@ -1532,9 +2257,13 @@ class SafetyGate:
                 evidence_id=None,
                 decision="ask_for_confirmation",
                 allowed_claim_strength="no_definitive_variant_claim",
-                required_warnings=["当前变异无法唯一映射。请补充转录本、参考基因组版本或检测报告中的标准 HGVS 表达。"],
+                required_warnings=[
+                    "您提供的变异写法目前无法唯一锁定一个变异（可能缺少转录本、参考基因组版本或标准 HGVS）。请对照基因检测报告，补充如 NM_xxx:c.xxx 或 chr:g.xxx 的标准写法，系统才能准确检索对应的证据。"
+                ],
                 blocked_outputs=["diagnosis", "patient_level_treatment_plan", "individual_prognosis_prediction"],
-                reasons=variant.warnings or ["变异信息不足或存在歧义。"],
+                reasons=variant.warnings or [
+                    "变异信息不足或写法存在歧义，暂时无法锁定唯一变异位点，需要医生补充/确认后继续。"
+                ],
             )
         return SafetyGateResult(
             evidence_id=None,
@@ -1554,36 +2283,36 @@ class SafetyGate:
         if card.access_status in {"abstract_only", "metadata_only", "conference_abstract", "preprint", "not_accessible"}:
             decision = "downgrade"
             strength = "literature_lead_or_database_signal_only"
-            warnings.append("该结论仅基于摘要或数据库元数据，尚无法核验患者入组条件、治疗细节、亚组分析及不良事件，因此仅作为文献线索，不构成患者级诊疗建议。")
-            reasons.append("证据访问状态不是全文已核验。")
+            warnings.append("本次只获取到数据库条目（摘要/元数据），尚未核对原始研究全文，无法确认研究人群、入组标准、治疗方案与疗效结局。该证据只能作为线索参考，暂不建议据此单独改变临床决策。")
+            reasons.append("证据完整性不足：仅获得摘要或数据库元数据，未核验原文全文。")
         if card.disease_match not in {"DLBCL直接证据", "LBCL近似证据"}:
             decision = "downgrade"
             strength = "extrapolation_only"
-            warnings.append("该证据不是 DLBCL 直接证据，不能直接外推到 DLBCL。")
-            reasons.append(f"疾病匹配程度为：{card.disease_match}。")
+            warnings.append("该证据来自其他疾病（非 DLBCL 直接研究）。不同肿瘤的分子机制与疗效证据不能直接套用，跨病种结论只能作参考，需结合 DLBCL 的直接研究。")
+            reasons.append(f"证据疾病与当前疾病不直接匹配（{card.disease_match}），跨病种外推需谨慎。")
         if card.conflict.has_conflict:
             decision = "downgrade"
             strength = "conflicted_evidence"
-            warnings.append("该证据存在未解决冲突，不能给出单一确定结论。")
-            reasons.append(card.conflict.description or "存在数据库或来源冲突。")
+            warnings.append("不同来源/提交方对该条目的临床意义存在分歧，结论尚不确定，解读时需保守。")
+            reasons.append(card.conflict.description or "数据库提交方之间存在分歧（冲突），无法给出单一确定结论。")
         if "oncogenicity" in (card.evidence_type or "").lower():
-            warnings.append("体细胞致癌性不等同于可靶向治疗证据。")
+            warnings.append("体细胞致癌性只说明该变异可能参与肿瘤发生，不等于有对应的可用靶向药，不能据此推断治疗方案。")
             blocked.append("infer_targetability_from_oncogenicity")
         if card.record_status and str(card.record_status).lower() not in {"accepted", "supported", "verified", "curated", "mock_accepted", "live_metadata"}:
             decision = "downgrade"
             strength = "unaccepted_or_uncertain_record"
             if card.provider.lower() == "civic" and str(card.record_status).lower() == "submitted":
-                warnings.append("该 CIViC 记录已提交但尚未经过编辑审核，只能作为待审核数据库线索。")
-                reasons.append("CIViC 状态为 SUBMITTED，而不是 ACCEPTED。")
+                warnings.append("该条 CIViC 记录仍处于提交待审核状态，尚未经过编辑审核，只能作为待审核线索，不能作为确定结论或治疗依据。")
+                reasons.append("记录尚未被 CIViC 编辑审核接受，证据可信度未经确认。")
                 blocked.extend(["treatment_recommendation", "definitive_diagnosis", "patient_level_prognosis"])
             else:
-                warnings.append("证据记录状态未达到接受阈值，需要谨慎解读。")
-                reasons.append(f"记录状态为：{card.record_status}。")
+                warnings.append("该证据记录尚未达到数据库接受标准，解读时需保守，暂不宜据此作出诊疗判断。")
+                reasons.append(f"记录状态为 {card.record_status}，未达到接受阈值。")
         if card.evidence_level in {"L4", "L5"} and decision == "allow":
             decision = "downgrade"
             strength = "low_level_evidence"
-            warnings.append("当前证据等级较低，应以线索而非结论表述。")
-            reasons.append(f"内部证据等级为：{card.evidence_level}。")
+            warnings.append("该证据的证据级别较低（数据库整理、个案或低层级研究），证据强度有限，只能作为线索性参考，不宜据此单独改变诊疗决策。")
+            reasons.append(f"证据级别较低（{card.evidence_level}），仅支持线索性解读。")
         card.safety_flags = warnings
         return SafetyGateResult(
             evidence_id=card.evidence_id,
@@ -1611,29 +2340,20 @@ class AnswerComposer:
             decision_bucket = "confirm"
         elif any(g.decision == "downgrade" for g in gates):
             decision_bucket = "downgrade"
-        lines = ["## 直接回答", "", direct]
+        lines = ["## 直接回答", ""]
         if decision_bucket == "confirm":
-            lines.append("当前至少存在一项需要医生确认或阻断的安全门控结果，结论必须保守表述。")
+            lines.append("当前至少存在一项需要医生确认或阻断的安全门控结果，建议先复核原始报告与样本信息，再给出患者级结论。")
         elif decision_bucket == "downgrade":
-            lines.append("当前证据已进入降级模式，仅可作为线索性解释，不能直接上升为患者级结论。")
+            lines.append("当前证据可用于线索性解释，但证据强度有限，建议结合病理和临床背景再判断。")
         else:
-            lines.append("当前证据门控允许在边界内进行分子证据解释。")
+            lines.append("当前证据可用于分子层面的临床解释，但仍需结合病理、免疫表型和治疗背景综合判断。")
+        lines.append(direct)
         intents = self._question_intents(question)
         if intents:
             lines.extend(["", f"本次重点：{'、'.join(intents)}。"])
-        lines.extend(["", "## 针对临床问题的判断"])
         lines.extend(self._clinical_question_answer(variants=variants, cards=cards, intents=intents))
-        lines.extend(["", "## 证据依据"])
-        if cards:
-            for idx, card in enumerate(sorted(cards, key=self._card_rank), start=1):
-                lines.append(f"{idx}. **{card.claim}**")
-                lines.append(f"   - 来源：[{card.source_id}]({card.source_url})；疾病匹配：{card.disease_match}；证据状态：{card.access_status}；证据等级：{card.evidence_level}")
-                if card.drug:
-                    lines.append(f"   - 药物/干预线索：{card.drug}")
-                if card.limitations:
-                    lines.append(f"   - 局限性：{card.limitations}")
-        else:
-            lines.append("暂无证据卡。")
+        lines.append("")
+        lines.extend(self._clinical_general_suggestions(intents=intents, variants=variants, cards=cards, decision_bucket=decision_bucket))
         lines.extend(["", "## 适用范围"])
         for variant in variants:
             label = " ".join(item for item in [variant.gene, variant.protein_hgvs or variant.cdna_hgvs or variant.genomic_hgvs or variant.unresolved_position or "未明确位点"] if item)
@@ -1644,7 +2364,7 @@ class AnswerComposer:
         for variant in variants:
             ann = getattr(variant, "molecular_annotation", {}) or {}
             label = " ".join(item for item in [variant.gene or "未识别基因", variant.protein_hgvs or variant.cdna_hgvs or variant.genomic_hgvs or variant.unresolved_position or "未明确位点"] if item)
-            lines.append(f"- **{label}**")
+            lines.append(f"- {label}")
             lines.append(f"  - 突变类型：{ann.get('variant_type') or variant.variant_type or 'unknown'}；外显子/结构相关性：{ann.get('exon_relevance') or 'unknown'}")
             lines.append(f"  - 蛋白影响：{ann.get('protein_impact_note') or '当前证据不足'}；预测效应：{ann.get('protein_effect') or 'unknown'}")
             lines.append(f"  - 基因属性：{ann.get('gene_role') or 'unknown'}；肿瘤效应：{ann.get('oncology_effect') or 'unknown'}")
@@ -1659,38 +2379,6 @@ class AnswerComposer:
             lines.append(f"  - 数据库分型提示：{ann.get('database_class_hint') or 'context_dependent'}")
         lines.extend(["", "## 分子诊断报告模板"])
         lines.extend(self._build_report_template(variants=variants, cards=cards, decision_bucket=decision_bucket))
-        lines.extend(["", "## 证据状态"])
-        statuses = sorted({card.access_status for card in cards}) if cards else []
-        lines.append("- " + ("；".join(statuses) if statuses else "暂无可展示证据状态。"))
-        # 分级展示证据核验状态，而非一刀切
-        full_verified = [c for c in cards if c.access_status == "full_text_verified"]
-        metadata_only = [c for c in cards if c.access_status == "metadata_only"]
-        mock_cards = [c for c in cards if "mock" in (c.access_status or "").lower() or "mock" in (c.provider or "").lower()]
-        not_accessible = [c for c in cards if c.access_status in {"not_accessible", "abstract_only", "preprint"}]
-        if full_verified:
-            lines.append(f"- 已全文核验证据 {len(full_verified)} 条，可用于临床讨论。")
-        if metadata_only:
-            lines.append(f"- 元数据级证据 {len(metadata_only)} 条：可作为数据库线索，不宜直接用于用药或疗效判断。")
-        if mock_cards:
-            lines.append(f"- 本地示例证据 {len(mock_cards)} 条：仅用于演示流程，不代表真实数据库结论。")
-        if not_accessible:
-            lines.append(f"- 未获取全文证据 {len(not_accessible)} 条：建议补充原文或升级数据源模式后复查。")
-        if not cards:
-            lines.append("- 当前未检索到证据卡；建议补充更明确的 HGVS 或切换数据源模式。")
-        if any(card.evidence_level in {"L4", "L5"} for card in cards):
-            lines.append("- 存在低等级证据，已按线索性证据处理。")
-        lines.extend(["", "## 冲突与不确定性"])
-        conflicts = [card for card in cards if card.conflict.has_conflict]
-        if conflicts:
-            for card in conflicts:
-                lines.append(f"- {card.source_id}：{card.conflict.description or '存在未解决冲突'}")
-        else:
-            lines.append("- 当前证据卡未标记明确冲突。")
-        if any(card.disease_match not in {"DLBCL直接证据", "LBCL近似证据"} for card in cards):
-            lines.append("- 存在非 DLBCL 直接证据，已按外推证据降级处理。")
-        unaccepted = [c for c in cards if (c.record_status or '').lower() not in {"accepted", "supported", "verified", "curated", "mock_accepted", "live_metadata"}]
-        if unaccepted:
-            lines.append(f"- 存在 {len(unaccepted)} 条未确认记录，仅作参考线索。")
         lines.extend(["", "## 缺失信息"])
         if missing_information:
             lines.extend(f"- {item}" for item in missing_information)
@@ -1698,17 +2386,6 @@ class AnswerComposer:
             lines.append("- 当前输入已满足基础查询条件。")
         if any(v.mapping_status == "ambiguous" for v in variants):
             lines.append("- 存在歧义映射的变异，无法在不补充信息时给出位点级结论。")
-        if cards:
-            provider_counts = {}
-            for card in cards:
-                provider_counts[card.provider] = provider_counts.get(card.provider, 0) + 1
-            lines.append("- 来源分布：" + "；".join(f"{provider} {count} 条" for provider, count in provider_counts.items()))
-        lines.extend(["", "## 来源"])
-        if cards:
-            for card in cards:
-                lines.append(f"- [{card.source_id}]({card.source_url})，版本：{card.source_version or '未知'}，检索时间：{card.retrieved_at}")
-        else:
-            lines.append("- 暂无来源。")
         lines.extend(["", "## 使用边界"])
         for item in global_warnings:
             lines.append(f"- {item}")
@@ -1749,32 +2426,72 @@ class AnswerComposer:
         lines: list[str] = []
         if "诊断与分型" in intents:
             if {"MYD88", "CD79B"}.issubset(genes):
-                lines.append("- **诊断与分型：**MYD88 与 CD79B 共变异在生物学上符合 BCR/TLR–NF-κB 共同激活，并可支持 MCD 样分子特征；但不能仅凭两个位点替代完整分子分型算法，也不能脱离病理和免疫表型独立确诊。")
+                lines.append("- 诊断与分型：MYD88 与 CD79B 共变异在生物学上符合 BCR/TLR–NF-κB 共同激活，并可支持 MCD 样分子特征；但不能仅凭两个位点替代完整分子分型算法，也不能脱离病理和免疫表型独立确诊。")
             else:
-                lines.append("- **诊断与分型：**这些变异可作为当前疾病诊断或分型的辅助线索，不能单独替代病理、免疫表型及正式分类标准。")
+                lines.append("- 诊断与分型：这些变异可作为当前疾病诊断或分型的辅助线索，不能单独替代病理、免疫表型及正式分类标准。")
+            lines.append("- 分型建议：如需要分子分型结论，建议补充免疫组化（CD10、BCL6、MUM1 等）、FISH（MYC/BCL2/BCL6 重排）及必要的全外显子或靶向 panel 数据，以便按现行分类体系综合评估。")
         if "治疗与可操作性" in intents:
             targetable = [variant.gene for variant in variants if (variant.molecular_annotation or {}).get("targetability")]
             if targetable:
-                lines.append(f"- **治疗：**{ '、'.join(dict.fromkeys(targetable)) } 存在通路或药物研究线索；致癌性和通路相关性不等同于已证实的患者级疗效，应结合当前癌种适应证、治疗线次、指南及临床试验。")
+                lines.append(f"- 治疗：{'、'.join(dict.fromkeys(targetable))} 存在通路或药物研究线索；致癌性和通路相关性不等同于已证实的患者级疗效，应结合当前癌种适应证、治疗线次、指南及临床试验。")
             else:
-                lines.append("- **治疗：**当前变异不能直接形成患者级用药建议；需确认同癌种预测性证据、适应证和指南推荐。")
+                lines.append("- 治疗：当前变异不能直接形成患者级用药建议；需确认同癌种预测性证据、适应证和指南推荐。")
+            lines.append("- 治疗建议：如考虑靶向治疗，建议先检索同癌种获批适应证与 ClinicalTrials.gov 相关临床试验，并由多学科团队评估获益风险；超出适应证的用药需在充分知情同意下进行，同时制定疗效监测和停药标准。")
         if "预后" in intents:
-            lines.append("- **预后：**现有记录最多支持群体层面的相关性线索，不能据此预测该患者的具体复发概率、生存时间或必然结局。")
+            lines.append("- 预后：现有记录最多支持群体层面的相关性线索，不能据此预测该患者的具体复发概率、生存时间或必然结局。")
+            lines.append("- 预后评估建议：建议结合 IPI 评分、肿瘤负荷、治疗反应及可量化动态标志物（如 ctDNA、VAF 变化）综合判断，避免仅依据单个变异下预后结论。")
         if "耐药" in intents:
-            lines.append("- **耐药：**需要结合具体药物、治疗前后配对样本、变异出现时间和克隆比例变化判断；单次检测不能确认获得性耐药。")
+            lines.append("- 耐药：需要结合具体药物、治疗前后配对样本、变异出现时间和克隆比例变化判断；单次检测不能确认获得性耐药。")
+            lines.append("- 耐药监测建议：如怀疑获得性耐药，建议行治疗前后配对样本对比，并动态监测相关克隆的 VAF 变化；必要时补充针对耐药机制的检测项目。")
         if "遗传风险" in intents:
-            lines.append("- **遗传风险：**肿瘤样本结果不能确认胚系来源；如变异和家族史提示遗传易感，应进行遗传咨询并使用非肿瘤样本验证。")
+            lines.append("- 遗传风险：肿瘤样本结果不能确认胚系来源；如变异和家族史提示遗传易感，应进行遗传咨询并使用非肿瘤样本验证。")
+            lines.append("- 遗传咨询建议：建议转诊遗传咨询门诊，完善家族史采集，并在签署知情同意后使用外周血等非肿瘤组织进行胚系验证。")
         if "功能与通路" in intents:
             pathways = list(dict.fromkeys(pathway for variant in variants for pathway in (variant.molecular_annotation or {}).get("downstream_pathways", [])))
-            lines.append(f"- **功能与通路：**涉及的主要下游包括{'、'.join(pathways) if pathways else '需结合具体变异进一步判断'}；这些属于机制解释，不自动构成治疗证据。")
+            lines.append(f"- 功能与通路：涉及的主要下游包括{'、'.join(pathways) if pathways else '需结合具体变异进一步判断'}；这些属于机制解释，不自动构成治疗证据。")
         if "补充检测" in intents:
-            lines.append("- **下一步：**优先核对标准HGVS、转录本、GRCh版本、VAF、测序深度、支持读段、肿瘤含量及配对正常样本；涉及分型时应补充完整分类所需的病理和分子数据。")
+            lines.append("- 下一步：优先核对标准HGVS、转录本、GRCh版本、VAF、测序深度、支持读段、肿瘤含量及配对正常样本；涉及分型时应补充完整分类所需的病理和分子数据。")
         if direct_count:
-            lines.append(f"- **证据匹配：**当前检索到 {direct_count} 条当前疾病直接证据；仍需结合记录状态和证据等级判断可采用的结论强度。")
+            lines.append(f"- 证据匹配：当前检索到 {direct_count} 条当前疾病直接证据；仍需结合记录状态和证据等级判断可采用的结论强度。")
         elif cards:
-            lines.append("- **证据匹配：**当前证据以相近疾病或外推记录为主，不宜直接用于当前患者决策。")
+            lines.append("- 证据匹配：当前证据以相近疾病或外推记录为主，不宜直接用于当前患者决策。")
         else:
-            lines.append("- **证据匹配：**当前未形成可展示证据卡，不能把未检索到记录解释为变异无临床意义。")
+            lines.append("- 证据匹配：当前未形成可展示证据卡，不能把未检索到记录解释为变异无临床意义。")
+        if variants:
+            lines.append("- 随访与验证建议：治疗过程中建议动态复查相关指标；对关键变异可考虑重复检测或采用正交方法（如 ddPCR、Sanger 测序）验证，以减少批次或平台误差。")
+            lines.append("- 多学科讨论建议：建议将本次分子证据作为会诊材料之一，最终诊断与治疗决策由病理科、血液科/肿瘤科等多学科团队共同确认。")
+        return lines
+
+    def _clinical_general_suggestions(
+        self,
+        *,
+        intents: list[str],
+        variants: list[NormalizedVariant],
+        cards: list[EvidenceCard],
+        decision_bucket: str,
+    ) -> list[str]:
+        lines: list[str] = ["## 一般建议"]
+        genes = {variant.gene.upper() for variant in variants if variant.gene}
+        if decision_bucket == "confirm":
+            lines.append("- 当前至少存在一项需要医生确认或阻断的安全门控结果，建议优先复核原始报告、转录本、参考基因组版本与样本来源，再进入患者级解释。")
+        elif decision_bucket == "downgrade":
+            lines.append("- 当前结果可作为线索性证据使用，但证据强度有限，建议结合病理、免疫表型和临床背景综合判断。")
+        else:
+            lines.append("- 当前结果可用于分子层面的临床解释，但仍需结合病理、免疫表型和治疗背景综合判断。")
+        if variants:
+            labels = "、".join(dict.fromkeys(variant.gene for variant in variants if variant.gene))
+            lines.append(f"- 建议优先关注：{labels} 的标准 HGVS、转录本和参考基因组版本是否一致。")
+        if "诊断与分型" in intents and {"MYD88", "CD79B"}.issubset(genes):
+            lines.append("- 诊断与分型：MYD88 与 CD79B 的组合可提示 BCR/TLR–NF-κB 相关分子特征，但不能替代完整分型算法。")
+        if "治疗与可操作性" in intents:
+            lines.append("- 治疗：请优先核对同癌种、同适应证的证据，再判断是否存在可操作治疗线索。")
+        if "补充检测" in intents:
+            lines.append("- 补充检测：如关键信息缺失，建议补充 IHC、FISH、正交验证或复测以减少平台差异。")
+        if cards:
+            lines.append(f"- 当前已形成 {len(cards)} 条证据卡，可继续按证据等级和疾病匹配度筛选。")
+        else:
+            lines.append("- 当前未形成可展示证据卡，不应将“未检出”解释为“无临床意义”。")
+        lines.append("- 所有输出仅用于辅助阅读与证据组织，最终结论仍需由临床医生结合原始检测报告确认。")
         return lines
 
     def _build_report_template(
@@ -2006,16 +2723,27 @@ class MolecularEvidenceService:
         *,
         provider_mode: Optional[ProviderMode] = None,
         agent: Optional[MolecularEvidenceAgent] = None,
+        resolver: Optional[VariantResolver] = None,
     ) -> None:
         self.parser = MolecularInputParser()
         self.provider_mode = (provider_mode or os.getenv("MOLECULAR_EVIDENCE_PROVIDER_MODE", "live")).strip().lower()
+        self.resolver = resolver or self._build_resolver(self.provider_mode)
         self.agent = agent or MolecularEvidenceAgent(
             provider_mode=self.provider_mode,
             providers=self._build_agent_providers(self.provider_mode, provider),
+            resolver=self.resolver,
         )
         self.builder = EvidenceCardBuilder()
         self.safety_gate = SafetyGate()
         self.answer_composer = AnswerComposer()
+
+    def _build_resolver(self, provider_mode: Optional[str]) -> Optional[VariantResolver]:
+        mode = (provider_mode or os.getenv("MOLECULAR_EVIDENCE_PROVIDER_MODE", "live")).strip().lower()
+        if mode == "mock":
+            return MockVariantResolver()
+        if mode == "hybrid":
+            return CompositeVariantResolver([MyVariantResolver(), MockVariantResolver()])
+        return MyVariantResolver()
 
     def _build_agent_providers(
         self, provider_mode: Optional[str], provider: Optional[EvidenceProvider]
@@ -2030,8 +2758,9 @@ class MolecularEvidenceService:
             return [
                 _ProviderView(mock, "ClinVar"),
                 _ProviderView(mock, "CIViC"),
+                _ProviderView(mock, "MyVariant"),
             ]
-        providers: list[EvidenceProvider] = [ClinVarProvider(), CivicProvider()]
+        providers: list[EvidenceProvider] = [ClinVarProvider(), CivicProvider(), MyVariantProvider()]
         if mode == "hybrid":
             providers.append(MockEvidenceProvider())
         return providers
@@ -2082,7 +2811,20 @@ class MolecularEvidenceService:
             "question": question,
             "provider_mode": self.provider_mode,
         }
-        cache_key = self._make_cache_key(text=text, disease=disease, sample_type=sample_type, genome_build=genome_build, transcript=transcript, variant_type=variant_type, provider_name=f"{self.provider_mode}:providers-v4-civic-tiered-zh")
+        required_providers = list(self.agent.required_providers)
+        extended_providers = sorted(
+            {provider.provider_name for provider in self.agent.providers} - set(required_providers)
+        )
+        query = {
+            "question": question,
+            "disease": disease,
+            "sample_type": sample_type,
+            "genome_build": genome_build,
+            "transcript": transcript,
+            "variant_type": variant_type,
+            "provider_mode": self.provider_mode,
+        }
+        cache_key = self._make_cache_key(text=text, disease=disease, sample_type=sample_type, genome_build=genome_build, transcript=transcript, variant_type=variant_type, provider_name=f"{self.provider_mode}:providers-v9-structured-zh")
         cached = self._load_cache(cache_key)
         if cached is not None:
             result = self._result_from_payload(cached, cache_hit=True, cache_key=cache_key)
@@ -2092,12 +2834,12 @@ class MolecularEvidenceService:
                 query_payload=query_payload,
                 result=result,
                 cache_hit=True,
-                cache_source_log_id=cached.get("query_log_id"),
+                cache_source_log_id=(cached.get("meta") or {}).get("query_log_id"),
             )
-            result.query_log_id = log_id
-            result.cache_hit = True
-            result.cache_key = cache_key
-            result.cache_entry_id = cached.get("cache_entry_id") or cached.get("id")
+            result.meta["query_log_id"] = log_id
+            result.meta["cache_hit"] = True
+            result.meta["cache_key"] = cache_key
+            result.meta["cache_entry_id"] = cached.get("cache_entry_id") or cached.get("id")
             return result
 
         variants = self.parser.parse(
@@ -2108,12 +2850,14 @@ class MolecularEvidenceService:
             transcript=transcript,
             variant_type=variant_type,
         )
-        raw_records, agent_trace, provider_status = self.agent.run(variants)
+        raw_records, agent_trace, provider_status, resolver_status = self.agent.run(variants)
         cards: list[EvidenceCard] = []
         gates: list[SafetyGateResult] = []
         variants_by_id = {variant.variant_id: variant for variant in variants}
         for variant in variants:
-            gates.append(self.safety_gate.evaluate_variant(variant))
+            gate = self.safety_gate.evaluate_variant(variant)
+            gate.variant_id = variant.variant_id
+            gates.append(gate)
         for record in raw_records:
             if self.agent._is_error_record(record):
                 continue
@@ -2125,9 +2869,13 @@ class MolecularEvidenceService:
                 continue
             card = self.builder.build(record, variant)
             cards.append(card)
-            gates.append(self.safety_gate.evaluate_card(card))
+            card_gate = self.safety_gate.evaluate_card(card)
+            card_gate.variant_id = card.variant_id
+            gates.append(card_gate)
+        cards = self._dedupe_evidence_cards(cards)
         cards.sort(key=self.answer_composer._card_rank)
-        missing_information = self._collect_missing_information(variants)
+        missing_by_variant, missing = self._collect_missing_information(variants)
+        missing_flat = missing["blocking"] + missing["advisory"]
         global_warnings = [
             "本工具仅用于分子证据解释，不构成患者级诊断或治疗建议。",
             "不得将体细胞致癌性自动等同于可靶向治疗。",
@@ -2139,34 +2887,48 @@ class MolecularEvidenceService:
         ]
         if degraded_providers:
             global_warnings.append(
-                f"数据库查询发生降级：{', '.join(degraded_providers)}；相关数据库本次未形成完整证据集，不能将未命中解释为无证据。"
+                f"数据库查询结果受限：{', '.join(degraded_providers)}；相关数据库本次未形成完整证据集，不能将未命中解释为无证据。"
             )
         answer, doctor_summary = self.answer_composer.compose(
             variants=variants,
             cards=cards,
             gates=gates,
-            missing_information=missing_information,
+            missing_information=missing_flat,
             global_warnings=global_warnings,
             question=question,
         )
+        meta = {
+            "provider_mode": self.provider_mode,
+            "retrieved_at": retrieved_at,
+            "cache_hit": False,
+            "cache_key": cache_key,
+            "cache_entry_id": None,
+            "query_log_id": None,
+            "required_providers": required_providers,
+            "extended_providers": extended_providers,
+        }
+        audit = {
+            "raw_records": raw_records,
+            "agent_trace": agent_trace,
+            "provider_status": provider_status,
+            "resolver_status": resolver_status,
+        }
         result = MolecularEvidenceResult(
+            meta=meta,
+            query=query,
             variants=variants,
             raw_records=raw_records,
             evidence_cards=cards,
             safety_gate_results=gates,
             answer_markdown=answer,
             doctor_summary=doctor_summary,
-            missing_information=missing_information,
+            missing=missing,
+            missing_by_variant=missing_by_variant,
             global_warnings=global_warnings,
-            retrieved_at=retrieved_at,
-            provider_mode=self.provider_mode,
-            cache_hit=False,
-            cache_key=cache_key,
-            agent_trace=agent_trace,
-            provider_status=provider_status,
+            audit=audit,
         )
         cache_entry_id = self._store_cache(cache_key, result.to_dict())
-        result.cache_entry_id = cache_entry_id
+        result.meta["cache_entry_id"] = cache_entry_id
         log_id = self._write_audit_log(
             cache_key=cache_key,
             provider_mode=query_payload["provider_mode"],
@@ -2174,10 +2936,38 @@ class MolecularEvidenceService:
             result=result,
             cache_hit=False,
         )
-        result.query_log_id = log_id
+        result.meta["query_log_id"] = log_id
         if cache_entry_id:
             self._store_cache(cache_key, result.to_dict())
         return result
+
+    def _dedupe_evidence_cards(
+        self, cards: list[EvidenceCard]
+    ) -> list[EvidenceCard]:
+        """Collapse content-identical evidence cards.
+
+        ClinVar can return several VCV records for one variant that carry the
+        same title, claim, classification, internal level and disease match; they
+        render as apparent duplicates in the UI. Keep the first representative
+        and drop the rest. Distinct evidence (different title / claim / level /
+        match) is intentionally preserved.
+        """
+        seen: set[tuple[str, str, str, str, str, str]] = set()
+        deduped: list[EvidenceCard] = []
+        for card in cards:
+            key = (
+                card.variant_id or "",
+                (card.provider or "").lower(),
+                (card.source_title or "").strip(),
+                (card.claim or "").strip(),
+                (card.evidence_level or "").upper(),
+                (card.disease_match or "").strip(),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(card)
+        return deduped
 
     def _match_record_variant(
         self, record: RawEvidenceRecord, variants: list[NormalizedVariant]
@@ -2309,61 +3099,98 @@ class MolecularEvidenceService:
             db.close()
 
     def _result_from_payload(self, payload: dict[str, Any], *, cache_hit: bool, cache_key: str) -> MolecularEvidenceResult:
-        variants = [NormalizedVariant(**item) for item in payload.get("variants", [])]
+        meta = dict(payload.get("meta") or {})
+        query = dict(payload.get("query") or {})
+        variants = [
+            NormalizedVariant(**{k: v for k, v in item.items() if k not in {"evidence_summary", "gate", "missing"}})
+            for item in payload.get("variants", [])
+        ]
         raw_records = [RawEvidenceRecord(**item) for item in payload.get("raw_records", [])]
-        evidence_cards = [EvidenceCard(conflict=EvidenceConflict(**item.get("conflict", {})), **{k: v for k, v in item.items() if k != "conflict"}) for item in payload.get("evidence_cards", [])]
-        safety_results = [SafetyGateResult(**item) for item in payload.get("safety_gate_results", [])]
+        evidence_cards = [
+            EvidenceCard(
+                conflict=EvidenceConflict(**item.get("conflict", {})),
+                **{k: v for k, v in item.items() if k not in {"conflict", "gate"}},
+            )
+            for item in payload.get("evidence", [])
+        ]
+        safety_payload = dict(payload.get("safety") or {})
+        safety_results = [
+            SafetyGateResult(**item)
+            for item in safety_payload.get("variant_gates", []) + safety_payload.get("card_gates", [])
+        ]
+        missing = dict(payload.get("missing") or {"blocking": [], "advisory": []})
+        missing_by_variant: dict[str, dict[str, list[str]]] = {}
+        for item in payload.get("variants", []):
+            variant_missing = item.get("missing") or {"blocking": [], "advisory": []}
+            missing_by_variant[str(item.get("variant_id") or "")] = {
+                "blocking": list(variant_missing.get("blocking") or []),
+                "advisory": list(variant_missing.get("advisory") or []),
+            }
+        audit = dict(payload.get("audit") or {})
         return MolecularEvidenceResult(
+            meta=meta,
+            query=query,
             variants=variants,
             raw_records=raw_records,
             evidence_cards=evidence_cards,
             safety_gate_results=safety_results,
-            answer_markdown=str(payload.get("answer_markdown") or ""),
-            doctor_summary=dict(payload.get("doctor_summary") or {}),
-            missing_information=list(payload.get("missing_information") or []),
+            answer_markdown=str((payload.get("answer") or {}).get("markdown") or ""),
+            doctor_summary=dict(payload.get("summary") or {}),
+            missing=missing,
+            missing_by_variant=missing_by_variant,
             global_warnings=list(payload.get("global_warnings") or []),
-            retrieved_at=str(payload.get("retrieved_at") or utc_now_iso()),
-            provider_mode=str(payload.get("provider_mode") or self.provider_mode),
-            cache_hit=cache_hit,
-            cache_key=cache_key,
-            cache_entry_id=str(payload.get("cache_entry_id") or "") or None,
-            query_log_id=str(payload.get("query_log_id") or "") or None,
-            agent_trace=list(payload.get("agent_trace") or []),
-            provider_status=dict(payload.get("provider_status") or {}),
-            required_providers=list(payload.get("required_providers") or ["ClinVar", "CIViC"]),
+            audit={
+                "raw_records": raw_records,
+                "agent_trace": list(audit.get("agent_trace") or []),
+                "provider_status": dict(audit.get("provider_status") or {}),
+                "resolver_status": dict(audit.get("resolver_status") or {}),
+            },
         )
 
-    def _collect_missing_information(self, variants: list[NormalizedVariant]) -> list[str]:
-        """收集缺失信息，但区分"阻断性缺失"和"建议性缺失"。
+    def _collect_missing_information(
+        self, variants: list[NormalizedVariant]
+    ) -> tuple[dict[str, dict[str, list[str]]], dict[str, list[str]]]:
+        """Collect missing info per variant, split into blocking vs advisory.
 
-        只有阻断性缺失（gene / protein_hgvs / disease / sample_type）
-        才会进入 missing_information，用于门控降级。
-
-        建议性缺失（transcript / genome_build）不会触发降级，
-        只会在报告的"解析提示"中提醒。
+        Blocking (gene / protein_hgvs / cdna_hgvs / disease / sample_type)
+        gates the analysis; advisory (transcript / genome_build) only reduces
+        precision and never blocks output.
+        Returns (per_variant, global) as {"blocking": [...], "advisory": [...]}.
         """
-        blocking_missing: list[str] = []
-        advisory_missing: list[str] = []
+        missing_by_variant: dict[str, dict[str, list[str]]] = {}
+        global_blocking: list[str] = []
+        global_advisory: list[str] = []
+        seen_blocking: set[str] = set()
+        seen_advisory: set[str] = set()
         for variant in variants:
-            label = " ".join(item for item in [variant.gene or "未识别基因", variant.protein_hgvs or variant.cdna_hgvs or "未明确位点"] if item)
-            # 阻断性缺失：直接影响能否解析
+            label = " ".join(
+                item
+                for item in [variant.gene or "未识别基因", variant.protein_hgvs or variant.cdna_hgvs or "未明确位点"]
+                if item
+            )
+            blocking: list[str] = []
+            advisory: list[str] = []
             if variant.missing_fields:
-                blocking_missing.append(f"{label} 缺少：{', '.join(variant.missing_fields)}。")
+                blocking.append(f"{label} 缺少：{', '.join(variant.missing_fields)}。")
             if not variant.sample_type:
-                blocking_missing.append(f"{label} 缺少样本类型，无法区分肿瘤组织、外周血或胚系检测语境。")
-            # 建议性缺失：不影响已有证据的解读，但影响精确度
+                blocking.append(f"{label} 缺少样本类型，无法区分肿瘤组织、外周血或胚系检测语境。")
             if not variant.transcript:
-                advisory_missing.append(f"{label} 未提供转录本；如需精确外显子定位请补充。")
+                advisory.append(f"{label} 未提供转录本；如需精确外显子定位请补充。")
             if not variant.genome_build:
-                advisory_missing.append(f"{label} 未提供 GRCh37/GRCh38；如需基因组坐标精确匹配请补充。")
-        # 去重
-        deduped: list[str] = []
-        seen: set[str] = set()
-        for item in blocking_missing + advisory_missing:
-            if item not in seen:
-                seen.add(item)
-                deduped.append(item)
-        return deduped
+                advisory.append(f"{label} 未提供 GRCh37/GRCh38；如需基因组坐标精确匹配请补充。")
+            missing_by_variant[variant.variant_id] = {
+                "blocking": blocking,
+                "advisory": advisory,
+            }
+            for item in blocking:
+                if item not in seen_blocking:
+                    seen_blocking.add(item)
+                    global_blocking.append(item)
+            for item in advisory:
+                if item not in seen_advisory:
+                    seen_advisory.add(item)
+                    global_advisory.append(item)
+        return missing_by_variant, {"blocking": global_blocking, "advisory": global_advisory}
 
     def _has_blocking_missing(self, variants: list[NormalizedVariant]) -> bool:
         """判断是否存在阻断性缺失（只有这类缺失才应该触发"先补齐"提示）。"""

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from backend.app.models import ReferenceEntry, SearchDocument
 
@@ -217,14 +217,55 @@ def enrich_literature_dict(hit) -> Dict[str, Any]:
     if pmid:
         meta_parts.append(f"PMID {pmid}")
 
+    # Journal IF / quartile / CAS — prefer precomputed fields from ranker.
+    journal_meta_parts: List[str] = []
+    if journal:
+        journal_meta_parts.append(str(journal))
+    if year:
+        journal_meta_parts.append(str(year))
+    jcr_if = data.get("journal_if")
+    if jcr_if is not None:
+        try:
+            journal_meta_parts.append(f"IF {float(jcr_if):g}")
+        except (TypeError, ValueError):
+            pass
+    if data.get("journal_quartile"):
+        journal_meta_parts.append(f"JCR {data['journal_quartile']}")
+    cas = data.get("journal_cas_tier")
+    if cas:
+        cas_label = f"中科院{cas}区"
+        # cas_top is not stored on LiteratureHit; infer Top only for cas_tier==1 + T0/T1 is noisy,
+        # so keep plain cas_tier unless journal_tier suggests top.
+        if data.get("journal_tier") in {"T0", "T1"} and int(cas) == 1:
+            cas_label += "Top"
+        journal_meta_parts.append(cas_label)
+    journal_meta = " · ".join(journal_meta_parts) if journal_meta_parts else (journal or "")
+
+    design = data.get("study_design_zh") or ""
+    in_guideline = bool(data.get("in_guideline"))
+    guideline_ref = data.get("guideline_ref")
+    if in_guideline:
+        cite_bit = f"已被{guideline_ref}引用" if guideline_ref else "已被指南引用"
+    else:
+        cite_bit = "未经指南收录"
+    design_bits = [b for b in [design, cite_bit] if b]
+    # Always mark abstract-only secondary evidence.
+    design_bits.append("仅摘要")
+    tier_label = " · ".join(design_bits) if design_bits else "PubMed · 仅摘要 · 未经指南收录"
+
     data["display_title"] = title
     data["badge"] = "PubMed"
     data["source_label"] = " · ".join(meta_parts) if meta_parts else "PubMed · 仅摘要"
     data["locator"] = f"PMID {pmid}" if pmid else ""
     data["citation_label"] = f"L{data.get('rank') or ''}".rstrip() or "L"
     data["url"] = url
-    data["tier_label"] = "PubMed · 仅摘要 · 未经指南收录"
+    data["tier_label"] = tier_label
+    data["journal_meta"] = journal_meta
     data["doi"] = doi
+    data["evidence_tier"] = data.get("evidence_tier")
+    data["study_design_zh"] = design or None
+    data["in_guideline"] = in_guideline
+    data["guideline_ref"] = guideline_ref
     return data
 
 

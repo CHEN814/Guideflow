@@ -29,12 +29,25 @@ def format_literature_section(
     for hit in hits:
         label = f"[L{hit.rank}]" if hit.rank else "[L]"
         meta_bits = [b for b in [hit.journal, hit.year] if b]
+        if hit.journal_if is not None:
+            meta_bits.append(f"IF {hit.journal_if:g}")
+        if hit.journal_quartile:
+            meta_bits.append(hit.journal_quartile)
         meta = f" ({', '.join(meta_bits)})" if meta_bits else ""
-        pub = f"；{hit.pub_types[0]}" if hit.pub_types else ""
-        lines.append(f"{label} {hit.title}{meta}{pub}. PMID {hit.pmid}")
+        # Doctor-facing appendix: study design only — do not expose E1–E5 algorithm tier.
+        design_bit = f"；{hit.study_design_zh}" if hit.study_design_zh else ""
+        lines.append(f"{label} {hit.title}{meta}{design_bit}. PMID {hit.pmid}")
         if hit.summary_zh:
             lines.append(f"  - {hit.summary_zh}")
-        lines.append(f"  - 来源：PubMed · 仅摘要 · 未经指南收录")
+        if hit.in_guideline and hit.guideline_ref:
+            source_line = f"PubMed · 仅摘要 · 已被{hit.guideline_ref}引用"
+        elif hit.in_guideline:
+            source_line = "PubMed · 仅摘要 · 已被指南引用"
+        else:
+            source_line = "PubMed · 仅摘要 · 未经指南收录"
+        if hit.study_design_zh:
+            source_line = f"{hit.study_design_zh} · {source_line}"
+        lines.append(f"  - 来源：{source_line}")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 

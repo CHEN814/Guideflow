@@ -1,28 +1,19 @@
-"""Local weighted rerank on top of PubMed Best Match."""
+"""Doctor-facing tier-first literature ranking on top of PubMed Best Match."""
 from __future__ import annotations
 
 import math
 import re
 from datetime import datetime
-from typing import Iterable, List, Optional, Sequence, Set
+from typing import List, Optional, Sequence, Set
 
 from backend.app.models import LiteratureHit
 from backend.app.services.bm25_store import tokenize
-from backend.app.services.literature_query import DISEASE_VOCAB, LiteratureConcepts
+from backend.app.services.evidence_tier import classify_evidence_tier
+from backend.app.services.guideline_cited import lookup_guideline_citation
+from backend.app.services.journal_quality import lookup_journal
+from backend.app.services.literature_query import DISEASE_VOCAB, LINE_OF_THERAPY_VOCAB, LiteratureConcepts
 from backend.app.services.pubmed_client import PubmedArticle
 
-
-_DESIGN_SCORES = [
-    (("meta-analysis",), 1.0),
-    (("systematic review",), 0.95),
-    (("practice guideline", "guideline"), 0.9),
-    (("randomized controlled trial", "clinical trial, phase iii"), 0.85),
-    (("clinical trial", "controlled clinical trial"), 0.75),
-    (("observational study", "prospective studies", "cohort studies"), 0.65),
-    (("retrospective studies", "case-control studies"), 0.5),
-    (("comparative study",), 0.45),
-    (("case reports",), 0.2),
-]
 
 _PENALTY_TYPES = {
     "retracted publication",
@@ -34,15 +25,15 @@ _PENALTY_TYPES = {
     "published erratum",
 }
 
-
-def _design_score(pub_types: Sequence[str]) -> float:
-    lowered = [p.lower() for p in pub_types]
-    best = 0.35  # default original research / unknown
-    for keys, score in _DESIGN_SCORES:
-        if any(any(k in pt for k in keys) for pt in lowered):
-            best = max(best, score)
-    # Consensus / guideline bonus already covered; keep soft floor
-    return best
+# Competing lymphoma entities used to detect disease mismatch (e.g. MCL in a DLBCL query).
+_COMPETING_DISEASE = {
+    "mcl": ["mantle cell lymphoma", "mantle-cell lymphoma"],
+    "fl": ["follicular lymphoma"],
+    "mzl": ["marginal zone lymphoma"],
+    "cll": ["chronic lymphocytic leukemia", "small lymphocytic lymphoma", "richter"],
+    "hl": ["hodgkin lymphoma", "hodgkin's lymphoma"],
+    "ptcl": ["peripheral t-cell lymphoma", "t-cell lymphoma"],
+}
 
 
 def _recency_score(year: Optional[str]) -> float:
@@ -51,29 +42,6 @@ def _recency_score(year: Optional[str]) -> float:
     pub_year = int(str(year)[:4])
     age = max(0, datetime.utcnow().year - pub_year)
     return math.exp(-age / 3.0)
-
-
-def _topic_score(article: PubmedArticle, concepts: LiteratureConcepts) -> float:
-    target_meshes: Set[str] = set()
-    for key in concepts.disease_keys or ["dlbcl"]:
-        vocab = DISEASE_VOCAB.get(key)
-        if vocab:
-            target_meshes.add(vocab["mesh"].lower())
-    if not target_meshes:
-        return 0.5
-    mesh_all = {m.lower() for m in article.mesh}
-    mesh_major = {m.lower() for m in article.mesh_major}
-    if mesh_major & target_meshes:
-        return 1.0
-    if mesh_all & target_meshes:
-        return 0.75
-    # Title/abstract disease string hit
-    blob = f"{article.title} {article.abstract}".lower()
-    for key in concepts.disease_keys or []:
-        for term in DISEASE_VOCAB.get(key, {}).get("tiab", []):
-            if term.lower() in blob:
-                return 0.6
-    return 0.25
 
 
 def _must_term_bonus(article: PubmedArticle, concepts: LiteratureConcepts) -> float:
@@ -85,7 +53,6 @@ def _must_term_bonus(article: PubmedArticle, concepts: LiteratureConcepts) -> fl
         return 0.0
     bonus = 0.0
     for term in must:
-        token = term.lower().replace("-", " ")
         compact = term.lower().replace("-", "").replace(" ", "")
         if term.lower() in title or compact in title.replace("-", "").replace(" ", ""):
             bonus += 0.25
@@ -106,10 +73,8 @@ def _rel_score(
     text = f"{article.title} {article.abstract}"
     d_tokens = set(tokenize(text))
     overlap = len(query_tokens & d_tokens) / max(len(query_tokens), 1)
-    # PubMed Best Match rank: 1-based; normalize inverse
     rank_norm = 1.0 - ((pubmed_rank - 1) / max(candidate_n, 1))
     rank_norm = max(0.0, min(1.0, rank_norm))
-    # Title hit bonus
     title_tokens = set(tokenize(article.title))
     title_overlap = len(query_tokens & title_tokens) / max(len(query_tokens), 1)
     must = _must_term_bonus(article, concepts)
@@ -126,10 +91,78 @@ def _penalty(article: PubmedArticle) -> float:
     lang = (article.language or "").lower()
     if lang and lang not in {"eng", "en", "english"}:
         penalty += 0.3
-    # Retracted in title
     if re.search(r"\bretract", article.title or "", re.I):
         penalty += 0.8
     return penalty
+
+
+def _population_score(article: PubmedArticle, concepts: LiteratureConcepts) -> float:
+    """Disease + line-of-therapy + biomarker/subtype match from a clinician's view."""
+    blob = f"{article.title}\n{article.abstract}".lower()
+    mesh_all = {m.lower() for m in article.mesh}
+    mesh_major = {m.lower() for m in article.mesh_major}
+    score = 0.5
+    reasons_penalty = 0.0
+
+    target_keys = concepts.disease_keys or ["dlbcl"]
+    target_meshes = set()
+    target_tiab = set()
+    for key in target_keys:
+        vocab = DISEASE_VOCAB.get(key)
+        if not vocab:
+            continue
+        target_meshes.add(vocab["mesh"].lower())
+        for term in vocab.get("tiab") or []:
+            target_tiab.add(term.lower())
+
+    disease_hit = False
+    if mesh_major & target_meshes:
+        score = 1.0
+        disease_hit = True
+    elif mesh_all & target_meshes:
+        score = 0.85
+        disease_hit = True
+    elif any(t in blob for t in target_tiab):
+        score = 0.75
+        disease_hit = True
+
+    # Hard penalty when a competing lymphoma is clearly the subject and target disease is absent.
+    for other_key, phrases in _COMPETING_DISEASE.items():
+        if other_key in target_keys:
+            continue
+        if any(p in blob for p in phrases) and not disease_hit:
+            reasons_penalty += 0.55
+            break
+        if any(p in blob for p in phrases) and disease_hit:
+            # Mentioned as comparator / transformation — mild dampening only.
+            reasons_penalty += 0.08
+
+    # Line-of-therapy match
+    if concepts.line_of_therapy:
+        line_hits = 0
+        for code in concepts.line_of_therapy:
+            phrases = [p.lower() for p in LINE_OF_THERAPY_VOCAB.get(code, [])]
+            if any(p in blob for p in phrases):
+                line_hits += 1
+        if line_hits:
+            score = min(1.0, score + 0.12 * line_hits)
+        else:
+            reasons_penalty += 0.12
+
+    # Biomarker / intervention literal presence
+    must = [t.lower() for t in (concepts.biomarker + concepts.intervention) if t]
+    if must:
+        matched = sum(
+            1
+            for t in must
+            if t in blob or t.replace("-", "").replace(" ", "") in blob.replace("-", "").replace(" ", "")
+        )
+        if matched:
+            score = min(1.0, score + 0.08 * matched)
+        else:
+            reasons_penalty += 0.15
+
+    return max(0.0, min(1.0, score - reasons_penalty))
 
 
 def rank_articles(
@@ -138,7 +171,7 @@ def rank_articles(
     *,
     top_k: int = 5,
 ) -> List[LiteratureHit]:
-    """Score and return top_k LiteratureHit objects."""
+    """Tier-first rank: E1>E2>… then within-tier continuous score."""
     query_tokens = set(tokenize(" ".join(concepts.english_tokens())))
     if not query_tokens:
         query_tokens = set(tokenize("diffuse large B-cell lymphoma DLBCL"))
@@ -160,12 +193,38 @@ def rank_articles(
     n = len(articles)
     scored: List[LiteratureHit] = []
     for idx, article in work:
+        citation = lookup_guideline_citation(
+            pmid=article.pmid,
+            doi=article.doi,
+            title=article.title,
+        )
+        in_guideline = citation is not None
+        guideline_ref = citation.label if citation else None
+
+        tier_res = classify_evidence_tier(
+            title=article.title or "",
+            abstract=article.abstract or "",
+            pub_types=article.pub_types,
+            in_guideline=in_guideline,
+            guideline_ref=guideline_ref,
+        )
+        jq = lookup_journal(article.journal)
+
         rel = _rel_score(article, query_tokens, idx, n, concepts)
-        design = _design_score(article.pub_types)
+        population = _population_score(article, concepts)
+        journal = jq.score if jq else 0.55
         recency = _recency_score(article.year)
-        topic = _topic_score(article, concepts)
         penalty = _penalty(article)
-        score = 0.35 * rel + 0.25 * design + 0.20 * recency + 0.15 * topic - penalty
+
+        # Within-tier continuous score (doctor decision order).
+        score = (
+            0.40 * population
+            + 0.25 * journal
+            + 0.20 * recency
+            + 0.15 * rel
+            - penalty
+        )
+
         scored.append(
             LiteratureHit(
                 pmid=article.pmid,
@@ -181,16 +240,36 @@ def rank_articles(
                 url=article.url,
                 pubmed_rank=idx,
                 score_components={
-                    "rel": round(rel, 4),
-                    "design": round(design, 4),
+                    "population": round(population, 4),
+                    "journal": round(journal, 4),
                     "recency": round(recency, 4),
-                    "topic": round(topic, 4),
+                    "rel": round(rel, 4),
                     "penalty": round(penalty, 4),
+                    "tier": tier_res.tier,
+                    "tier_rank": tier_res.tier_rank,
+                    "tier_reasons": list(tier_res.reasons),
                 },
+                evidence_tier=tier_res.tier,
+                study_design_zh=tier_res.study_design_zh,
+                journal_if=jq.jcr_if if jq else None,
+                journal_quartile=jq.jcr_quartile if jq else None,
+                journal_cas_tier=jq.cas_tier if jq else None,
+                journal_tier=jq.tier if jq else None,
+                in_guideline=in_guideline,
+                guideline_ref=guideline_ref,
             )
         )
 
-    scored.sort(key=lambda h: h.score, reverse=True)
+    # Disease-compatible first (prevents MCL/FL papers floating above DLBCL hits
+    # just because they carry a pivotal trial name), then tier, guideline, score.
+    scored.sort(
+        key=lambda h: (
+            0 if float((h.score_components or {}).get("population") or 0.0) >= 0.35 else 1,
+            int((h.score_components or {}).get("tier_rank") or 5),
+            0 if h.in_guideline else 1,
+            -h.score,
+        )
+    )
     top = scored[: max(0, top_k)]
     for i, hit in enumerate(top, start=1):
         hit.rank = i

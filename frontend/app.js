@@ -49,11 +49,19 @@ const els = {
   molecularEvidenceCloseBtn: document.getElementById('molecularEvidenceCloseBtn'),
   molecularEvidenceCancelBtn: document.getElementById('molecularEvidenceCancelBtn'),
   shareChatBtn: document.getElementById('shareChatBtn'),
+  headerTitle: document.getElementById('headerTitle'),
+  evidenceDrawer: document.getElementById('evidenceDrawer'),
+  evidenceDrawerBody: document.getElementById('evidenceDrawerBody'),
+  evidenceDrawerTitle: document.getElementById('evidenceDrawerTitle'),
+  evidenceDrawerCloseBtn: document.getElementById('evidenceDrawerCloseBtn'),
+  evidenceBackdrop: document.getElementById('evidenceBackdrop'),
   statsModal: document.getElementById('statsModal'),
   statsBody: document.getElementById('statsBody'),
   statsCloseBtn: document.getElementById('statsCloseBtn'),
   composerBox: document.getElementById('composerBox'),
   dataSourceChip: document.getElementById('dataSourceChip'),
+  dataSourceChipLabel: document.getElementById('dataSourceChipLabel'),
+  dataSourceChipIcon: document.getElementById('dataSourceChipIcon'),
   dataSourceMenu: document.getElementById('dataSourceMenu'),
   dataSourceWrap: document.getElementById('dataSourceWrap'),
   enableLiteratureChip: document.getElementById('enableLiteratureChip'),
@@ -123,6 +131,12 @@ const DATA_SOURCE_KEY = 'gf_data_source';
 const LIT_TOGGLE_KEY = 'gf_enable_literature';
 const DATA_SOURCE_LABELS = { nccn: 'NCCN', csco: 'CSCO', eha: 'EHA' };
 const DATA_SOURCE_ALLOWED = new Set(Object.keys(DATA_SOURCE_LABELS));
+// Distinct icons per guideline (chip + dropdown).
+const GUIDE_ICONS = {
+  nccn: `<svg class="chip-icon chip-icon-guide" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>`,
+  csco: `<svg class="chip-icon chip-icon-guide" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/><path d="M8 7h8M8 11h6"/></svg>`,
+  eha: `<svg class="chip-icon chip-icon-guide" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/><circle cx="12" cy="12" r="2.2"/></svg>`,
+};
 
 function loadDataSource() {
   const v = (localStorage.getItem(DATA_SOURCE_KEY) || 'nccn').toLowerCase();
@@ -166,6 +180,7 @@ const state = {
   abortController: null,
   dataSource: loadDataSource(),
   enableLiterature: loadEnableLiterature(),
+  evidenceMsgId: null,
 };
 
 const ACTIVE_CONV_KEY = 'gf_active_conversation_id';
@@ -605,6 +620,7 @@ function openLocalConversation(id) {
   const list = loadLocalConversations();
   const conv = list.find((c) => c.id === id);
   if (!conv) return;
+  closeEvidence();
   state.activeConversationId = conv.id;
   if (conv.tree?.messages?.length) {
     buildTreeFromMessages(conv.tree.messages, conv.tree.activeRootId);
@@ -1002,6 +1018,7 @@ async function openConversation(id) {
     openLocalConversation(id);
     return;
   }
+  closeEvidence();
   const resp = await api(`/api/conversations/${id}`);
   if (!resp.ok) return;
   const data = await resp.json();
@@ -1018,6 +1035,7 @@ function newChat({ skipSave = false } = {}) {
   if (!skipSave && !state.user) {
     upsertLocalConversationFromState();
   }
+  closeEvidence();
   state.activeConversationId = null;
   resetTree();
   state.lastPayload = null;
@@ -1037,8 +1055,18 @@ function updateShareChatBtn() {
   els.shareChatBtn.hidden = !hasAssistant;
 }
 
+function updateHeaderTitle() {
+  if (!els.headerTitle) return;
+  const conv = state.conversations.find((c) => c.id === state.activeConversationId);
+  const title = (conv?.title || '').trim();
+  els.headerTitle.textContent = title && title !== '新对话' ? title : '';
+  els.headerTitle.title = els.headerTitle.textContent;
+}
+
 function renderChat() {
+  updateHeaderTitle();
   if (!state.messages.length) {
+    closeEvidence();
     els.chatLog.innerHTML = `
       <div class="empty-state">
         <h2>面向 DLBCL 的 NCCN 指南问答</h2>
@@ -1059,6 +1087,11 @@ function renderChat() {
   bindFigures();
   bindTables();
   updateShareChatBtn();
+  if (state.evidenceMsgId) {
+    const stillThere = findMessageByEvidenceId(state.evidenceMsgId);
+    if (stillThere?.payload) openEvidence(state.evidenceMsgId);
+    else closeEvidence();
+  }
   const editingInput = els.chatLog.querySelector('.user-edit-input');
   if (editingInput) {
     editingInput.focus();
@@ -1154,12 +1187,17 @@ function renderMessage(message, idx) {
     ? `<span class="source-chip ${src === 'nccn' ? '' : src}">${escapeHtml(DATA_SOURCE_LABELS[src] || src)}</span>`
     : '';
   const { vNav, delBtn } = renderBranchControls(message);
+  const msgId = message.serverId || message.id || '';
+  const evidenceBar = renderEvidenceBar(payload, msgId);
   return `
-    <div class="msg-row assistant" data-msg-idx="${idx}" data-node-id="${escapeHtml(message.id || '')}" data-msg-id="${escapeHtml(message.serverId || message.id || '')}">
-      <div class="message assistant">
-        <div class="tag">${escapeHtml(tag)}${srcChip}</div>
-        <div class="answer">${body}</div>
+    <div class="msg-row assistant" data-msg-idx="${idx}" data-node-id="${escapeHtml(message.id || '')}" data-msg-id="${escapeHtml(msgId)}">
+      <div class="answer-layout">
+        <div class="message assistant">
+          <div class="tag">${escapeHtml(tag)}${srcChip}</div>
+          <div class="answer">${body}</div>
+        </div>
       </div>
+      ${evidenceBar}
       <div class="msg-actions">
         ${vNav}
         <span class="msg-actions-icons">
@@ -1238,7 +1276,6 @@ function renderAnswerBody(payload, fallbackText) {
     html += `<div class="answer-block"><h3>相关流程图</h3>${unanchored.map((f, i) => renderFigureCard(f, `u-${i}`)).join('')}</div>`;
   }
   html += `<p class="ai-disclaimer">本回答由 AI 生成，内容仅供参考，请仔细甄别</p>`;
-  html += renderReferences(payload);
   return html;
 }
 
@@ -1287,31 +1324,37 @@ function decorateCitations(html, payload) {
   const sources = payload.sources || [];
   const refs = payload.attached_references || [];
   const lit = payload.literature || [];
+  const { citeMap } = collectEvidenceGroups(payload);
+  const citeBtn = (type, index, ref, tip, fallbackNo) => {
+    const key = type === 'R' ? `R-${ref}` : `${type}-${index}`;
+    const n = citeMap[key] || fallbackNo;
+    const indexAttr = index != null ? ` data-index="${index}"` : '';
+    const refAttr = ref != null && ref !== '' ? ` data-ref="${escapeHtml(String(ref))}"` : '';
+    return `<button class="cite" data-cite="${type}"${indexAttr}${refAttr} aria-label="${tip}">${n}</button>`;
+  };
   return html
     .replace(/\[S(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
       const s = sources[idx] || {};
-      const label = s.citation_label || s.printed_page_code || `S${n}`;
-      const tip = escapeHtml(s.display_title || label);
-      return `<button class="cite" data-cite="S" data-index="${idx}" aria-label="${tip}">${escapeHtml(label)}</button>`;
+      const tip = escapeHtml(s.display_title || s.citation_label || s.printed_page_code || `S${n}`);
+      return citeBtn('S', idx, null, tip, n);
     })
     .replace(/\[L(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
       const hit = lit[idx] || lit.find((x) => Number(x.rank) === Number(n)) || {};
-      const tip = escapeHtml(hit.display_title || hit.title || `L${n}`);
-      return `<button class="cite" data-cite="L" data-index="${idx}" aria-label="${tip}">L${n}</button>`;
+      const tip = escapeHtml(hit.display_title || hit.title || `文献${n}`);
+      return citeBtn('L', idx, null, tip, n);
     })
     .replace(/\[G(\d+)\]/gi, (_, n) => {
       const idx = Number(n) - 1;
-      return `<button class="cite" data-cite="G" data-index="${idx}">G${n}</button>`;
+      return citeBtn('G', idx, null, `G${n}`, n);
     })
-    .replace(/(?<!\w)G(\d+)(?!\w)/g, (_, n) => `<button class="cite" data-cite="G" data-index="${Number(n) - 1}">G${n}</button>`)
+    .replace(/(?<!\w)G(\d+)(?!\w)/g, (_, n) => citeBtn('G', Number(n) - 1, null, `G${n}`, n))
     .replace(/\[(\d{1,3})\]/g, (m, n) => {
       const hit = refs.find((r) => String(r.ref_number) === String(n));
       if (!hit) return m;
-      const label = hit.author_year || hit.citation_label || n;
-      const tip = escapeHtml(hit.display_title || label);
-      return `<button class="cite" data-cite="R" data-ref="${escapeHtml(String(n))}" aria-label="${tip}">${escapeHtml(label)}</button>`;
+      const tip = escapeHtml(hit.display_title || hit.author_year || hit.citation_label || n);
+      return citeBtn('R', null, n, tip, n);
     });
 }
 
@@ -1321,71 +1364,198 @@ function answerKindLabel(kind) {
   return 'AI 回答 · 证据约束';
 }
 
-function renderReferences(payload) {
+function collectEvidenceGroups(payload) {
   const sources = payload.sources || [];
   const refs = payload.attached_references || [];
   const lit = payload.literature || [];
   const graph = payload.graph_triples || [];
-  if (!sources.length && !refs.length && !lit.length && !graph.length) return '';
-  const items = [];
-  sources.forEach((s, i) => {
+  const guideline = sources.map((s, i) => {
     const metaParts = [s.subtitle, s.source_label, s.locator].filter(Boolean);
-    items.push({
+    return {
       title: s.display_title || s.printed_page_code || s.source_id || `Source ${i + 1}`,
       meta: metaParts.join(' · ') || (s.page_type || 'source'),
       badge: s.badge || (s.page_type === 'clinical_guideline' ? '指南' : (s.page_type || 'Source')),
-    });
+      cite: { type: 'S', index: i, label: s.citation_label || s.printed_page_code || `S${i + 1}` },
+      anchor: `S-${i}`,
+    };
   });
-  refs.forEach((r) => {
-    items.push({
-      title: r.display_title || r.paper_title || (r.text || '').replace(/\s+/g, ' ').trim(),
-      meta: r.source_label || [r.journal, r.year, r.authors].filter(Boolean).join('. ') || 'Literature',
-      badge: r.badge || '文献',
-      url: r.url,
-    });
-  });
-  lit.forEach((l, i) => {
-    const rank = l.rank || i + 1;
-    items.push({
-      title: l.display_title || l.title || `PMID ${l.pmid}`,
-      meta: l.tier_label || l.source_label || [l.journal, l.year, l.pmid ? `PMID ${l.pmid}` : ''].filter(Boolean).join(' · ') || 'PubMed · 仅摘要',
-      badge: l.badge || 'PubMed',
-      badgeClass: 'pubmed',
-      url: l.url || (l.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/` : null),
-      cite: { type: 'L', index: i, label: `L${rank}` },
-    });
-  });
-  graph.forEach((g, i) => {
+  const graphItems = graph.map((g, i) => {
     const sourceTag = g.review_status === 'synthetic' ? 'Synthetic' : (g.evidence_kind === 'neo4j' ? 'Neo4j' : 'Graph');
-    items.push({
+    return {
       title: `${g.subject_name || ''} → ${g.relation || ''} → ${g.object_name || ''}`,
       meta: (g.evidence_text || '').slice(0, 160) || `confidence ${Number(g.confidence || 0).toFixed(2)}`,
       badge: sourceTag,
       cite: { type: 'G', index: i, label: `G${i + 1}` },
+      anchor: `G-${i}`,
+    };
+  });
+  const literature = [];
+  refs.forEach((r) => {
+    literature.push({
+      title: r.display_title || r.paper_title || (r.text || '').replace(/\s+/g, ' ').trim(),
+      meta: r.source_label || [r.journal, r.year, r.authors].filter(Boolean).join('. ') || 'Literature',
+      badge: r.badge || '文献',
+      url: r.url,
+      cite: {
+        type: 'R',
+        ref: r.ref_number,
+        label: r.author_year || r.citation_label || String(r.ref_number || ''),
+      },
+      anchor: `R-${r.ref_number}`,
     });
   });
+  lit.forEach((l, i) => {
+    const rank = l.rank || i + 1;
+    const metaPrimary = l.journal_meta || [l.journal, l.year].filter(Boolean).join(' · ');
+    const metaSecondary = l.tier_label || 'PubMed · 仅摘要';
+    literature.push({
+      title: l.display_title || l.title || `PMID ${l.pmid}`,
+      meta: metaPrimary ? `${metaPrimary}\n${metaSecondary}` : metaSecondary,
+      metaPrimary,
+      metaSecondary,
+      badge: l.badge || 'PubMed',
+      badgeClass: 'pubmed',
+      url: l.url || (l.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/` : null),
+      // label unused in sidebar (global refNo shown); kept for citeMap / popovers
+      cite: { type: 'L', index: i, label: String(rank) },
+      anchor: `L-${i}`,
+    });
+  });
+  const citeMap = {};
+  let refNo = 0;
+  [...guideline, ...graphItems, ...literature].forEach((it) => {
+    refNo += 1;
+    it.refNo = refNo;
+    if (it.anchor) citeMap[it.anchor] = refNo;
+  });
+  return { guideline, graph: graphItems, literature, citeMap, total: refNo };
+}
+
+function renderCiteChip(cite) {
+  if (!cite) return '';
+  const label = escapeHtml(cite.label || `${cite.type}${Number(cite.index) + 1}`);
+  const indexAttr = cite.index != null ? ` data-index="${cite.index}"` : '';
+  const refAttr = cite.ref != null && cite.ref !== '' ? ` data-ref="${escapeHtml(String(cite.ref))}"` : '';
+  return `<button class="cite" data-cite="${escapeHtml(cite.type)}"${indexAttr}${refAttr}>${label}</button> `;
+}
+
+function renderRefItem(it) {
+  const title = it.url
+    ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>`
+    : escapeHtml(it.title);
+  // Doctor view: global refNo only (matches body cite buttons). No「文献n」chip, no E-tier / 已进指南 badges.
+  const metaHtml = it.metaPrimary || it.metaSecondary
+    ? `<div class="rmeta-lines">
+        ${it.metaPrimary ? `<div class="rmeta-line rmeta-journal">${escapeHtml(it.metaPrimary)}</div>` : ''}
+        ${it.metaSecondary ? `<div class="rmeta-line rmeta-status">${escapeHtml(it.metaSecondary)}</div>` : ''}
+      </div>`
+    : `<span>${escapeHtml(it.meta || '')}</span>`;
+  const num = it.refNo != null ? it.refNo : '';
+  const cite = it.cite || {};
+  const indexAttr = cite.index != null ? ` data-index="${cite.index}"` : '';
+  const refAttr = cite.ref != null && cite.ref !== '' ? ` data-ref="${escapeHtml(String(cite.ref))}"` : '';
+  const typeAttr = cite.type ? ` data-cite="${escapeHtml(cite.type)}"` : '';
+  const numHtml = num !== ''
+    ? (cite.type
+      ? `<button type="button" class="rnum cite"${typeAttr}${indexAttr}${refAttr}>${num}.</button> `
+      : `<span class="rnum">${num}.</span> `)
+    : '';
   return `
-    <details class="refs-block" open>
+    <div class="ref-item" data-ref-anchor="${escapeHtml(it.anchor || '')}">
+      <div class="rtitle">${numHtml}${title}</div>
+      <div class="rmeta">${metaHtml}<span class="badge${it.badgeClass ? ` ${it.badgeClass}` : ''}">${escapeHtml(it.badge)}</span></div>
+    </div>`;
+}
+
+function renderRefGroup(key, title, items, open) {
+  if (!items.length) return '';
+  return `
+    <details class="refs-group" data-refs-group="${escapeHtml(key)}"${open ? ' open' : ''}>
       <summary>
-        <span class="refs-summary-left">
-          <svg class="refs-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <text x="1" y="5" font-size="5" fill="currentColor" font-family="sans-serif">1</text>
-            <line x1="7" y1="3.5" x2="15" y2="3.5" stroke="currentColor" stroke-width="1.2"/>
-            <text x="1" y="10" font-size="5" fill="currentColor" font-family="sans-serif">2</text>
-            <line x1="7" y1="8.5" x2="15" y2="8.5" stroke="currentColor" stroke-width="1.2"/>
-            <text x="1" y="15" font-size="5" fill="currentColor" font-family="sans-serif">3</text>
-            <line x1="7" y1="13.5" x2="15" y2="13.5" stroke="currentColor" stroke-width="1.2"/>
-          </svg>
-          <span>References & Graph</span>
-        </span>
+        <span class="refs-group-title">${escapeHtml(title)}</span>
         <span class="muted small">${items.length}</span>
       </summary>
-      ${items.map((it, i) => `
-        <div class="ref-item">
-          <div class="rtitle"><span class="rnum">${i + 1}.</span> ${it.cite ? `<button class="cite" data-cite="${it.cite.type}" data-index="${it.cite.index}">${escapeHtml(it.cite.label || (it.cite.type + (it.cite.index + 1)))}</button> ` : ''}${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>` : escapeHtml(it.title)}</div>
-          <div class="rmeta"><span>${escapeHtml(it.meta)}</span><span class="badge${it.badgeClass ? ` ${it.badgeClass}` : ''}">${escapeHtml(it.badge)}</span></div>
-        </div>`).join('')}
+      <div class="refs-group-body">
+        ${items.map((it) => renderRefItem(it)).join('')}
+      </div>
     </details>`;
+}
+
+function renderEvidenceBar(payload, msgId) {
+  const groups = collectEvidenceGroups(payload);
+  if (!groups.total) return '';
+  const parts = [];
+  if (groups.guideline.length) parts.push(`指南 ${groups.guideline.length}`);
+  if (groups.graph.length) parts.push(`图谱 ${groups.graph.length}`);
+  if (groups.literature.length) parts.push(`文献 ${groups.literature.length}`);
+  return `
+    <button type="button" class="evidence-bar" data-act="open-evidence" data-msg-id="${escapeHtml(msgId || '')}" aria-label="查看证据">
+      <svg class="refs-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+        <text x="1" y="5" font-size="5" fill="currentColor" font-family="sans-serif">1</text>
+        <line x1="7" y1="3.5" x2="15" y2="3.5" stroke="currentColor" stroke-width="1.2"/>
+        <text x="1" y="10" font-size="5" fill="currentColor" font-family="sans-serif">2</text>
+        <line x1="7" y1="8.5" x2="15" y2="8.5" stroke="currentColor" stroke-width="1.2"/>
+        <text x="1" y="15" font-size="5" fill="currentColor" font-family="sans-serif">3</text>
+        <line x1="7" y1="13.5" x2="15" y2="13.5" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      <span>证据 ${groups.total}</span>
+      ${parts.length ? `<span class="evidence-bar-parts">· ${parts.join(' · ')}</span>` : ''}
+    </button>`;
+}
+
+function renderEvidenceBody(payload) {
+  const groups = collectEvidenceGroups(payload);
+  if (!groups.total) return '<div class="muted small" style="padding:12px 2px">暂无证据</div>';
+  return `
+    <div class="refs-panel" aria-label="证据列表">
+      ${renderRefGroup('guideline', '指南证据', groups.guideline, true)}
+      ${renderRefGroup('graph', '图谱', groups.graph, false)}
+      ${renderRefGroup('literature', '文献', groups.literature, false)}
+    </div>`;
+}
+
+function findMessageByEvidenceId(msgId) {
+  if (!msgId) return null;
+  return state.messages.find((m) => String(m.serverId || m.id || '') === String(msgId)) || null;
+}
+
+function closeEvidence() {
+  state.evidenceMsgId = null;
+  els.appRoot?.classList.remove('evidence-open');
+  if (els.evidenceBackdrop) els.evidenceBackdrop.hidden = true;
+  if (els.evidenceDrawerBody) els.evidenceDrawerBody.innerHTML = '';
+  if (els.evidenceDrawerTitle) els.evidenceDrawerTitle.textContent = '证据';
+}
+
+function openEvidence(msgId, anchorKey = '') {
+  const message = findMessageByEvidenceId(msgId) || state.messages.filter((m) => m.role === 'assistant').slice(-1)[0];
+  const payload = message?.payload || state.lastPayload;
+  if (!payload) return;
+  const resolvedId = message ? String(message.serverId || message.id || '') : String(msgId || '');
+  state.evidenceMsgId = resolvedId;
+  const groups = collectEvidenceGroups(payload);
+  if (els.evidenceDrawerTitle) els.evidenceDrawerTitle.textContent = groups.total ? `证据 ${groups.total}` : '证据';
+  if (els.evidenceDrawerBody) els.evidenceDrawerBody.innerHTML = renderEvidenceBody(payload);
+  els.appRoot?.classList.add('evidence-open');
+  if (els.evidenceBackdrop) els.evidenceBackdrop.hidden = false;
+
+  const panel = els.evidenceDrawerBody;
+  if (!panel) return;
+  const type = anchorKey ? String(anchorKey).split('-')[0] : '';
+  const groupKey = type === 'S' ? 'guideline' : type === 'G' ? 'graph' : (type === 'L' || type === 'R') ? 'literature' : '';
+  if (groupKey) {
+    const group = panel.querySelector(`details[data-refs-group="${groupKey}"]`);
+    if (group) group.open = true;
+  }
+  panel.querySelectorAll('.ref-item.is-flash').forEach((el) => el.classList.remove('is-flash'));
+  if (anchorKey) {
+    const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(anchorKey) : anchorKey;
+    const item = panel.querySelector(`[data-ref-anchor="${esc}"]`);
+    if (item) {
+      item.classList.add('is-flash');
+      requestAnimationFrame(() => item.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+    }
+  }
 }
 
 function bindFigures() {
@@ -1551,7 +1721,7 @@ function projectClinicalGraph(data) {
 
   const edgeKeySet = new Set();
   const edges = [];
-  const pushEdge = (source, target, label) => {
+  const pushEdge = (source, target, label, properties = {}) => {
     if (!source || !target || source === target) return;
     const rel = String(label || 'RELATED_TO').toUpperCase();
     if (isStructuralRel(rel)) return;
@@ -1564,7 +1734,7 @@ function projectClinicalGraph(data) {
       target,
       label: rel,
       type: rel,
-      properties: {},
+      properties,
     });
   };
 
@@ -1600,7 +1770,10 @@ function projectClinicalGraph(data) {
     const sKey = subjId ? (idAlias.get(String(subjId)) || ensureConcept(byId.get(String(subjId))) || ensureConcept({ id: subjId, label: props.subject_name, type: 'OntologyConcept', properties: { name: props.subject_name } })) : null;
     const oKey = objId ? (idAlias.get(String(objId)) || ensureConcept(byId.get(String(objId))) || ensureConcept({ id: objId, label: props.object_name, type: 'OntologyConcept', properties: { name: props.object_name } })) : null;
     const rel = props.relation || n.label || 'RELATED_TO';
-    pushEdge(sKey, oKey, rel);
+    pushEdge(sKey, oKey, rel, {
+      confidence: Number(props.confidence ?? n.properties?.confidence ?? 1),
+      evidence_kind: props.evidence_kind || n.properties?.evidence_kind || 'graph',
+    });
   }
 
   // Direct non-structural edges between concepts
@@ -1670,10 +1843,48 @@ function projectClinicalGraph(data) {
   };
 }
 
-function renderNeo4jGraph(data, selectedId = '') {
+function graphNodeCategory(type, properties = {}, nodeId = '') {
+  const t = `${String(type || '')} ${String(properties.type || '')} ${String(nodeId || '')}`.toLowerCase();
+  if (t.includes('disease') || t.includes('diagnos')) return '疾病';
+  if (t.includes('subtype')) return '分型';
+  if (t.includes('treat') || t.includes('drug') || t.includes('therapy') || t.includes('regimen')) return '治疗';
+  if (t.includes('test') || t.includes('procedure')) return '检查';
+  if (t.includes('biomarker') || t.includes('gene') || t.includes('protein') || t.includes('mutation')) return '分子标志物';
+  if (t.includes('risk') || t.includes('scoring') || t.includes('patientgroup')) return '风险因素';
+  if (t.includes('outcome') || t.includes('prognos')) return '预后';
+  if (t.includes('page') || t.includes('reference') || t.includes('article')) return '证据来源';
+  const name = `${String(properties.name || '')} ${String(properties.label || '')}`.toLowerCase();
+  if (/dlbcl|\bfl\b|\bmcl\b|\blbcl\b|lymphoma|淋巴瘤/.test(name)) return '疾病';
+  if (/gcb|abc|double-hit|double-expressor|non-gcb|分型/.test(name)) return '分型';
+  if (/r-chop|pola|epoch|car-t|asct|antibody|抗体|治疗/.test(name)) return '治疗';
+  if (/pet|fish|biopsy|ldh|echocardiography|检查|活检/.test(name)) return '检查';
+  if (/tp53|myc|bcl2|bcl6|cd19|cd20|基因|蛋白/.test(name)) return '分子标志物';
+  if (/ipi|ecog|age|bulky|风险|评分/.test(name)) return '风险因素';
+  if (/prognosis|response|remission|预后|缓解/.test(name)) return '预后';
+  return '其他';
+}
+
+function renderNeo4jGraph(data, selectedId = '', filters = {}) {
   const projected = projectClinicalGraph(data || {});
-  const nodes = projected.nodes || [];
-  const edges = projected.edges || [];
+  let nodes = projected.nodes || [];
+  let edges = projected.edges || [];
+  const allowedTypes = filters.nodeTypes instanceof Set && filters.nodeTypes.size ? filters.nodeTypes : null;
+  const allowedRelations = filters.relations instanceof Set && filters.relations.size ? filters.relations : null;
+  const minConfidence = Number(filters.minConfidence || 0);
+  if (allowedTypes || allowedRelations || minConfidence > 0) {
+    const visibleIds = new Set(nodes.filter((node) => {
+      return !allowedTypes || allowedTypes.has(graphNodeCategory(node.type, node.properties, node.id));
+    }).map((node) => String(node.id)));
+    edges = edges.filter((edge) => {
+      const relation = String(edge.label || edge.type || 'RELATED_TO').toUpperCase();
+      return visibleIds.has(String(edge.source)) && visibleIds.has(String(edge.target))
+        && (!allowedRelations || allowedRelations.has(relation))
+        && Number(edge.properties?.confidence ?? 1) >= minConfidence;
+    });
+    const connectedIds = new Set(edges.flatMap((edge) => [String(edge.source), String(edge.target)]));
+    if (projected.center && visibleIds.has(String(projected.center))) connectedIds.add(String(projected.center));
+    nodes = nodes.filter((node) => connectedIds.has(String(node.id)));
+  }
   if (!nodes.length) return '<div class="muted" style="padding:16px">没有可视化数据（请换一个临床实体 seed，如 DLBCL / TP53 / R-CHOP）</div>';
 
   const typeWeight = (type) => {
@@ -1753,7 +1964,7 @@ function renderNeo4jGraph(data, selectedId = '') {
     const label = escapeHtml(rawLabel.slice(0, 22));
     return `
       <g>
-        <line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" stroke="#9aa4b2" stroke-width="1.6" marker-end="url(#arrow)" />
+        <line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" stroke="${edge.properties?.evidence_kind === 'literature' ? '#c08457' : '#9aa4b2'}" stroke-width="${edge.properties?.evidence_kind === 'flowchart' ? '2.8' : '1.6'}" stroke-dasharray="${edge.properties?.evidence_kind === 'predicted' ? '4 4' : 'none'}" marker-end="url(#arrow)" />
         ${label ? `<rect x="${midX - Math.min(40, label.length * 3)}" y="${midY - 11}" width="${Math.min(90, Math.max(28, label.length * 6))}" height="15" rx="7" fill="rgba(248,250,252,.96)" stroke="rgba(148,163,184,.35)" />` : ''}
         ${label ? `<text x="${midX}" y="${midY}" text-anchor="middle" font-size="9" fill="#64748b">${label}</text>` : ''}
       </g>`;
@@ -1773,7 +1984,12 @@ function renderNeo4jGraph(data, selectedId = '') {
     const selected = String(node.id) === String(selectedId);
     const isCenter = String(node.id) === String(centerNode?.id);
     const isFocus = Boolean(node.__focus);
-    const fill = isCenter ? '#fff7ed' : '#e2e8f0';
+    const fills = {
+      '疾病': '#4f86f7', '分型': '#a855f7', '治疗': '#2f9e6a', '检查': '#38bdf8',
+      '分子标志物': '#f59e0b', '风险因素': '#eab308', '预后': '#ec7caa', '证据来源': '#94a3b8', '其他': '#cbd5e1',
+    };
+    const category = graphNodeCategory(node.type);
+    const fill = isCenter ? '#fff7ed' : fills[category];
     const opacity = 1;
     const labelRaw = String(node.displayLabel || node.label || node.id);
     const label = escapeHtml(labelRaw.length > 18 ? `${labelRaw.slice(0, 16)}…` : labelRaw);
@@ -1786,7 +2002,7 @@ function renderNeo4jGraph(data, selectedId = '') {
     return `
       <g class="neo4j-node ${selected ? 'selected' : ''}" data-node-id="${escapeHtml(String(node.id))}" data-node-label="${escapeHtml(labelRaw)}" style="cursor:pointer;opacity:${opacity}">
         <title>${tooltip}</title>
-        <circle cx="${node.x}" cy="${node.y}" r="${r}" fill="${fill}" stroke="${selected || isCenter ? '#ea580c' : typeColor(node.type)}" stroke-width="${selected || isCenter ? '3' : '1.6'}" />
+        <circle cx="${node.x}" cy="${node.y}" r="${r}" fill="${fill}" fill-opacity="${isCenter ? '1' : '.88'}" stroke="${selected || isCenter ? '#ea580c' : typeColor(node.type)}" stroke-width="${selected || isCenter ? '3' : '1.6'}" />
         <text x="${node.x}" y="${node.y + 4}" text-anchor="middle" font-size="${isCenter ? 12 : 10}" fill="#1e293b" font-weight="${isCenter ? '600' : '500'}">${label}</text>
       </g>`;
   }).join('');
@@ -1828,7 +2044,6 @@ function bindNeo4jGraphInteractions(root, onSelect, onExpand) {
 }
 
 function bindCitations() {
-  const payload = state.lastPayload || {};
   const pop = els.citePopover;
   if (!pop) return;
 
@@ -1851,21 +2066,34 @@ function bindCitations() {
       state.citeHideTimer = null;
     }, 160);
   };
-  const scrollToRefs = () => {
+  const payloadForBtn = (btn) => {
+    const row = btn?.closest?.('.msg-row');
+    const msg = messageFromRow(row);
+    return msg?.payload || state.lastPayload || {};
+  };
+  const scrollToRefs = (btn) => {
     hidePopover();
-    document.querySelector('.refs-block')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const row = btn?.closest?.('.msg-row');
+    const msgId = row?.dataset?.msgId || state.evidenceMsgId || '';
+    const type = btn?.dataset?.cite;
+    let key = '';
+    if (type === 'S' || type === 'G' || type === 'L') key = `${type}-${btn.dataset.index}`;
+    else if (type === 'R') key = `R-${btn.dataset.ref}`;
+    openEvidence(msgId, key);
   };
 
   const showFor = (btn, { pin = false } = {}) => {
     clearHide();
     state.citePinned = !!pin;
+    const payload = payloadForBtn(btn);
     const type = btn.dataset.cite;
     const citeKey = `${type}:${btn.dataset.index ?? ''}:${btn.dataset.ref ?? ''}`;
     pop.dataset.citeKey = citeKey;
     let html = '';
     let seeCount = (payload.sources || []).length
       + (payload.attached_references || []).length
-      + (payload.literature || []).length;
+      + (payload.literature || []).length
+      + (payload.graph_triples || []).length;
     if (type === 'S') {
       const s = (payload.sources || [])[Number(btn.dataset.index)] || {};
       const metaLine = [s.subtitle, s.source_label, s.locator].filter(Boolean).join(' · ');
@@ -1876,17 +2104,19 @@ function bindCitations() {
         <div class="muted small" style="margin-top:8px">${escapeHtml((s.text || s.section || '').slice(0, 180))}</div>`;
     } else if (type === 'L') {
       const l = (payload.literature || [])[Number(btn.dataset.index)] || {};
-      const metaLine = l.tier_label || l.source_label || [l.journal, l.year].filter(Boolean).join(' · ') || 'PubMed · 仅摘要';
+      const journalLine = l.journal_meta || [l.journal, l.year].filter(Boolean).join(' · ');
+      const metaLine = l.tier_label || 'PubMed · 仅摘要';
       html = `
         <div class="ref-head"><span class="k">PubMed</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
         <div class="ref-title">${escapeHtml(l.display_title || l.title || `PMID ${l.pmid || ''}`)}</div>
-        <div class="ref-meta"><span>${escapeHtml(metaLine)}</span><span class="badge pubmed">PubMed</span></div>
+        <div class="ref-meta"><span class="rmeta-journal">${escapeHtml(journalLine || metaLine)}</span><span class="badge pubmed">PubMed</span></div>
+        ${journalLine ? `<div class="muted small" style="margin-top:4px">${escapeHtml(metaLine)}</div>` : ''}
         <div class="muted small" style="margin-top:8px;max-width:320px;white-space:pre-wrap">${escapeHtml((l.summary_zh || l.abstract || '').slice(0, 220))}</div>
-        ${l.url || l.pmid ? `<div style="margin-top:10px"><a class="btn ghost" href="${escapeHtml(l.url || `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/`)}" target="_blank" rel="noopener">打开 PubMed</a></div>` : ''}`;
+        ${l.url || l.pmid ? `<div><a class="cite-ext-link" href="${escapeHtml(l.url || `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/`)}" target="_blank" rel="noopener">打开 PubMed<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M10 14L19 5"/><path d="M19 12v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></a></div>` : ''}`;
     } else if (type === 'G') {
       const g = (payload.graph_triples || [])[Number(btn.dataset.index)] || {};
       html = `
-        <div class="ref-head"><span class="k">Graph</span><button type="button" class="see" data-see-all>See All</button></div>
+        <div class="ref-head"><span class="k">Graph</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
         <div class="ref-title">${escapeHtml(g.subject_name || '')} → ${escapeHtml(g.relation || '')} → ${escapeHtml(g.object_name || '')}</div>
         <div class="ref-meta"><span>confidence ${Number(g.confidence || 0).toFixed(2)}</span><span class="badge">${escapeHtml(g.validation_status || 'graph')}</span></div>
         <div class="muted small" style="margin-top:8px;max-width:320px;white-space:pre-wrap">${escapeHtml((g.evidence_text || '').slice(0, 220))}</div>
@@ -1899,19 +2129,23 @@ function bindCitations() {
       html = `
         <div class="ref-head"><span class="k">Reference</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
         <div class="ref-title">${escapeHtml(r.display_title || (r.text || '').slice(0, 160))}</div>
-        <div class="ref-meta"><span>${escapeHtml(metaLine)}</span><span class="badge">${escapeHtml(r.badge || '文献')}</span></div>`;
+        <div class="ref-meta"><span>${escapeHtml(metaLine)}</span><span class="badge">${escapeHtml(r.badge || '文献')}</span></div>
+        ${r.url || r.pmid ? `<div><a class="cite-ext-link" href="${escapeHtml(r.url || `https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/`)}" target="_blank" rel="noopener">打开来源<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M10 14L19 5"/><path d="M19 12v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></a></div>` : ''}`;
     }
     pop.innerHTML = html;
     pop.hidden = false;
     const rect = btn.getBoundingClientRect();
-    const left = Math.min(window.innerWidth - 380, Math.max(8, rect.left));
+    const popW = Math.min(360, window.innerWidth * 0.92);
+    let left = rect.left;
+    if (left + popW + 12 > window.innerWidth) left = Math.max(8, rect.right - popW);
+    left = Math.min(window.innerWidth - popW - 8, Math.max(8, left));
     const top = Math.min(window.innerHeight - 200, rect.bottom + 8);
     pop.style.left = `${left}px`;
     pop.style.top = `${top}px`;
     pop.querySelector('[data-see-all]')?.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      scrollToRefs();
+      scrollToRefs(btn);
     });
     pop.querySelector('[data-open-neo4j]')?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1983,6 +2217,18 @@ function syncLiteratureChip() {
   chip.setAttribute('aria-pressed', on ? 'true' : 'false');
 }
 
+function syncDataSourceChip() {
+  const key = state.dataSource || 'nccn';
+  const label = DATA_SOURCE_LABELS[key] || key.toUpperCase();
+  if (els.dataSourceChipLabel) els.dataSourceChipLabel.textContent = label;
+  if (els.dataSourceChipIcon) els.dataSourceChipIcon.innerHTML = GUIDE_ICONS[key] || GUIDE_ICONS.nccn;
+  if (els.dataSourceChip) {
+    els.dataSourceChip.classList.add('is-active');
+    els.dataSourceChip.setAttribute('data-source-active', key);
+    els.dataSourceChip.title = `当前指南：${label}`;
+  }
+}
+
 function closeDataSourceMenu() {
   if (!els.dataSourceMenu || !els.dataSourceChip) return;
   els.dataSourceMenu.hidden = true;
@@ -1992,9 +2238,15 @@ function closeDataSourceMenu() {
 function syncDataSourceMenu() {
   if (!els.dataSourceMenu) return;
   els.dataSourceMenu.querySelectorAll('[data-source]').forEach((btn) => {
-    const selected = btn.getAttribute('data-source') === state.dataSource;
+    const src = btn.getAttribute('data-source');
+    const selected = src === state.dataSource;
     btn.classList.toggle('is-selected', selected);
     btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+    const iconSlot = btn.querySelector('[data-guide-icon]');
+    if (iconSlot && !iconSlot.dataset.ready) {
+      iconSlot.innerHTML = GUIDE_ICONS[src] || '';
+      iconSlot.dataset.ready = '1';
+    }
   });
 }
 
@@ -2007,9 +2259,10 @@ function openDataSourceMenu() {
 
 function setDataSource(key, { animate = false } = {}) {
   state.dataSource = saveDataSource(key);
+  syncDataSourceChip();
   syncDataSourceMenu();
   if (animate) {
-    pulseChipIcon(els.dataSourceChip?.querySelector('.chip-icon-book'), 'is-pop');
+    pulseChipIcon(els.dataSourceChip?.querySelector('.chip-icon-guide'), 'is-pop');
   }
 }
 
@@ -2493,6 +2746,8 @@ function bindMessageActions() {
           await copyShareLink(url, btn, ICON.share, '分享此回答');
         } else if (act === 'open-feedback') {
           openFeedbackModal(msg);
+        } else if (act === 'open-evidence') {
+          openEvidence(btn.dataset.msgId || msg.serverId || msg.id || '');
         }
       });
     });
@@ -2834,9 +3089,19 @@ function openToolsDrawer(kind, seedOverride = '') {
           <button class="btn" id="neo4jZoomOutBtn">缩小</button>
         </div>
       </div>
-      <div class="neo4j-shell" style="display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px;align-items:start;">
-        <div id="neo4jGraphCanvas" class="evidence-card" style="min-height:640px; overflow:auto;">${escapeHtml('正在加载...')}</div>
-        <aside id="neo4jSidePanel" class="evidence-card" style="position:sticky;top:12px;min-height:640px;max-height:640px;overflow:auto;padding:14px;">
+      <div class="neo4j-shell graph-workbench">
+        <aside id="neo4jFilterPanel" class="evidence-card graph-filter-panel">
+          <div class="ref-title">图谱筛选</div>
+          <div class="muted small graph-filter-hint">选择节点和关系类型，图谱会即时更新</div>
+          <div class="graph-filter-group"><strong>节点类型</strong><div id="neo4jNodeFilters"></div></div>
+          <div class="graph-filter-group"><strong>关系类型</strong><div id="neo4jRelationFilters"></div></div>
+          <label class="graph-confidence">最小置信度 <output id="neo4jConfidenceValue">0.00</output>
+            <input id="neo4jConfidenceFilter" type="range" min="0" max="1" step="0.05" value="0" />
+          </label>
+          <button class="btn" id="neo4jClearFiltersBtn">清除筛选</button>
+        </aside>
+        <div id="neo4jGraphCanvas" class="evidence-card graph-canvas">${escapeHtml('正在加载...')}</div>
+        <aside id="neo4jSidePanel" class="evidence-card graph-detail-panel">
           <div class="ref-title" style="margin-bottom:10px">图谱概览</div>
           <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
             <button class="btn" id="neo4jPathBtn">路径模式</button>
@@ -2889,13 +3154,33 @@ function openToolsDrawer(kind, seedOverride = '') {
     let selectedNodeId = '';
     const historyStack = [];
     let mode = 'path';
+    const filterState = { nodeTypes: null, relations: null, minConfidence: 0 };
+    const nodeFiltersEl = overlay.querySelector('#neo4jNodeFilters');
+    const relationFiltersEl = overlay.querySelector('#neo4jRelationFilters');
+    const confidenceInput = overlay.querySelector('#neo4jConfidenceFilter');
+    const confidenceValue = overlay.querySelector('#neo4jConfidenceValue');
+    const renderFilterOptions = (data) => {
+      const projected = projectClinicalGraph(data || {});
+      const categories = [...new Set((projected.nodes || []).map((node) => graphNodeCategory(node.type, node.properties, node.id)))].sort();
+      const relations = [...new Set((projected.edges || []).map((edge) => String(edge.label || edge.type || 'RELATED_TO')))].sort();
+      if (!filterState.nodeTypes) filterState.nodeTypes = new Set(categories);
+      if (!filterState.relations) filterState.relations = new Set(relations);
+      const checkbox = (kind, value, checked) => `<label class="graph-filter-option"><input type="checkbox" data-filter-kind="${kind}" data-filter-value="${escapeHtml(value)}" ${checked ? 'checked' : ''}><span>${escapeHtml(value)}</span></label>`;
+      if (nodeFiltersEl) nodeFiltersEl.innerHTML = categories.map((value) => checkbox('node', value, filterState.nodeTypes.has(value))).join('') || '<span class="muted small">暂无节点类型</span>';
+      if (relationFiltersEl) relationFiltersEl.innerHTML = relations.map((value) => checkbox('relation', value, filterState.relations.has(value))).join('') || '<span class="muted small">暂无关系类型</span>';
+      overlay.querySelectorAll('[data-filter-kind]').forEach((input) => input.addEventListener('change', () => {
+        const target = input.dataset.filterKind === 'node' ? filterState.nodeTypes : filterState.relations;
+        if (input.checked) target.add(input.dataset.filterValue); else target.delete(input.dataset.filterValue);
+        paintCanvas();
+      }));
+    };
     const renderStats = (data) => {
       if (!statsEl || !data) return;
       const projected = projectClinicalGraph(data || {});
       const pNodes = projected.nodes || [];
       const pEdges = projected.edges || [];
       const typeCounts = pNodes.reduce((acc, n) => {
-        const k = String(n.type || 'Concept');
+        const k = graphNodeCategory(n.type, n.properties, n.id);
         acc[k] = (acc[k] || 0) + 1;
         return acc;
       }, {});
@@ -2952,7 +3237,7 @@ function openToolsDrawer(kind, seedOverride = '') {
       if (!canvas || !currentData) return;
       const projected = projectClinicalGraph(currentData, Array.isArray(window.__GF_GRAPH_FOCUS__) ? window.__GF_GRAPH_FOCUS__ : []);
       selectedNodeId = selectedNodeId || projected.center || '';
-      canvas.innerHTML = renderNeo4jGraph(currentData, selectedNodeId);
+      canvas.innerHTML = renderNeo4jGraph(currentData, selectedNodeId, filterState);
       canvas.style.transform = `scale(${currentScale})`;
       canvas.style.transformOrigin = 'top center';
       bindNeo4jGraphInteractions(
@@ -3011,6 +3296,9 @@ function openToolsDrawer(kind, seedOverride = '') {
       });
       currentData = { center, nodes, edges };
       selectedNodeId = nodes[0]?.id || '';
+      filterState.nodeTypes = null;
+      filterState.relations = null;
+      renderFilterOptions(currentData);
       paintCanvas();
       renderStats(currentData);
       renderDetail(nodes[0] || null);
@@ -3034,6 +3322,9 @@ function openToolsDrawer(kind, seedOverride = '') {
         const data = await resp.json();
         if (!resp.ok) throw new Error(formatApiDetail(data));
         currentData = data;
+      filterState.nodeTypes = null;
+        filterState.relations = null;
+        renderFilterOptions(currentData);
         selectedNodeId = '';
         if (mode === 'path') {
           const first = (projectClinicalGraph(data).nodes || [])[0];
@@ -3066,6 +3357,18 @@ function openToolsDrawer(kind, seedOverride = '') {
     overviewBtn?.addEventListener('click', () => { mode = 'overview'; navigateTo(currentSeed || seedInput?.value || '', 2, false); });
     zoomInBtn?.addEventListener('click', () => { currentScale = Math.min(1.8, currentScale + 0.1); if (canvas) canvas.style.transform = `scale(${currentScale})`; });
     zoomOutBtn?.addEventListener('click', () => { currentScale = Math.max(0.6, currentScale - 0.1); if (canvas) canvas.style.transform = `scale(${currentScale})`; });
+    confidenceInput?.addEventListener('input', () => {
+      filterState.minConfidence = Number(confidenceInput.value || 0);
+      if (confidenceValue) confidenceValue.value = filterState.minConfidence.toFixed(2);
+      paintCanvas();
+    });
+    overlay.querySelector('#neo4jClearFiltersBtn')?.addEventListener('click', () => {
+      filterState.minConfidence = 0;
+      if (confidenceInput) confidenceInput.value = '0';
+      if (confidenceValue) confidenceValue.value = '0.00';
+      renderFilterOptions(currentData || {});
+      paintCanvas();
+    });
     seedPills.forEach((pill) => pill.addEventListener('click', () => navigateTo(pill.dataset.seed || '', 1, true)));
     const payloadSeeds = Array.isArray(payload.graph_seed_candidates) ? payload.graph_seed_candidates.filter(Boolean) : [];
     if (payloadSeeds.length) {
@@ -3190,6 +3493,7 @@ els.chatLog?.addEventListener('click', (e) => {
   if (msg?.role === 'assistant') openFeedbackModal(msg);
 });
 syncLiteratureChip();
+syncDataSourceChip();
 syncDataSourceMenu();
 els.followUpInput?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -3339,11 +3643,22 @@ els.toolsMenu?.addEventListener('click', async (e) => {
     await openFeedbackList();
     return;
   }
-  if (btn.dataset.tool === 'molecular-evidence') {
-    location.href = './molecular-evidence.html';
+  if (btn.dataset.tool === 'sources') {
+    const lastAssistant = [...state.messages].reverse().find((m) => m.role === 'assistant' && m.payload);
+    if (!lastAssistant) {
+      alert('请先完成一次问答');
+      return;
+    }
+    openEvidence(lastAssistant.serverId || lastAssistant.id || '');
     return;
   }
   openToolsDrawer(btn.dataset.tool);
+});
+
+els.evidenceDrawerCloseBtn?.addEventListener('click', closeEvidence);
+els.evidenceBackdrop?.addEventListener('click', closeEvidence);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && els.appRoot?.classList.contains('evidence-open')) closeEvidence();
 });
 
 if (els.shareChatBtn) {
@@ -3355,8 +3670,14 @@ if (els.shareChatBtn) {
   });
 }
 
-els.molecularEvidenceBtn?.addEventListener('click', () => {
-  location.href = './molecular-evidence.html';
+function molecularEvidenceHref() {
+  const path = window.location.pathname || '/app/';
+  const dir = path.endsWith('/') ? path : path.replace(/[^/]+$/, '');
+  return `${dir}molecular-evidence.html`;
+}
+els.molecularEvidenceBtn?.addEventListener('click', (e) => {
+  e.preventDefault();
+  location.href = molecularEvidenceHref();
 });
 els.molecularEvidenceCloseBtn?.addEventListener('click', closeMolecularEvidenceModal);
 els.molecularEvidenceCancelBtn?.addEventListener('click', closeMolecularEvidenceModal);

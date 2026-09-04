@@ -1,0 +1,965 @@
+# DLBCL / lymphoma clinical journal quality table (hand-curated).
+# IF / quartile values are approximate clinical UX aids — not a redistribution of Clarivate JCR.
+# Update data_version and updated_at when refreshing numbers.
+data_version: "curated-approx-2025"
+updated_at: "2026-08-18"
+source_note: "Hand-curated for GuideFlow DLBCL UX; IF/quartile approximate; CAS tiers approximate."
+
+# tier:
+#   T0  general top (practice-changing phase III often lands here)
+#   T1  oncology / hematology top
+#   T2  specialty mainstream
+#   T2G guideline / society carriers
+#   T3  use with caution (not blocked)
+
+journals:
+  # ---- T0 ----
+  - full_name: "The New England Journal of Medicine"
+    iso_abbr: "N Engl J Med"
+    aliases: ["NEJM", "New Engl J Med"]
+    issn: "0028-4793"
+    jcr_if: 96.2
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "general_medicine"
+    tier: "T0"
+
+  - full_name: "The Lancet"
+    iso_abbr: "Lancet"
+    aliases: ["The Lancet"]
+    issn: "0140-6736"
+    jcr_if: 98.4
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "general_medicine"
+    tier: "T0"
+
+  - full_name: "JAMA"
+    iso_abbr: "JAMA"
+    aliases: ["Journal of the American Medical Association"]
+    issn: "0098-7484"
+    jcr_if: 63.1
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "general_medicine"
+    tier: "T0"
+
+  # ---- T1 ----
+  - full_name: "Journal of Clinical Oncology"
+    iso_abbr: "J Clin Oncol"
+    aliases: ["JCO"]
+    issn: "0732-183X"
+    jcr_if: 42.1
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "oncology"
+    tier: "T1"
+
+  - full_name: "Blood"
+    iso_abbr: "Blood"
+    aliases: []
+    issn: "0006-4971"
+    jcr_if: 21.0
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "hematology"
+    tier: "T1"
+
+  - full_name: "The Lancet Oncology"
+    iso_abbr: "Lancet Oncol"
+    aliases: ["Lancet Oncology"]
+    issn: "1470-2045"
+    jcr_if: 41.6
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "oncology"
+    tier: "T1"
+
+  - full_name: "The Lancet Haematology"
+    iso_abbr: "Lancet Haematol"
+    aliases: ["Lancet Hematology", "Lancet Haematology"]
+    issn: "2352-3026"
+    jcr_if: 24.7
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "hematology"
+    tier: "T1"
+
+  - full_name: "Annals of Oncology"
+    iso_abbr: "Ann Oncol"
+    aliases: []
+    issn: "0923-7534"
+    jcr_if: 56.7
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "oncology"
+    tier: "T1"
+
+  - full_name: "Nature Medicine"
+    iso_abbr: "Nat Med"
+    aliases: []
+    issn: "1078-8956"
+    jcr_if: 58.7
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "translational"
+    tier: "T1"
+
+  - full_name: "Cancer Cell"
+    iso_abbr: "Cancer Cell"
+    aliases: []
+    issn: "1535-6108"
+    jcr_if: 48.8
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "cancer_biology"
+    tier: "T1"
+
+  - full_name: "Cancer Discovery"
+    iso_abbr: "Cancer Discov"
+    aliases: []
+    issn: "2159-8274"
+    jcr_if: 28.2
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "cancer_biology"
+    tier: "T1"
+
+  - full_name: "JAMA Oncology"
+    iso_abbr: "JAMA Oncol"
+    aliases: []
+    issn: "2374-2437"
+    jcr_if: 22.5
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "oncology"
+    tier: "T1"
+
+  - full_name: "Journal of Hematology & Oncology"
+    iso_abbr: "J Hematol Oncol"
+    aliases: ["Journal of Hematology and Oncology"]
+    issn: "1756-8722"
+    jcr_if: 29.5
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "hematology_oncology"
+    tier: "T1"
+
+  - full_name: "Blood Cancer Discovery"
+    iso_abbr: "Blood Cancer Discov"
+    aliases: []
+    issn: "2643-3230"
+    jcr_if: 11.0
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: false
+    specialty: "hematology"
+    tier: "T1"
+
+  - full_name: "Nature Reviews Clinical Oncology"
+    iso_abbr: "Nat Rev Clin Oncol"
+    aliases: []
+    issn: "1759-4774"
+    jcr_if: 81.1
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "oncology"
+    tier: "T1"
+
+  - full_name: "Nature Reviews Cancer"
+    iso_abbr: "Nat Rev Cancer"
+    aliases: []
+    issn: "1474-175X"
+    jcr_if: 72.5
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "cancer_biology"
+    tier: "T1"
+
+  - full_name: "Nature Cancer"
+    iso_abbr: "Nat Cancer"
+    aliases: []
+    issn: "2662-1347"
+    jcr_if: 23.5
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "cancer_biology"
+    tier: "T1"
+
+  - full_name: "Cell"
+    iso_abbr: "Cell"
+    aliases: []
+    issn: "0092-8674"
+    jcr_if: 45.5
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "biology"
+    tier: "T1"
+
+  - full_name: "Nature"
+    iso_abbr: "Nature"
+    aliases: []
+    issn: "0028-0836"
+    jcr_if: 50.5
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "general_science"
+    tier: "T1"
+
+  - full_name: "Science"
+    iso_abbr: "Science"
+    aliases: []
+    issn: "0036-8075"
+    jcr_if: 44.7
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "general_science"
+    tier: "T1"
+
+  - full_name: "CA: A Cancer Journal for Clinicians"
+    iso_abbr: "CA Cancer J Clin"
+    aliases: ["CA Cancer J Clin"]
+    issn: "0007-9235"
+    jcr_if: 503.1
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "oncology"
+    tier: "T1"
+
+  # ---- T2G guideline carriers ----
+  - full_name: "Journal of the National Comprehensive Cancer Network"
+    iso_abbr: "J Natl Compr Canc Netw"
+    aliases: ["JNCCN"]
+    issn: "1540-1405"
+    jcr_if: 12.0
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "guideline"
+    tier: "T2G"
+
+  - full_name: "中华血液学杂志"
+    iso_abbr: "Zhonghua Xue Ye Xue Za Zhi"
+    aliases: ["Chin J Hematol", "Chinese Journal of Hematology"]
+    issn: "0253-2727"
+    jcr_if: null
+    jcr_quartile: null
+    cas_tier: 2
+    cas_top: false
+    specialty: "guideline_cn"
+    tier: "T2G"
+
+  # ---- T2 specialty mainstream ----
+  - full_name: "Blood Advances"
+    iso_abbr: "Blood Adv"
+    aliases: []
+    issn: "2473-9529"
+    jcr_if: 7.4
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Haematologica"
+    iso_abbr: "Haematologica"
+    aliases: ["Haematologica Journal"]
+    issn: "0390-6078"
+    jcr_if: 8.2
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "HemaSphere"
+    iso_abbr: "Hemasphere"
+    aliases: ["HemaSphere"]
+    issn: "2572-9241"
+    jcr_if: 9.0
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Leukemia"
+    iso_abbr: "Leukemia"
+    aliases: []
+    issn: "0887-6924"
+    jcr_if: 12.8
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "American Journal of Hematology"
+    iso_abbr: "Am J Hematol"
+    aliases: []
+    issn: "0361-8609"
+    jcr_if: 12.8
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "British Journal of Haematology"
+    iso_abbr: "Br J Haematol"
+    aliases: ["British Journal of Hematology"]
+    issn: "0007-1048"
+    jcr_if: 5.1
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Blood Cancer Journal"
+    iso_abbr: "Blood Cancer J"
+    aliases: []
+    issn: "2044-5385"
+    jcr_if: 12.9
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Bone Marrow Transplantation"
+    iso_abbr: "Bone Marrow Transplant"
+    aliases: []
+    issn: "0268-3369"
+    jcr_if: 4.5
+    jcr_quartile: "Q2"
+    cas_tier: 2
+    cas_top: false
+    specialty: "transplant"
+    tier: "T2"
+
+  - full_name: "Transplantation and Cellular Therapy"
+    iso_abbr: "Transplant Cell Ther"
+    aliases: ["Biology of Blood and Marrow Transplantation", "Biol Blood Marrow Transplant", "BBMT"]
+    issn: "2666-6367"
+    jcr_if: 4.6
+    jcr_quartile: "Q2"
+    cas_tier: 2
+    cas_top: false
+    specialty: "transplant"
+    tier: "T2"
+
+  - full_name: "Journal for ImmunoTherapy of Cancer"
+    iso_abbr: "J Immunother Cancer"
+    aliases: ["JITC"]
+    issn: "2051-1426"
+    jcr_if: 10.9
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: false
+    specialty: "immunotherapy"
+    tier: "T2"
+
+  - full_name: "Clinical Cancer Research"
+    iso_abbr: "Clin Cancer Res"
+    aliases: []
+    issn: "1078-0432"
+    jcr_if: 10.4
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  - full_name: "Leukemia & Lymphoma"
+    iso_abbr: "Leuk Lymphoma"
+    aliases: ["Leukemia and Lymphoma"]
+    issn: "1042-8194"
+    jcr_if: 2.2
+    jcr_quartile: "Q3"
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Clinical Lymphoma, Myeloma & Leukemia"
+    iso_abbr: "Clin Lymphoma Myeloma Leuk"
+    aliases: ["Clinical Lymphoma Myeloma and Leukemia"]
+    issn: "2152-2650"
+    jcr_if: 2.7
+    jcr_quartile: "Q3"
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Hematological Oncology"
+    iso_abbr: "Hematol Oncol"
+    aliases: []
+    issn: "0278-0232"
+    jcr_if: 3.1
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "European Journal of Cancer"
+    iso_abbr: "Eur J Cancer"
+    aliases: []
+    issn: "0959-8049"
+    jcr_if: 7.6
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  - full_name: "Cancer"
+    iso_abbr: "Cancer"
+    aliases: []
+    issn: "0008-543X"
+    jcr_if: 6.2
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  - full_name: "Blood Reviews"
+    iso_abbr: "Blood Rev"
+    aliases: []
+    issn: "0268-960X"
+    jcr_if: 7.7
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Seminars in Hematology"
+    iso_abbr: "Semin Hematol"
+    aliases: []
+    issn: "0037-1963"
+    jcr_if: 4.0
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Current Opinion in Oncology"
+    iso_abbr: "Curr Opin Oncol"
+    aliases: []
+    issn: "1040-8746"
+    jcr_if: 3.6
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  - full_name: "Oncologist"
+    iso_abbr: "Oncologist"
+    aliases: ["The Oncologist"]
+    issn: "1083-7159"
+    jcr_if: 5.0
+    jcr_quartile: "Q2"
+    cas_tier: 2
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  - full_name: "Cancer Treatment Reviews"
+    iso_abbr: "Cancer Treat Rev"
+    aliases: []
+    issn: "0305-7372"
+    jcr_if: 11.0
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  - full_name: "Modern Pathology"
+    iso_abbr: "Mod Pathol"
+    aliases: []
+    issn: "0893-3952"
+    jcr_if: 7.1
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "pathology"
+    tier: "T2"
+
+  - full_name: "American Journal of Surgical Pathology"
+    iso_abbr: "Am J Surg Pathol"
+    aliases: []
+    issn: "0147-5185"
+    jcr_if: 4.5
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "pathology"
+    tier: "T2"
+
+  - full_name: "Histopathology"
+    iso_abbr: "Histopathology"
+    aliases: []
+    issn: "0309-0167"
+    jcr_if: 5.0
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "pathology"
+    tier: "T2"
+
+  - full_name: "Leukemia Research"
+    iso_abbr: "Leuk Res"
+    aliases: []
+    issn: "0145-2126"
+    jcr_if: 2.1
+    jcr_quartile: "Q3"
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "International Journal of Hematology"
+    iso_abbr: "Int J Hematol"
+    aliases: []
+    issn: "0925-5710"
+    jcr_if: 1.9
+    jcr_quartile: "Q3"
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Annals of Hematology"
+    iso_abbr: "Ann Hematol"
+    aliases: []
+    issn: "0939-5555"
+    jcr_if: 3.0
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Experimental Hematology & Oncology"
+    iso_abbr: "Exp Hematol Oncol"
+    aliases: ["Experimental Hematology and Oncology"]
+    issn: "2162-3619"
+    jcr_if: 7.0
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "hematology_oncology"
+    tier: "T2"
+
+  - full_name: "Cancer Immunology Research"
+    iso_abbr: "Cancer Immunol Res"
+    aliases: []
+    issn: "2326-6066"
+    jcr_if: 8.1
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "immunotherapy"
+    tier: "T2"
+
+  - full_name: "British Journal of Cancer"
+    iso_abbr: "Br J Cancer"
+    aliases: []
+    issn: "0007-0920"
+    jcr_if: 6.4
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  - full_name: "Molecular Cancer"
+    iso_abbr: "Mol Cancer"
+    aliases: []
+    issn: "1476-4598"
+    jcr_if: 27.7
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "cancer_biology"
+    tier: "T1"
+
+  - full_name: "Signal Transduction and Targeted Therapy"
+    iso_abbr: "Signal Transduct Target Ther"
+    aliases: ["STTT"]
+    issn: "2095-9907"
+    jcr_if: 40.8
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "translational"
+    tier: "T1"
+
+  - full_name: "Blood Science"
+    iso_abbr: "Blood Sci"
+    aliases: []
+    issn: "2543-6368"
+    jcr_if: null
+    jcr_quartile: null
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Cancer Letters"
+    iso_abbr: "Cancer Lett"
+    aliases: []
+    issn: "0304-3835"
+    jcr_if: 9.1
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  - full_name: "Oncotarget"
+    iso_abbr: "Oncotarget"
+    aliases: []
+    issn: "1949-2553"
+    jcr_if: null
+    jcr_quartile: null
+    cas_tier: 3
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  - full_name: "PLoS Medicine"
+    iso_abbr: "PLoS Med"
+    aliases: ["PLOS Medicine"]
+    issn: "1549-1277"
+    jcr_if: 10.5
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: false
+    specialty: "general_medicine"
+    tier: "T2"
+
+  - full_name: "BMJ"
+    iso_abbr: "BMJ"
+    aliases: ["British Medical Journal"]
+    issn: "0959-8138"
+    jcr_if: 93.6
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "general_medicine"
+    tier: "T0"
+
+  - full_name: "JAMA Network Open"
+    iso_abbr: "JAMA Netw Open"
+    aliases: []
+    issn: "2574-3805"
+    jcr_if: 10.5
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "general_medicine"
+    tier: "T2"
+
+  - full_name: "eClinicalMedicine"
+    iso_abbr: "EClinicalMedicine"
+    aliases: []
+    issn: "2589-5370"
+    jcr_if: 9.6
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "general_medicine"
+    tier: "T2"
+
+  - full_name: "Science Translational Medicine"
+    iso_abbr: "Sci Transl Med"
+    aliases: []
+    issn: "1946-6234"
+    jcr_if: 15.8
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: true
+    specialty: "translational"
+    tier: "T1"
+
+  - full_name: "Journal of Hematology"
+    iso_abbr: "J Hematol"
+    aliases: []
+    issn: "1927-1212"
+    jcr_if: null
+    jcr_quartile: null
+    cas_tier: 4
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Cytotherapy"
+    iso_abbr: "Cytotherapy"
+    aliases: []
+    issn: "1465-3249"
+    jcr_if: 4.0
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "cell_therapy"
+    tier: "T2"
+
+  - full_name: "Molecular Therapy"
+    iso_abbr: "Mol Ther"
+    aliases: []
+    issn: "1525-0016"
+    jcr_if: 12.1
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: false
+    specialty: "cell_therapy"
+    tier: "T2"
+
+  - full_name: "Cancer Research"
+    iso_abbr: "Cancer Res"
+    aliases: []
+    issn: "0008-5472"
+    jcr_if: 12.5
+    jcr_quartile: "Q1"
+    cas_tier: 1
+    cas_top: false
+    specialty: "cancer_biology"
+    tier: "T2"
+
+  - full_name: "Expert Review of Hematology"
+    iso_abbr: "Expert Rev Hematol"
+    aliases: []
+    issn: "1747-4086"
+    jcr_if: 2.5
+    jcr_quartile: "Q3"
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "Current Hematologic Malignancy Reports"
+    iso_abbr: "Curr Hematol Malig Rep"
+    aliases: []
+    issn: "1558-8211"
+    jcr_if: 2.8
+    jcr_quartile: "Q3"
+    cas_tier: 3
+    cas_top: false
+    specialty: "hematology"
+    tier: "T2"
+
+  - full_name: "International Journal of Cancer"
+    iso_abbr: "Int J Cancer"
+    aliases: []
+    issn: "0020-7136"
+    jcr_if: 5.7
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "oncology"
+    tier: "T2"
+
+  # ---- T3 caution ----
+  - full_name: "Frontiers in Oncology"
+    iso_abbr: "Front Oncol"
+    aliases: []
+    issn: "2234-943X"
+    jcr_if: 3.5
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "oncology"
+    tier: "T3"
+
+  - full_name: "Frontiers in Immunology"
+    iso_abbr: "Front Immunol"
+    aliases: []
+    issn: "1664-3224"
+    jcr_if: 5.7
+    jcr_quartile: "Q1"
+    cas_tier: 2
+    cas_top: false
+    specialty: "immunology"
+    tier: "T3"
+
+  - full_name: "Cancers"
+    iso_abbr: "Cancers (Basel)"
+    aliases: ["Cancers"]
+    issn: "2072-6694"
+    jcr_if: 4.5
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "oncology"
+    tier: "T3"
+
+  - full_name: "Journal of Clinical Medicine"
+    iso_abbr: "J Clin Med"
+    aliases: []
+    issn: "2077-0383"
+    jcr_if: 3.0
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "general_medicine"
+    tier: "T3"
+
+  - full_name: "Cancer Medicine"
+    iso_abbr: "Cancer Med"
+    aliases: []
+    issn: "2045-7634"
+    jcr_if: 2.9
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "oncology"
+    tier: "T3"
+
+  - full_name: "BMC Cancer"
+    iso_abbr: "BMC Cancer"
+    aliases: []
+    issn: "1471-2407"
+    jcr_if: 3.4
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "oncology"
+    tier: "T3"
+
+  - full_name: "Medicine"
+    iso_abbr: "Medicine (Baltimore)"
+    aliases: ["Medicine"]
+    issn: "0025-7974"
+    jcr_if: 1.6
+    jcr_quartile: "Q3"
+    cas_tier: 4
+    cas_top: false
+    specialty: "general_medicine"
+    tier: "T3"
+
+  - full_name: "Scientific Reports"
+    iso_abbr: "Sci Rep"
+    aliases: []
+    issn: "2045-2322"
+    jcr_if: 3.8
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "multidisciplinary"
+    tier: "T3"
+
+  - full_name: "PLoS ONE"
+    iso_abbr: "PLoS One"
+    aliases: ["PLOS ONE"]
+    issn: "1932-6203"
+    jcr_if: 2.9
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "multidisciplinary"
+    tier: "T3"
+
+  - full_name: "Oncology Letters"
+    iso_abbr: "Oncol Lett"
+    aliases: []
+    issn: "1792-1074"
+    jcr_if: 2.5
+    jcr_quartile: "Q3"
+    cas_tier: 4
+    cas_top: false
+    specialty: "oncology"
+    tier: "T3"
+
+  - full_name: "Molecular and Clinical Oncology"
+    iso_abbr: "Mol Clin Oncol"
+    aliases: []
+    issn: "2049-9450"
+    jcr_if: 1.4
+    jcr_quartile: "Q4"
+    cas_tier: 4
+    cas_top: false
+    specialty: "oncology"
+    tier: "T3"
+
+  - full_name: "Heliyon"
+    iso_abbr: "Heliyon"
+    aliases: []
+    issn: "2405-8440"
+    jcr_if: 3.4
+    jcr_quartile: "Q2"
+    cas_tier: 4
+    cas_top: false
+    specialty: "multidisciplinary"
+    tier: "T3"
+
+  - full_name: "Cureus"
+    iso_abbr: "Cureus"
+    aliases: []
+    issn: "2168-8184"
+    jcr_if: null
+    jcr_quartile: null
+    cas_tier: 4
+    cas_top: false
+    specialty: "general_medicine"
+    tier: "T3"
+
+  - full_name: "Current Oncology"
+    iso_abbr: "Curr Oncol"
+    aliases: []
+    issn: "1198-0052"
+    jcr_if: 2.8
+    jcr_quartile: "Q3"
+    cas_tier: 3
+    cas_top: false
+    specialty: "oncology"
+    tier: "T3"
+
+  - full_name: "Biomedicines"
+    iso_abbr: "Biomedicines"
+    aliases: []
+    issn: "2227-9059"
+    jcr_if: 3.9
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "biomedicine"
+    tier: "T3"
+
+  - full_name: "Diagnostics"
+    iso_abbr: "Diagnostics (Basel)"
+    aliases: ["Diagnostics"]
+    issn: "2075-4418"
+    jcr_if: 3.0
+    jcr_quartile: "Q2"
+    cas_tier: 3
+    cas_top: false
+    specialty: "diagnostics"
+    tier: "T3"

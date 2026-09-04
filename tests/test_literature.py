@@ -194,3 +194,181 @@ def test_pubmed_cache_roundtrip(tmp_path: Path):
     client._write_cache(path, art.to_dict())
     cached = client._read_cache(path, ttl_s=3600)
     assert cached["pmid"] == "1"
+
+
+def test_extract_line_of_therapy_second_line():
+    concepts = extract_concepts_rule("复发难治 DLBCL 二线 CAR-T 怎么选")
+    assert "second-line" in concepts.line_of_therapy
+    q = build_pubmed_query(concepts, level=1)
+    assert "second-line" in q.lower() or "relapsed" in q.lower()
+
+
+def test_evidence_tier_phase3_rct_is_e1():
+    from backend.app.services.evidence_tier import classify_evidence_tier
+
+    res = classify_evidence_tier(
+        title="POLARIX: pola-R-CHP in previously untreated DLBCL",
+        abstract="A randomized phase III trial of polatuzumab vedotin.",
+        pub_types=["Randomized Controlled Trial", "Clinical Trial, Phase III"],
+    )
+    assert res.tier == "E1"
+    assert "III" in res.study_design_zh or "RCT" in res.study_design_zh
+
+
+def test_evidence_tier_single_arm_pivotal_is_e2():
+    from backend.app.services.evidence_tier import classify_evidence_tier
+
+    res = classify_evidence_tier(
+        title="Epcoritamab monotherapy for Richter transformation (EPCORE CLL-1): findings from a single-arm, multicentre, open-label, phase 1b/2 trial.",
+        abstract="We conducted a single-arm phase 1b/2 trial of epcoritamab.",
+        pub_types=["Clinical Trial, Phase II", "Clinical Trial"],
+    )
+    assert res.tier == "E2"
+    assert "注册" in res.study_design_zh or "II" in res.study_design_zh
+
+
+def test_evidence_tier_real_world_is_e4():
+    from backend.app.services.evidence_tier import classify_evidence_tier
+
+    res = classify_evidence_tier(
+        title="Polatuzumab Vedotin Plus R-CHP: A Real-World, Multi-Center, Retrospective Cohort Study",
+        abstract="This multicenter retrospective real-world study evaluated Pola-R-CHP.",
+        pub_types=["Observational Study", "Retrospective Studies"],
+    )
+    assert res.tier == "E4"
+
+
+def test_evidence_tier_case_report_is_e5():
+    from backend.app.services.evidence_tier import classify_evidence_tier
+
+    res = classify_evidence_tier(
+        title="A rare case of DLBCL",
+        abstract="We report a single patient.",
+        pub_types=["Case Reports"],
+    )
+    assert res.tier == "E5"
+
+
+def test_evidence_tier_guideline_citation_lifts_to_e1():
+    from backend.app.services.evidence_tier import classify_evidence_tier
+
+    res = classify_evidence_tier(
+        title="Some observational DLBCL paper",
+        abstract="Retrospective cohort.",
+        pub_types=["Retrospective Studies"],
+        in_guideline=True,
+        guideline_ref="NCCN B-Cell Lymphomas",
+    )
+    assert res.tier == "E1"
+    assert res.in_guideline is True
+
+
+def test_journal_lookup_blood_and_unknown_neutral():
+    from backend.app.services.journal_quality import journal_score, lookup_journal, format_journal_meta
+
+    blood = lookup_journal("Blood")
+    assert blood is not None
+    assert blood.tier == "T1"
+    assert blood.jcr_if is not None
+    assert journal_score("Blood") > journal_score("Some Unknown Journal XYZ")
+    # Unmatched is neutral, not T3 penalty
+    assert abs(journal_score("Some Unknown Journal XYZ") - 0.55) < 1e-6
+    meta = format_journal_meta("Blood", "2024")
+    assert "IF" in meta
+    assert "Q1" in meta or "JCR" in meta
+
+
+def test_rank_tier_first_e2_before_e4():
+    concepts = extract_concepts_rule("DLBCL 二线 epcoritamab")
+    articles = [
+        PubmedArticle(
+            pmid="10",
+            title="Efficacy of Pola-R-CHP: A Real-World Retrospective Cohort in DLBCL",
+            abstract="Multicenter retrospective real-world study of polatuzumab in diffuse large B-cell lymphoma.",
+            year="2024",
+            journal="Cancer Med",
+            pub_types=["Retrospective Studies", "Observational Study"],
+            mesh=["Lymphoma, Large B-Cell, Diffuse"],
+            mesh_major=["Lymphoma, Large B-Cell, Diffuse"],
+        ),
+        PubmedArticle(
+            pmid="20",
+            title="Epcoritamab in relapsed DLBCL (EPCORE): single-arm open-label phase 1b/2 trial",
+            abstract="Single-arm phase 1b/2 pivotal trial of epcoritamab in relapsed/refractory diffuse large B-cell lymphoma.",
+            year="2023",
+            journal="Lancet Oncol",
+            pub_types=["Clinical Trial, Phase II", "Clinical Trial"],
+            mesh=["Lymphoma, Large B-Cell, Diffuse"],
+            mesh_major=["Lymphoma, Large B-Cell, Diffuse"],
+        ),
+    ]
+    hits = rank_articles(articles, concepts, top_k=2)
+    assert hits[0].pmid == "20"
+    assert hits[0].evidence_tier == "E2"
+    assert hits[1].evidence_tier == "E4"
+
+
+def test_rank_penalizes_disease_mismatch_mcl():
+    concepts = extract_concepts_rule("DLBCL CAR-T 疗效")
+    articles = [
+        PubmedArticle(
+            pmid="mcl",
+            title="Lisocabtagene Maraleucel in Relapsed/Refractory Mantle Cell Lymphoma: TRANSCEND NHL 001",
+            abstract="Primary analysis of the mantle cell lymphoma cohort from TRANSCEND NHL 001, a phase I study of liso-cel / CAR-T.",
+            year="2024",
+            journal="J Clin Oncol",
+            pub_types=["Clinical Trial, Phase I"],
+            mesh=["Lymphoma, Mantle-Cell"],
+            mesh_major=["Lymphoma, Mantle-Cell"],
+        ),
+        PubmedArticle(
+            pmid="dlbcl",
+            title="CAR-T in relapsed diffuse large B-cell lymphoma: phase 2 study",
+            abstract="Prospective phase 2 clinical trial of CAR-T in relapsed/refractory DLBCL.",
+            year="2023",
+            journal="Blood",
+            pub_types=["Clinical Trial, Phase II"],
+            mesh=["Lymphoma, Large B-Cell, Diffuse"],
+            mesh_major=["Lymphoma, Large B-Cell, Diffuse"],
+        ),
+    ]
+    hits = rank_articles(articles, concepts, top_k=2)
+    assert hits[0].pmid == "dlbcl"
+    # MCL should score lower on population even if journal is strong
+    mcl = next(h for h in hits if h.pmid == "mcl")
+    dlbcl = next(h for h in hits if h.pmid == "dlbcl")
+    assert dlbcl.score_components["population"] > mcl.score_components["population"]
+
+
+def test_enrich_literature_has_journal_meta_and_dynamic_tier():
+    from backend.app.services.source_display import enrich_literature_dict
+
+    hit = LiteratureHit(
+        pmid="99",
+        title="Demo",
+        abstract="abs",
+        journal="Blood",
+        year="2024",
+        rank=1,
+        evidence_tier="E1",
+        study_design_zh="III期RCT",
+        journal_if=21.0,
+        journal_quartile="Q1",
+        journal_cas_tier=1,
+        journal_tier="T1",
+        in_guideline=False,
+    )
+    data = enrich_literature_dict(hit)
+    assert "IF" in data["journal_meta"]
+    assert "III期RCT" in data["tier_label"]
+    assert "未经指南收录" in data["tier_label"]
+    assert data["evidence_tier"] == "E1"
+
+
+def test_guideline_cited_lookup_from_built_index():
+    from backend.app.services.guideline_cited import lookup_guideline_citation
+
+    # NCCN KB has pmid 39817679 (Cancer statistics 2025)
+    hit = lookup_guideline_citation(pmid="39817679")
+    assert hit is not None
+    assert "nccn" in hit.sources
