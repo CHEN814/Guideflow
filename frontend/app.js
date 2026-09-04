@@ -1364,6 +1364,21 @@ function answerKindLabel(kind) {
   return 'AI 回答 · 证据约束';
 }
 
+const EVIDENCE_TIER_TIPS = {
+  E1: '改变实践：III期RCT / 高质量系统综述Meta / 已被指南引用',
+  E2: '注册性证据：单臂II期或关键Ib/II期（如CAR-T、双抗获批依据）',
+  E3: '前瞻性探索：非注册II期或前瞻队列',
+  E4: '真实世界：回顾性队列 / RWE',
+  E5: '弱证据：病例报告 / 综述评论',
+};
+
+function renderEvidenceTierBadge(tier, tip) {
+  const t = String(tier || '').toUpperCase();
+  if (!/^E[1-5]$/.test(t)) return '';
+  const title = tip || EVIDENCE_TIER_TIPS[t] || t;
+  return `<span class="badge tier-${t.toLowerCase()}" title="${escapeHtml(title)}">${escapeHtml(t)}</span>`;
+}
+
 function collectEvidenceGroups(payload) {
   const sources = payload.sources || [];
   const refs = payload.attached_references || [];
@@ -1406,6 +1421,7 @@ function collectEvidenceGroups(payload) {
   });
   lit.forEach((l, i) => {
     const rank = l.rank || i + 1;
+    const tier = String(l.evidence_tier || '').toUpperCase();
     const metaPrimary = l.journal_meta || [l.journal, l.year].filter(Boolean).join(' · ');
     const metaSecondary = l.tier_label || 'PubMed · 仅摘要';
     literature.push({
@@ -1415,6 +1431,8 @@ function collectEvidenceGroups(payload) {
       metaSecondary,
       badge: l.badge || 'PubMed',
       badgeClass: 'pubmed',
+      evidenceTier: /^E[1-5]$/.test(tier) ? tier : '',
+      evidenceTierTip: EVIDENCE_TIER_TIPS[tier] || '',
       url: l.url || (l.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/` : null),
       // label unused in sidebar (global refNo shown); kept for citeMap / popovers
       cite: { type: 'L', index: i, label: String(rank) },
@@ -1443,7 +1461,8 @@ function renderRefItem(it) {
   const title = it.url
     ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>`
     : escapeHtml(it.title);
-  // Doctor view: global refNo only (matches body cite buttons). No「文献n」chip, no E-tier / 已进指南 badges.
+  // Doctor view: global refNo only (matches body cite buttons). No「文献n」chip / 已进指南 badges.
+  const tierBadge = renderEvidenceTierBadge(it.evidenceTier, it.evidenceTierTip);
   const metaHtml = it.metaPrimary || it.metaSecondary
     ? `<div class="rmeta-lines">
         ${it.metaPrimary ? `<div class="rmeta-line rmeta-journal">${escapeHtml(it.metaPrimary)}</div>` : ''}
@@ -1463,7 +1482,7 @@ function renderRefItem(it) {
   return `
     <div class="ref-item" data-ref-anchor="${escapeHtml(it.anchor || '')}">
       <div class="rtitle">${numHtml}${title}</div>
-      <div class="rmeta">${metaHtml}<span class="badge${it.badgeClass ? ` ${it.badgeClass}` : ''}">${escapeHtml(it.badge)}</span></div>
+      <div class="rmeta">${metaHtml}${tierBadge}<span class="badge${it.badgeClass ? ` ${it.badgeClass}` : ''}">${escapeHtml(it.badge)}</span></div>
     </div>`;
 }
 
@@ -2106,10 +2125,11 @@ function bindCitations() {
       const l = (payload.literature || [])[Number(btn.dataset.index)] || {};
       const journalLine = l.journal_meta || [l.journal, l.year].filter(Boolean).join(' · ');
       const metaLine = l.tier_label || 'PubMed · 仅摘要';
+      const tierBadge = renderEvidenceTierBadge(l.evidence_tier);
       html = `
         <div class="ref-head"><span class="k">PubMed</span><button type="button" class="see" data-see-all>See All (${seeCount})</button></div>
         <div class="ref-title">${escapeHtml(l.display_title || l.title || `PMID ${l.pmid || ''}`)}</div>
-        <div class="ref-meta"><span class="rmeta-journal">${escapeHtml(journalLine || metaLine)}</span><span class="badge pubmed">PubMed</span></div>
+        <div class="ref-meta"><span class="rmeta-journal">${escapeHtml(journalLine || metaLine)}</span>${tierBadge}<span class="badge pubmed">PubMed</span></div>
         ${journalLine ? `<div class="muted small" style="margin-top:4px">${escapeHtml(metaLine)}</div>` : ''}
         <div class="muted small" style="margin-top:8px;max-width:320px;white-space:pre-wrap">${escapeHtml((l.summary_zh || l.abstract || '').slice(0, 220))}</div>
         ${l.url || l.pmid ? `<div><a class="cite-ext-link" href="${escapeHtml(l.url || `https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/`)}" target="_blank" rel="noopener">打开 PubMed<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M10 14L19 5"/><path d="M19 12v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></a></div>` : ''}`;

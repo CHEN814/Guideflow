@@ -389,10 +389,10 @@ a.composer-chip{text-decoration:none;color:inherit}
 .chip-wrap:has(.source-menu:not([hidden])) .composer-chip[data-tip]::after{opacity:0!important}
 .badge.pubmed{background:#eeeae6;color:#5c534c}
 .badge.tier-e1{background:rgba(22,163,74,.15);color:#166534}
-.badge.tier-e2{background:#eeeae6;color:#5c534c}
+.badge.tier-e2{background:rgba(37,99,235,.12);color:#1d4ed8}
 .badge.tier-e3{background:#eeeae6;color:#5c534c}
-.badge.tier-e4{background:#eeeae6;color:#5c534c}
-.badge.tier-e5{background:#eeeae6;color:#5c534c}
+.badge.tier-e4{background:rgba(217,119,6,.14);color:#b45309}
+.badge.tier-e5{background:rgba(185,28,28,.10);color:#9b1c1c}
 .badge.in-guideline{background:#eeeae6;color:#5c534c}
 .rmeta-lines{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
 .rmeta-line{line-height:1.4;word-break:break-word}
