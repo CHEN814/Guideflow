@@ -3,443 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Guideflow · 分子证据模块</title>
-  <link rel="stylesheet" href="./styles.css?v=20260818-uirevamp" />
+  <title>Guideflow · 分子证据内容</title>
+  <link rel="stylesheet" href="./styles.css?v=20260831-me-rewrite" />
   <style>
+    :root {
+      --me-header-height: 64px;
+      --me-sidebar-width: 224px;
+      --me-composer-height: 96px;
+      --me-divider: rgba(31, 59, 110, .12);
+      --me-workspace: #f5f7fb;
+      --me-blue: #1f3b6e;
+      --me-blue-soft: rgba(31, 59, 110, .08);
+      --me-orange: #e56d3d;
+      --me-orange-soft: rgba(229, 111, 61, .12);
+      --me-text: #2a2623;
+      --me-muted: #6b7280;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: var(--me-workspace);
+      color: var(--me-text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    a { color: var(--me-blue); text-decoration: none; }
     .me-shell {
       display: grid;
-      grid-template-rows: auto 1fr;
-      min-height: 100vh;
-      min-height: 100dvh;
+      grid-template-rows: var(--me-header-height) minmax(0, 1fr);
+      height: 100vh;
+      height: 100dvh;
+      min-height: 0;
     }
+
+    /* ============ 顶部栏 ============ */
     .me-hero {
-      display: grid;
-      gap: 14px;
-      padding: 18px 22px 10px;
+      position: relative;
+      z-index: 20;
+      border-bottom: 1px solid var(--me-divider);
+      background: #fff;
     }
     .me-hero-top {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px;
+      height: var(--me-header-height);
+      box-sizing: border-box;
+      padding: 0 24px;
     }
-    .export-menu {
-      position: relative;
-    }
-    .export-menu-panel {
-      position: absolute;
-      top: calc(100% + 8px);
-      right: 0;
-      z-index: 30;
-      display: grid;
-      gap: 6px;
-      width: max-content;
-      min-width: 180px;
-      padding: 8px;
-      border: 1px solid rgba(0,0,0,.08);
-      border-radius: 14px;
-      background: rgba(255,255,255,.98);
-      box-shadow: 0 14px 36px rgba(69,45,30,.16);
-    }
-    .export-menu-panel[hidden] { display: none; }
-    .export-menu-panel .btn { width: 100%; justify-content: flex-start; }
+    .me-hero-copy { min-width: 0; display: flex; align-items: baseline; gap: 12px; }
     .me-kicker {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: rgba(229, 111, 61, .10);
-      color: #8a4b2a;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-    }
-    .me-title {
-      margin: 10px 0 6px;
-      font-size: clamp(24px, 4vw, 34px);
-      line-height: 1.15;
-      letter-spacing: -.02em;
-    }
-    .me-desc {
-      margin: 0;
-      color: var(--muted);
-      max-width: 72ch;
-      line-height: 1.7;
-    }
-    .me-content {
-      display: grid;
-      grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
-      gap: 16px;
-      padding: 12px 22px 20px;
-      min-height: 0;
-    }
-    .me-card {
-      background: rgba(255,255,255,.92);
-      border: 1px solid rgba(229,111,61,.14);
-      border-radius: 22px;
-      box-shadow: 0 16px 40px rgba(72, 48, 31, .10);
-      overflow: hidden;
-      min-width: 0;
-      min-height: 0;
-    }
-    .me-card-head {
-      padding: 16px 18px 12px;
-      border-bottom: 1px solid rgba(0,0,0,.06);
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start;
-      flex-wrap: wrap;
-    }
-    .me-card-body {
-      padding: 16px 18px 18px;
-    }
-    .me-form {
-      display: grid;
-      gap: 12px;
-    }
-    .me-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .me-grid label,
-    .me-form label {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .me-form input,
-    .me-form select,
-    .me-form textarea {
-      width: 100%;
-      border: 1px solid rgba(0,0,0,.10);
-      border-radius: 12px;
-      padding: 10px 12px;
-      font: inherit;
-      color: var(--text);
-      background: #fff;
-      outline: none;
-    }
-    .me-form textarea {
-      min-height: 120px;
-      resize: vertical;
-      line-height: 1.6;
-    }
-    .me-form input:focus,
-    .me-form select:focus,
-    .me-form textarea:focus {
-      border-color: rgba(229,111,61,.35);
-      box-shadow: 0 0 0 3px rgba(229,111,61,.10);
-    }
-    .me-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .me-actions .left,
-    .me-actions .right {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .me-samples {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 4px;
-    }
-    .question-library {
-      margin-top: 14px;
-      border: 1px solid rgba(229,111,61,.14);
-      border-radius: 18px;
-      background: linear-gradient(180deg, rgba(255,252,249,.98), rgba(255,255,255,.96));
-      overflow: hidden;
-    }
-    .question-library-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-      padding: 12px 14px;
-      cursor: pointer;
-      user-select: none;
-      border-bottom: 1px solid rgba(0,0,0,.05);
-    }
-    .question-library-header h4 {
-      margin: 0;
-      font-size: 15px;
-    }
-    .question-library-header .muted {
-      margin-top: 4px;
-      font-size: 12px;
-    }
-    .question-library-body {
-      padding: 12px 14px 14px;
-    }
-    .question-library-body[hidden] { display: none; }
-    .question-category {
-      border: 1px solid rgba(0,0,0,.06);
-      border-radius: 16px;
-      padding: 12px;
-      margin-bottom: 10px;
-      background: rgba(255,255,255,.85);
-    }
-    .question-category:last-child { margin-bottom: 0; }
-    .question-category-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .question-category-title {
-      font-size: 14px;
-      font-weight: 700;
-      margin: 0;
-    }
-    .question-category-count {
-      font-size: 12px;
-      color: var(--muted);
-      background: rgba(0,0,0,.04);
-      border-radius: 999px;
-      padding: 4px 8px;
-      white-space: nowrap;
-    }
-    .question-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .sample-chip {
-      border: 1px solid rgba(229,111,61,.18);
-      background: #fff;
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 13px;
-      cursor: pointer;
-      color: var(--text);
-    }
-    .me-output {
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-      gap: 12px;
-      min-height: 0;
-    }
-    .me-summary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .summary-card {
-      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.9));
-      border: 1px solid rgba(0,0,0,.06);
-      border-radius: 16px;
-      padding: 12px 14px;
-    }
-    .summary-card .label {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
-    .summary-card strong {
-      font-size: 20px;
-    }
-    .doctor-banner {
-      border: 1px solid rgba(229,111,61,.16);
-      border-radius: 20px;
-      padding: 16px 16px 14px;
-      background: linear-gradient(180deg, rgba(255,248,243,.98), rgba(255,255,255,.96));
-      box-shadow: 0 14px 30px rgba(72, 48, 31, .08);
-      margin-bottom: 12px;
-    }
-    .doctor-banner.alert { border-color: rgba(180,40,40,.16); background: linear-gradient(180deg, rgba(254,242,242,.98), rgba(255,255,255,.96)); }
-    .doctor-banner.warn { border-color: rgba(245,158,11,.18); background: linear-gradient(180deg, rgba(255,251,235,.98), rgba(255,255,255,.96)); }
-    .doctor-banner.ok { border-color: rgba(46,158,91,.18); background: linear-gradient(180deg, rgba(240,253,244,.98), rgba(255,255,255,.96)); }
-    .doctor-banner-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-    .doctor-banner-title {
+      color: var(--me-blue);
       font-size: 18px;
       font-weight: 800;
       letter-spacing: -.01em;
+      white-space: nowrap;
+    }
+    .me-title {
       margin: 0;
-    }
-    .doctor-banner-conclusion {
-      margin: 0;
-      color: var(--text);
-      font-size: 15px;
-      line-height: 1.75;
-    }
-    .doctor-banner-subtitle {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-    .doctor-banner-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .doctor-mini {
-      background: rgba(255,255,255,.9);
-      border: 1px solid rgba(0,0,0,.06);
-      border-radius: 14px;
-      padding: 10px 12px;
-      min-width: 0;
-      overflow: hidden;
-    }
-    .doctor-mini .label {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 4px;
-    }
-    .doctor-mini strong {
-      font-size: 15px;
-      line-height: 1.4;
-    }
-    .doctor-mini.action strong { color: #8a4b2a; }
-    .doctor-mini.action .risk-chip { color: inherit; }
-    .doctor-mini .risk-chip {
-      display: flex;
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      border-radius: 12px;
-      line-height: 1.55;
-    }
-    .doctor-mini.action.warn strong, .risk-chip.warn { color: #9a6700; }
-    .doctor-mini.action.alert strong, .risk-chip.alert { color: #9b1c1c; }
-    .doctor-mini.action.ok strong, .risk-chip.ok { color: #1d6d43; }
-    .risk-chip {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      background: rgba(0,0,0,.04);
-      line-height: 1.4;
-    }
-    .doctor-banner-details {
-      margin-top: 12px;
-      border-top: 1px dashed rgba(0,0,0,.08);
-      padding-top: 12px;
-    }
-    .report-template {
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(229,111,61,.14);
-      background: rgba(255,251,247,.92);
-    }
-    .report-template h4 {
-      margin: 0 0 8px;
-      font-size: 15px;
-    }
-    .report-template-list {
-      display: grid;
-      gap: 8px;
-      margin: 0;
-      padding-left: 18px;
-      line-height: 1.6;
-    }
-    .doctor-banner-details[hidden] { display: none; }
-    .doctor-banner-filter {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-    .doctor-banner-filter .filter-chip.active {
-      background: rgba(229,111,61,.12);
-      border-color: rgba(229,111,61,.32);
-      color: #8a4b2a;
-    }
-    .doctor-banner-list {
-      display: grid;
-      gap: 6px;
-      margin: 12px 0 0;
-      padding-left: 18px;
-      color: var(--text);
-      line-height: 1.6;
-    }
-    .doctor-banner-list li { margin: 0; }
-    .result-stack {
-      display: grid;
-      gap: 12px;
-      min-height: 0;
-      overflow: auto;
-      padding-right: 2px;
-    }
-    .result-section {
-      background: rgba(255,255,255,.96);
-      border: 1px solid rgba(0,0,0,.06);
-      border-radius: 18px;
-      padding: 14px 16px;
-    }
-    .result-section h3 {
-      margin: 0 0 10px;
-      font-size: 16px;
-    }
-    .result-section.collapsible {
-      padding: 0;
-      overflow: hidden;
-    }
-    .result-section.collapsible > summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 16px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 700;
-      list-style: none;
-      user-select: none;
-    }
-    .result-section.collapsible > summary::-webkit-details-marker { display: none; }
-    .result-section.collapsible > summary::after {
-      content: '展开';
-      color: var(--muted);
+      color: var(--me-muted);
       font-size: 13px;
       font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .result-section.collapsible[open] > summary::after { content: '收起'; }
-    .collapsible-body {
-      padding: 0 16px 16px;
-      border-top: 1px solid rgba(0,0,0,.05);
-    }
-    .result-muted {
-      color: var(--muted);
-      line-height: 1.7;
-    }
-    .badge-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+    .me-hero-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+    .me-hero-actions .btn { white-space: nowrap; padding: 8px 12px; font-size: 13px; box-shadow: none; }
+    .hero-meta { color: var(--me-muted); font-size: 12px; white-space: nowrap; }
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -447,1913 +79,1634 @@
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
-      background: rgba(229,111,61,.12);
+      background: var(--me-orange-soft);
       color: #8a4b2a;
-    }
-    .status-badge.ok { background: rgba(46,158,91,.12); color: #1d6d43; }
-    .status-badge.warn { background: rgba(245,158,11,.14); color: #9a6700; }
-    .status-badge.bad { background: rgba(180,40,40,.10); color: #9b1c1c; }
-    .provider-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      border: 1px solid transparent;
       white-space: nowrap;
     }
-    .provider-badge.civic { background: rgba(111, 76, 255, .10); color: #5840b3; border-color: rgba(111, 76, 255, .18); }
-    .provider-badge.clinvar { background: rgba(0, 126, 167, .10); color: #0c6a88; border-color: rgba(0, 126, 167, .18); }
-    .provider-badge.mock { background: rgba(120, 120, 120, .10); color: #666; border-color: rgba(120, 120, 120, .18); }
-    .provider-badge.live { background: rgba(46,158,91,.12); color: #1d6d43; border-color: rgba(46,158,91,.18); }
-    .provider-badge.composite { background: rgba(229,111,61,.12); color: #8a4b2a; border-color: rgba(229,111,61,.18); }
-    .risk-chip {
-      display: inline-flex;
-      align-items: center;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      border: 1px solid transparent;
-      white-space: nowrap;
-    }
-    .risk-chip.ok { background: rgba(46,158,91,.12); color: #1d6d43; border-color: rgba(46,158,91,.18); }
-    .risk-chip.warn { background: rgba(245,158,11,.14); color: #9a6700; border-color: rgba(245,158,11,.20); }
-    .risk-chip.alert { background: rgba(180,40,40,.10); color: #9b1c1c; border-color: rgba(180,40,40,.18); }
-    .evidence-grid {
+    .status-badge.ok { background: rgba(46, 158, 91, .12); color: #1d6d43; }
+    .status-badge.warn { background: rgba(245, 158, 11, .14); color: #9a6700; }
+    .status-badge.bad { background: rgba(180, 40, 40, .10); color: #9b1c1c; }
+    .status-badge.neutral { background: rgba(31, 59, 110, .08); color: var(--me-blue); }
+
+    /* ============ 主体：左导航 + 右结果 ============ */
+    .me-content {
       display: grid;
-      gap: 10px;
-      min-width: 0;
-    }
-    .evidence-item {
-      border: 1px solid rgba(0,0,0,.06);
-      border-radius: 16px;
-      padding: 12px 14px;
-      background: #fff;
-      min-width: 0;
+      grid-template-columns: var(--me-sidebar-width) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+      min-height: 0;
       overflow: hidden;
     }
-    .evidence-item-head {
+    .me-sidebar {
+      grid-column: 1;
+      grid-row: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 20px 14px;
+      border-right: 1px solid var(--me-divider);
+      background: #fff;
+      overflow-y: auto;
+    }
+    .me-sidebar-title {
+      padding: 0 12px 10px;
+      color: #7b879a;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+    .section-sidebar { display: flex; flex-direction: column; gap: 4px; }
+    .section-sidebar a {
+      display: block;
+      padding: 11px 13px;
+      border-radius: 9px;
+      color: #526075;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background .12s ease, color .12s ease;
+    }
+    .section-sidebar a:hover { color: var(--me-blue); background: #eef4fc; }
+    .section-sidebar a.active {
+      color: var(--me-blue);
+      background: #eef4fc;
+      box-shadow: inset 3px 0 0 var(--me-orange);
+    }
+    .me-output {
+      grid-column: 2;
+      grid-row: 1;
+      min-width: 0;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 18px 26px calc(var(--me-composer-height) + 30px);
+    }
+
+    /* ============ 指标卡 ============ */
+    .me-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .summary-card {
+      background: #fff;
+      border: 1px solid rgba(0, 0, 0, .07);
+      border-radius: 14px;
+      padding: 12px 16px;
+    }
+    .summary-card .label { display: block; color: var(--me-muted); font-size: 12px; margin-bottom: 6px; }
+    .summary-card strong { font-size: 22px; color: var(--me-blue); }
+    .summary-card strong.warn { color: #9a6700; }
+    .summary-card strong.bad { color: #9b1c1c; }
+    .summary-card strong.ok { color: #1d6d43; }
+
+    /* ============ 工具栏 ============ */
+    .me-toolbar {
       display: flex;
       justify-content: space-between;
-      gap: 10px;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      margin-bottom: 8px;
-      min-width: 0;
-    }
-    .evidence-item-head strong {
-      font-size: 14px;
-      line-height: 1.4;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      min-width: 0;
-    }
-    .evidence-meta {
-      display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       gap: 8px;
-      color: var(--muted);
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .me-toolbar .left, .me-toolbar .right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .me-toolbar .btn { padding: 8px 12px; font-size: 13px; box-shadow: none; }
+    .history-count-badge {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #fdece3;
+      color: #9b1c1c;
       font-size: 12px;
-      margin-top: 8px;
-      min-width: 0;
-    }
-    .evidence-meta span {
-      max-width: 100%;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    .evidence-claim {
-      line-height: 1.7;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    .card-detail {
-      min-width: 0;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    .card-detail .result-muted,
-    .card-detail .evidence-meta {
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    .card-detail[hidden] { display: none; }
-    .answer-md h2,
-    .answer-md h3 {
-      margin: 14px 0 8px;
-    }
-    .answer-md p { margin: 0 0 10px; line-height: 1.75; }
-    .answer-md ul { margin: 8px 0 0 20px; }
-    .answer-md code { background: rgba(0,0,0,.05); padding: 1px 5px; border-radius: 6px; }
-    .loading {
-      display: none;
-      align-items: center;
-      gap: 10px;
-      color: var(--muted);
-      padding: 12px 0 0;
-      font-size: 13px;
-    }
-    .spinner {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      border: 2px solid rgba(229,111,61,.20);
-      border-top-color: var(--brand);
-      animation: spin .7s linear infinite;
-    }
-    .error-box {
-      border-radius: 14px;
-      background: #fef2f2;
-      color: #991b1b;
-      padding: 10px 12px;
-      border: 1px solid rgba(180,40,40,.12);
-      line-height: 1.6;
-    }
-    .copy-markdown {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      font-weight: 800;
     }
     .history-panel {
       display: grid;
-      gap: 10px;
-      max-height: 360px;
+      gap: 8px;
+      max-height: 340px;
       overflow: auto;
+      margin-bottom: 12px;
     }
-    .filter-row {
+    .history-item {
+      border: 1px solid rgba(0, 0, 0, .06);
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .history-item:hover { border-color: rgba(229, 111, 61, .28); }
+    .history-item.active { border-color: rgba(229, 111, 61, .4); background: rgba(229, 111, 61, .05); }
+    .history-item-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .history-item-title { font-weight: 700; font-size: 14px; }
+    .history-item-meta { color: var(--me-muted); font-size: 12px; line-height: 1.6; margin-top: 4px; }
+
+    /* ============ 章节卡片 ============ */
+    .result-stack { display: grid; gap: 14px; min-width: 0; }
+    .gene-section {
+      border: 1px solid rgba(0, 0, 0, .07);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+      scroll-margin-top: 16px;
+    }
+    .gene-section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, #eef4fc, #f7faff);
+      border-bottom: 1px solid rgba(0, 0, 0, .05);
+    }
+    .gene-section-title { font-size: 15px; font-weight: 800; color: var(--me-blue); }
+    .gene-section-sub { font-size: 12px; color: var(--me-muted); margin-left: 8px; font-weight: 600; }
+    .gene-section-count { font-size: 12px; color: var(--me-muted); font-weight: 700; white-space: nowrap; }
+    .gene-section-body { padding: 16px 18px 18px; }
+
+    /* ============ 医生摘要 / 概况 ============ */
+    .doctor-summary { display: grid; gap: 12px; }
+    .doctor-summary-conclusion {
+      margin: 0;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255, 248, 240, .9), rgba(255, 251, 243, .9));
+      border: 1px solid rgba(229, 111, 61, .18);
+      font-size: 15px;
+      line-height: 1.8;
+      color: #5c3a24;
+    }
+    .doctor-summary-conclusion.warn { background: linear-gradient(135deg, rgba(255, 251, 235, .9), rgba(255, 255, 255, .9)); border-color: rgba(245, 158, 11, .25); color: #7a5b10; }
+    .doctor-summary-conclusion.alert { background: linear-gradient(135deg, rgba(254, 242, 242, .9), rgba(255, 255, 255, .9)); border-color: rgba(180, 40, 40, .2); color: #8a2b2b; }
+    .doctor-summary-conclusion.ok { background: linear-gradient(135deg, rgba(240, 253, 244, .9), rgba(255, 255, 255, .9)); border-color: rgba(46, 158, 91, .2); color: #1d5b38; }
+    .doctor-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .doctor-mini { border: 1px solid rgba(0, 0, 0, .06); border-radius: 12px; padding: 10px 12px; background: #fff; min-width: 0; }
+    .doctor-mini .label { display: block; color: var(--me-muted); font-size: 12px; margin-bottom: 4px; }
+    .doctor-mini .value { font-size: 14px; font-weight: 700; line-height: 1.5; color: var(--me-blue); overflow-wrap: anywhere; }
+    .doctor-mini .value.warn { color: #9a6700; }
+    .doctor-mini .value.alert { color: #9b1c1c; }
+    .doctor-mini .value.ok { color: #1d6d43; }
+    .summary-block { border: 1px solid rgba(0, 0, 0, .06); border-radius: 12px; padding: 12px 14px; }
+    .summary-block h4 { margin: 0 0 8px; font-size: 13px; color: var(--me-blue); }
+    .summary-block ul { margin: 0; padding-left: 18px; line-height: 1.75; }
+    .summary-block li { margin: 2px 0; }
+    .provider-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    /* ============ 数据源状态 ============ */
+    .provider-status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    .provider-status-card {
+      background: #fff;
+      border: 1px solid rgba(0, 0, 0, .07);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .provider-status-card h4 { margin: 0 0 8px; font-size: 13px; color: var(--me-blue); display: flex; align-items: center; gap: 6px; }
+    .provider-status-card .status-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .provider-status-card .status-label { font-size: 12px; color: var(--me-muted); }
+    .provider-status-card .status-value { font-size: 13px; font-weight: 700; }
+    .provider-status-card .status-value.success { color: #1d6d43; }
+    .provider-status-card .status-value.no_evidence { color: #9a6700; }
+    .provider-status-card .status-value.degraded { color: #9b1c1c; }
+    .provider-status-card .status-value.incomplete { color: #9a6700; }
+    .provider-status-card .status-value.pending { color: var(--me-muted); }
+
+    /* ============ 变异分析 ============ */
+    .variant-card { border: 1px solid rgba(0, 0, 0, .07); border-radius: 14px; padding: 14px 16px; background: #fff; }
+    .variant-card + .variant-card { margin-top: 12px; }
+    .variant-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .variant-name { font-size: 16px; font-weight: 800; color: var(--me-blue); }
+    .variant-raw { margin-top: 6px; color: var(--me-muted); font-size: 12px; line-height: 1.6; }
+    .kv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 12px; }
+    .kv-item { border: 1px solid rgba(0, 0, 0, .06); border-radius: 10px; padding: 8px 10px; background: #fafbfd; min-width: 0; }
+    .kv-item.wide { grid-column: span 2; }
+    .kv-item .k { font-size: 11px; color: var(--me-muted); margin-bottom: 3px; font-weight: 600; }
+    .kv-item .v { font-size: 13px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
+    .variant-footer { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+    .resolver-badge {
+      display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; border: 1px solid rgba(0, 126, 167, .22);
+      background: rgba(0, 126, 167, .08); color: #0c6a88; white-space: nowrap;
+    }
+    .resolver-badge.blue { border-color: rgba(31, 59, 110, .22); background: rgba(31, 59, 110, .08); color: var(--me-blue); }
+    .warning-block {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(245, 158, 11, .08);
+      border: 1px solid rgba(245, 158, 11, .18);
+      color: #7a5b10;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .warning-block.bad { background: rgba(180, 40, 40, .07); border-color: rgba(180, 40, 40, .18); color: #8a2b2b; }
+
+    /* ============ 临床解释 ============ */
+    .answer-md { line-height: 1.75; font-size: 14px; }
+    .answer-md h2 { font-size: 17px; margin: 16px 0 8px; color: var(--me-blue); }
+    .answer-md h3 { font-size: 15px; margin: 14px 0 6px; color: var(--me-blue); }
+    .answer-md p { margin: 0 0 10px; }
+    .answer-md ul { margin: 6px 0 10px; padding-left: 20px; }
+    .answer-md li { margin: 3px 0; }
+    .answer-md code { background: rgba(0, 0, 0, .05); padding: 1px 5px; border-radius: 6px; font-size: 12px; }
+    .answer-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin: 2px 0 6px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(0, 0, 0, .06);
     }
+    .answer-actions .btn {
+      padding: 7px 12px;
+      font-size: 12px;
+      box-shadow: none;
+    }
+    .sub-box { margin-top: 14px; border: 1px solid rgba(229, 111, 61, .16); border-radius: 12px; padding: 12px 14px; background: rgba(255, 251, 247, .8); }
+    .sub-box h4 { margin: 0 0 8px; font-size: 13px; color: #8a4b2a; }
+    .sub-box ol, .sub-box ul { margin: 0; padding-left: 20px; line-height: 1.7; }
+    .sub-box li { margin: 3px 0; font-size: 13px; }
+
+    /* ============ 证据来源 ============ */
+    .filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
     .filter-chip {
-      border: 1px solid rgba(229,111,61,.18);
+      border: 1px solid rgba(31, 59, 110, .14);
       background: #fff;
-      color: var(--text);
+      color: var(--me-text);
       border-radius: 999px;
-      padding: 7px 11px;
+      padding: 7px 12px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
+      transition: all .12s ease;
     }
+    .filter-chip:hover { border-color: rgba(229, 111, 61, .3); }
     .filter-chip.active {
-      background: rgba(229,111,61,.12);
-      border-color: rgba(229,111,61,.28);
+      background: rgba(229, 111, 61, .1);
+      border-color: rgba(229, 111, 61, .34);
       color: #8a4b2a;
     }
-    .history-item {
-      border: 1px solid rgba(0,0,0,.06);
-      border-radius: 16px;
-      padding: 12px 14px;
+    .evidence-card { border: 1px solid rgba(0, 0, 0, .07); border-radius: 14px; padding: 14px 16px; background: #fff; }
+    .evidence-card + .evidence-card { margin-top: 10px; }
+    .evidence-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .evidence-title { font-size: 14px; font-weight: 800; color: var(--me-blue); line-height: 1.5; overflow-wrap: anywhere; }
+    .evidence-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--me-muted); font-size: 12px; margin-top: 8px; line-height: 1.6; }
+    .evidence-meta span { overflow-wrap: anywhere; }
+    .provider-badge {
+      display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px;
+      font-size: 11px; font-weight: 800; border: 1px solid transparent; white-space: nowrap;
+    }
+    .provider-badge.civic { background: rgba(111, 76, 255, .1); color: #5840b3; border-color: rgba(111, 76, 255, .18); }
+    .provider-badge.clinvar { background: rgba(0, 126, 167, .1); color: #0c6a88; border-color: rgba(0, 126, 167, .18); }
+    .provider-badge.myvariant { background: rgba(120, 120, 120, .1); color: #666; border-color: rgba(120, 120, 120, .18); }
+    .provider-badge.mock { background: rgba(120, 120, 120, .1); color: #666; border-color: rgba(120, 120, 120, .18); }
+    .evidence-claim { margin-top: 10px; line-height: 1.8; font-size: 13px; }
+    .reading-hint {
+      margin-top: 10px; padding: 9px 12px; border-radius: 10px;
+      background: rgba(245, 158, 11, .09); border: 1px solid rgba(245, 158, 11, .2);
+      color: #7a5b10; font-size: 12px; line-height: 1.7;
+    }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; margin-top: 12px; }
+    .detail-item { border: 1px solid rgba(0, 0, 0, .05); border-radius: 10px; padding: 9px 11px; background: #fafbfd; }
+    .detail-item .k { font-size: 11px; color: var(--me-muted); margin-bottom: 3px; font-weight: 600; }
+    .detail-item .v { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+    .detail-item.wide { grid-column: span 2; }
+
+    /* ============ 安全门控 ============ */
+    .gate-card { border: 1px solid rgba(0, 0, 0, .07); border-radius: 14px; padding: 13px 15px; background: #fff; }
+    .gate-card + .gate-card { margin-top: 10px; }
+    .gate-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .gate-target { font-weight: 800; font-size: 14px; }
+    .gate-strength { color: var(--me-muted); font-size: 12px; margin-top: 4px; }
+    .gate-note {
+      margin-top: 10px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: rgba(245, 158, 11, .08);
+      border: 1px solid rgba(245, 158, 11, .18);
+      color: #7a5b10;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .gate-note span { display: block; }
+    .gate-note span + span { margin-top: 4px; }
+    .gate-blocks { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+    .gate-blocks-label { color: var(--me-muted); font-size: 12px; font-weight: 700; margin-right: 2px; }
+    .gate-block-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(180, 40, 40, .08);
+      color: #9b1c1c;
+      border: 1px solid rgba(180, 40, 40, .16);
+      white-space: nowrap;
+    }
+
+    /* ============ 补充信息 ============ */
+    .missing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+    .missing-card { border: 1px solid rgba(0, 0, 0, .07); border-radius: 12px; padding: 12px 14px; background: #fff; }
+    .missing-card h4 { margin: 0 0 8px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .missing-card ul { margin: 0; padding-left: 18px; line-height: 1.8; font-size: 13px; }
+    .missing-card li { margin: 3px 0; }
+
+    /* ============ Agent Trace ============ */
+    .trace-section { display: grid; gap: 8px; }
+    .trace-card { border: 1px solid rgba(0, 0, 0, .06); border-radius: 10px; padding: 10px 12px; background: #fafbfd; font-size: 12px; }
+    .trace-card .trace-step { font-weight: 700; color: var(--me-blue); margin-bottom: 4px; }
+    .trace-card .trace-detail { color: var(--me-muted); line-height: 1.6; }
+
+    /* ============ 底部浮动输入 ============ */
+    .floating-composer {
+      position: fixed;
+      left: var(--me-sidebar-width);
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      min-height: var(--me-composer-height);
+      box-sizing: border-box;
+      padding: 14px max(26px, calc((100vw - var(--me-sidebar-width) - 860px) / 2)) 12px;
+      border-top: 1px solid var(--me-divider);
       background: #fff;
+      box-shadow: 0 -8px 24px rgba(31, 59, 110, .06);
+    }
+    .floating-composer-box {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 14px 10px;
+      border: 1px solid rgba(31, 59, 110, .16);
+      border-radius: 22px;
+      background: #fff;
+      box-shadow: 0 4px 16px rgba(31, 59, 110, .08);
+    }
+    .floating-composer textarea {
+      width: 100%;
+      min-height: 48px;
+      height: 48px;
+      max-height: 320px;
+      resize: none;
+      border: 0;
+      outline: 0;
+      padding: 4px;
+      font: inherit;
+      line-height: 1.55;
+      background: transparent;
+      overflow-y: auto;
+    }
+    .floating-composer textarea::placeholder { color: #8c96a6; }
+    .composer-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+    .composer-toolbar-left,
+    .composer-toolbar-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .composer-toolbar-right { flex-shrink: 0; margin-left: auto; }
+    .param-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 30px;
+      padding: 0 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(98, 76, 60, .14);
+      background: rgba(246, 242, 238, .9);
+      color: #5c534c;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
     }
-    .history-item:hover { border-color: rgba(229,111,61,.24); box-shadow: 0 8px 18px rgba(72,48,31,.06); }
-    .history-item.active { border-color: rgba(229,111,61,.34); background: rgba(229,111,61,.05); }
-    .history-item-head { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:6px; }
-    .history-item-title { font-weight:700; font-size:14px; line-height:1.4; }
-    .history-item-meta { color: var(--muted); font-size:12px; line-height:1.6; }
+    .param-chip:hover { background: #f0ebe6; border-color: rgba(98, 76, 60, .22); }
+    .param-chip.has-popover { background: rgba(229, 111, 61, .10); border-color: rgba(229, 111, 61, .3); color: #8a4b2a; }
+    .param-chip.has-popover:hover { background: rgba(229, 111, 61, .18); }
+    .param-chip.has-popover.is-open { background: rgba(229, 111, 61, .16); border-color: rgba(229, 111, 61, .42); }
+    .param-chip-icon { flex-shrink: 0; display: block; }
+    .param-chip-label { line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 56vw; }
+    .param-chip:focus-visible { outline: 2px solid rgba(229, 111, 61, .35); outline-offset: 2px; }
+    .param-chip-wrap { position: relative; flex-shrink: 1; min-width: 0; }
+    .composer-toolbar-btn {
+      width: 36px; height: 36px;
+      border: 1px solid rgba(31, 59, 110, .16); border-radius: 50%;
+      background: #fff; color: var(--me-blue);
+      cursor: pointer; flex-shrink: 0; display: grid; place-items: center; line-height: 1;
+      font-size: 18px;
+    }
+    .composer-toolbar-btn:hover { background: var(--me-blue-soft); }
+    .composer-send-btn {
+      width: 36px; height: 36px; padding: 0; border-radius: 50%; flex: 0 0 36px;
+      border: 0; cursor: pointer;
+      background: linear-gradient(145deg, var(--me-orange), #d96b43);
+      color: #fff; font-size: 16px; line-height: 1; display: grid; place-items: center;
+      box-shadow: 0 6px 16px rgba(229, 111, 61, .28);
+    }
+    .composer-send-btn:hover { filter: brightness(1.05); }
+    .composer-send-btn:disabled { cursor: wait; opacity: .65; filter: none; box-shadow: none; }
+    .composer-tip {
+      max-width: 860px;
+      margin: 6px auto 0;
+      color: var(--me-muted);
+      font-size: 11px;
+      text-align: center;
+    }
+    .composer-tip.composer-error { color: #9b1c1c; font-weight: 700; }
+    .composer-settings {
+      position: absolute;
+      left: 14px;
+      bottom: calc(100% + 10px);
+      z-index: 50;
+      width: min(480px, calc(100vw - 40px));
+    }
+    .settings-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      padding: 14px;
+      max-height: 60vh;
+      overflow: auto;
+      border: 1px solid rgba(31, 59, 110, .14);
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 16px 44px rgba(31, 59, 110, .18);
+    }
+    .settings-panel label { display: flex; flex-direction: column; gap: 5px; color: var(--me-muted); font-size: 12px; }
+    .settings-panel input,
+    .settings-panel select {
+      width: 100%;
+      border: 1px solid rgba(0, 0, 0, .1);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 13px;
+      color: var(--me-text);
+      background: #fff;
+      outline: none;
+    }
+    .settings-panel input:focus, .settings-panel select:focus {
+      border-color: rgba(229, 111, 61, .35);
+      box-shadow: 0 0 0 3px rgba(229, 111, 61, .1);
+    }
+
+    /* ============ 加载 / 空态 ============ */
+    .loading-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--me-muted);
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    .spinner {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid rgba(229, 111, 61, .2);
+      border-top-color: var(--me-orange);
+      animation: me-spin .7s linear infinite;
+    }
+    @keyframes me-spin { to { transform: rotate(360deg); } }
+    .error-box { border-radius: 12px; background: #fef2f2; color: #991b1b; padding: 10px 12px; border: 1px solid rgba(180, 40, 40, .12); line-height: 1.6; margin-top: 10px; }
+    .empty-result {
+      display: grid;
+      gap: 8px;
+      min-height: 320px;
+      place-content: center;
+      text-align: center;
+      color: var(--me-muted);
+      border: 1px dashed rgba(31, 59, 110, .2);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .7);
+    }
+    .empty-result strong { color: var(--me-blue); font-size: 16px; }
+    .empty-result span { font-size: 13px; }
+
     @media (max-width: 980px) {
-      .me-content { grid-template-columns: 1fr; }
-      .me-summary-grid { grid-template-columns: 1fr; }
+      body { overflow: auto; }
+      .me-shell { height: auto; min-height: 100vh; min-height: 100dvh; }
+      .me-content { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+      .me-sidebar { grid-column: 1; grid-row: 1; flex-direction: row; overflow-x: auto; padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--me-divider); }
+      .me-sidebar-title { display: none; }
+      .section-sidebar { flex-direction: row; gap: 6px; }
+      .section-sidebar a { white-space: nowrap; padding: 8px 12px; }
+      .me-output { grid-column: 1; grid-row: 2; padding: 14px 16px 140px; }
+      .floating-composer { left: 0; width: auto; padding: 12px 14px 10px; }
+      .me-kicker { font-size: 16px; }
+      .me-title { display: none; }
+      .doctor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .me-hero-top { padding: 0 16px; }
+      .hero-meta { display: none; }
     }
-    @media (max-width: 720px) {
-      .me-hero,
-      .me-content { padding-left: 14px; padding-right: 14px; }
-      .me-grid { grid-template-columns: 1fr; }
-      .me-actions { align-items: stretch; }
-      .me-actions .left,
-      .me-actions .right { width: 100%; }
-      .me-actions .right .btn { flex: 1; }
+    @media (max-width: 640px) {
+      .me-summary-grid { grid-template-columns: 1fr; }
+      .kv-item.wide, .detail-item.wide { grid-column: span 1; }
     }
   </style>
 </head>
-<body>
+<body class="pre-query">
   <div class="me-shell">
+    <!-- 顶部栏 -->
     <header class="me-hero">
       <div class="me-hero-top">
-        <div>
-          <div class="me-kicker">Molecular Evidence MVP</div>
-          <h1 class="me-title">分子证据模块</h1>
-          <p class="me-desc">
-            输入变异文本后，系统会完成标准化、证据检索、疾病匹配、安全门控与 markdown 回答生成。
-            你可以把它当成一个独立的医生工作台，直接查看“变异 → 证据 → 安全边界”的完整闭环。
-          </p>
+        <div class="me-hero-copy">
+          <div class="me-kicker">分子证据内容</div>
+          <p class="me-title">输入解析与变异标准化，多源证据检索与安全门控</p>
         </div>
-        <div class="badge-row">
-          <a class="btn ghost" href="./index.html">返回助手</a>
-          <button class="btn primary" id="copyAnswerBtn" type="button" disabled>复制结果</button>
-          <button class="btn ghost" id="copySummaryBtn" type="button" disabled>复制医生摘要</button>
-          <button class="btn ghost" id="toggleSummaryDetailsBtn" type="button" disabled>查看摘要证据</button>
-          <div class="export-menu" id="exportMenu">
-            <button class="btn ghost" id="exportMenuBtn" type="button" disabled aria-expanded="false" aria-haspopup="true">导出</button>
-            <div class="export-menu-panel" id="exportMenuPanel" hidden>
-              <button class="btn ghost" id="exportMarkdownBtn" type="button" disabled>导出 Markdown</button>
-              <button class="btn ghost" id="exportReportBtn" type="button" disabled>导出正式报告</button>
-              <button class="btn ghost" id="exportJsonBtn" type="button" disabled>导出 JSON</button>
-            </div>
-          </div>
+        <div class="me-hero-actions">
+          <span class="status-badge neutral" id="heroStateBadge">等待查询</span>
+          <span class="hero-meta" id="heroTime">检索时间 -</span>
+          <span class="hero-meta" id="heroMode">模式 -</span>
+          <button class="btn" id="historyToggleBtn" type="button">查看查询历史</button>
+          <button class="btn ghost" id="clearHistoryBtn" type="button">清空历史</button>
+          <span class="history-count-badge" id="historyCountBadge">历史 0 条</span>
+          <span class="status-badge neutral" id="summaryEvidenceBadge">摘要证据</span>
+          <a class="btn ghost" href="./index.html" title="返回助手前台">前台</a>
         </div>
       </div>
     </header>
 
     <main class="me-content">
-      <section class="me-card">
-        <div class="me-card-head">
-          <div>
-            <h2 style="margin:0 0 6px;font-size:18px;">输入与查询</h2>
-            <div class="muted small">支持多行、逗号、分号分隔输入</div>
+      <!-- 左侧导航 -->
+      <aside class="me-sidebar" aria-label="结果导航">
+        <div class="me-sidebar-title">查询导航</div>
+        <nav class="section-sidebar" id="resultSidebar">
+          <a href="#sec-summary" data-result-nav>概况</a>
+          <a href="#sec-variants" data-result-nav>变异分析</a>
+          <a href="#sec-answer" data-result-nav>临床解释</a>
+          <a href="#sec-evidence" data-result-nav>证据来源</a>
+          <a href="#sec-gates" data-result-nav>安全门控</a>
+          <a href="#sec-missing" data-result-nav>补充信息</a>
+        </nav>
+      </aside>
+
+      <!-- 右侧结果 -->
+      <section class="me-output" id="sec-output">
+        <!-- 数据源状态 - 新增 -->
+        <div class="provider-status-grid" id="providerStatusGrid" hidden>
+          <div class="provider-status-card">
+            <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> ClinVar</h4>
+            <div class="status-row">
+              <span class="status-label">状态</span>
+              <span class="status-value" id="clinvarStatus">-</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">查询次数</span>
+              <span class="status-value" id="clinvarQueryCount">-</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">记录数</span>
+              <span class="status-value" id="clinvarRecordCount">-</span>
+            </div>
           </div>
-          <div class="badge-row">
-            <span class="status-badge">后端接口：/api/molecular-evidence/query</span>
+          <div class="provider-status-card">
+            <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0-3.92 19.46"/><path d="M12 6v6l4 2"/></svg> CIViC</h4>
+            <div class="status-row">
+              <span class="status-label">状态</span>
+              <span class="status-value" id="civicStatus">-</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">查询次数</span>
+              <span class="status-value" id="civicQueryCount">-</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">记录数</span>
+              <span class="status-value" id="civicRecordCount">-</span>
+            </div>
+          </div>
+          <div class="provider-status-card">
+            <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c-5.523 0-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/><path d="M12 6v6l4 2"/></svg> MyVariant</h4>
+            <div class="status-row">
+              <span class="status-label">状态</span>
+              <span class="status-value" id="myvariantStatus">-</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">查询次数</span>
+              <span class="status-value" id="myvariantQueryCount">-</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">记录数</span>
+              <span class="status-value" id="myvariantRecordCount">-</span>
+            </div>
           </div>
         </div>
-        <div class="me-card-body">
-          <form id="meForm" class="me-form">
-            <label>
-              临床分子问题
-              <textarea id="variantsText" rows="9" placeholder="请在一个输入框中填写患者背景、检测结果和希望回答的问题。&#10;&#10;例如：&#10;患者诊断为DLBCL，肿瘤组织NGS检出：&#10;1. MYD88 NM_002468.5:c.794T>C，p.Leu265Pro，VAF 32.4%，深度1486×；&#10;2. CD79B NM_001039933.4:c.586T>C，p.Tyr196His，VAF 21.8%，深度1260×。&#10;这两个变异是否支持MCD分子亚型？是否有BTK抑制剂治疗线索？"></textarea>
-              <span class="muted small">可直接粘贴临床背景、检测报告和问题；系统只会把带有基因及明确变异表达的内容识别为变异。</span>
-            </label>
 
-            <div class="me-grid">
-              <label>
-                医疗机构
-                <input id="institution" placeholder="例如：XX 医院血液科" />
-              </label>
-              <label>
-                医生姓名
-                <input id="doctorName" placeholder="例如：张医生" />
-              </label>
-              <label>
-                科室
-                <input id="department" placeholder="例如：血液内科" />
-              </label>
-              <label>
-                报告日期
-                <input id="reportDate" type="date" />
-              </label>
-              <label>
-                疾病
-                <select id="disease">
-                  <option value="DLBCL" selected>DLBCL</option>
-                  <option value="LBCL">LBCL</option>
-                  <option value="Follicular lymphoma">Follicular lymphoma</option>
-                  <option value="Other">Other</option>
-                </select>
-              </label>
-              <label>
-                样本类型
-                <select id="sampleType">
-                  <option value="tumor tissue" selected>tumor tissue</option>
-                  <option value="bone marrow">bone marrow</option>
-                  <option value="peripheral blood">peripheral blood</option>
-                  <option value="cfDNA">cfDNA</option>
-                </select>
-              </label>
-              <label>
-                GRCh 版本
-                <select id="genomeBuild">
-                  <option value="">未提供</option>
-                  <option value="GRCh37">GRCh37</option>
-                  <option value="GRCh38">GRCh38</option>
-                </select>
-              </label>
-              <label>
-                转录本
-                <input id="transcript" placeholder="例如：NM_002468.6" />
-              </label>
-              <label>
-                变异类型
-                <input id="variantType" placeholder="SNV / fusion / amplification / deletion" />
-              </label>
-              <label>
-                数据源模式
-                <select id="providerMode">
-                  <option value="live" selected>Agent 在线检索（ClinVar + CIViC）</option>
-                  <option value="hybrid">Agent 混合检索（在线 + 本地示例）</option>
-                  <option value="mock">Agent 本地测试（模拟两库）</option>
-                </select>
-              </label>
-            </div>
-
-            <input id="question" type="hidden" />
-
-            <div>
-              <div class="muted small" style="margin-bottom:8px;">示例变异</div>
-              <div class="me-samples" id="sampleChips">
-                <button type="button" class="sample-chip">MYD88 p.L265P, CD79B p.Y196H</button>
-                <button type="button" class="sample-chip">TP53 p.R248Q</button>
-                <button type="button" class="sample-chip">BCL2 p.V600E</button>
-              </div>
-            </div>
-            <div class="question-library">
-              <div class="question-library-header" id="questionLibraryHeader">
-                <div>
-                  <h4>常见基因库</h4>
-                  <div class="muted">按肿瘤类别分组的快捷问题，点击即可填充</div>
-                </div>
-                <span class="status-badge ok" id="questionLibraryToggle">展开</span>
-              </div>
-              <div class="question-library-body" id="questionLibraryBody" hidden>
-                <div class="question-category">
-                  <div class="question-category-head">
-                    <span class="question-category-title">淋巴瘤 / 血液肿瘤</span>
-                    <span class="question-category-count">12 条</span>
-                  </div>
-                  <div class="question-pills" id="questionChips">
-                    <button type="button" class="sample-chip">请判断 MYD88 p.L265P 是否影响蛋白功能，并说明通路和靶向线索。</button>
-                    <button type="button" class="sample-chip">请解读 CD79B p.Y196H 在 DLBCL 中的临床意义和证据等级。</button>
-                    <button type="button" class="sample-chip">请说明 TP53 p.R248Q 是否属于抑癌基因失活型改变，以及对预后的提示。</button>
-                    <button type="button" class="sample-chip">请说明 EZH2 p.Y641 是否提示表观遗传调控异常及可操作性。</button>
-                    <button type="button" class="sample-chip">请说明 BCL2 相关异常在 DLBCL 中是否提示抗凋亡增强或治疗分层意义。</button>
-                    <button type="button" class="sample-chip">请说明 BCL6 相关异常是否提示生发中心程序重编程。</button>
-                    <button type="button" class="sample-chip">请说明 CREBBP 和 KMT2D 异常是否属于表观遗传抑癌基因改变。</button>
-                    <button type="button" class="sample-chip">请说明 MYC 异常是否提示增殖增强及 double-hit 相关风险。</button>
-                    <button type="button" class="sample-chip">请解读 NOTCH1 p.P2415fs 在淋巴瘤中的意义和通路提示。</button>
-                    <button type="button" class="sample-chip">请说明 SF3B1 p.K700E 是否提示剪接异常和预后价值。</button>
-                    <button type="button" class="sample-chip">请解读 XPO1 p.E571K 在血液肿瘤中的致癌性和可操作性。</button>
-                    <button type="button" class="sample-chip">请把 MYD88、CD79B、BCL2、TP53 的分子异常整理成会诊可用摘要。</button>
-                  </div>
-                </div>
-                <div class="question-category">
-                  <div class="question-category-head">
-                    <span class="question-category-title">白血病 / 骨髓肿瘤</span>
-                    <span class="question-category-count">8 条</span>
-                  </div>
-                  <div class="question-pills">
-                    <button type="button" class="sample-chip">请说明 FLT3-ITD 是否提示高危分子事件和靶向治疗机会。</button>
-                    <button type="button" class="sample-chip">请解读 NPM1 p.W288fs 在 AML 中的意义和预后分层价值。</button>
-                    <button type="button" class="sample-chip">请说明 IDH1 p.R132H 是否提示代谢和表观遗传重编程及靶向线索。</button>
-                    <button type="button" class="sample-chip">请说明 IDH2 p.R140Q 的临床意义和靶向治疗证据。</button>
-                    <button type="button" class="sample-chip">请解读 RUNX1 突变在 AML 中是否提示不良预后或家族性风险。</button>
-                    <button type="button" class="sample-chip">请说明 ASXL1 突变是否提示表观遗传失调和预后分层价值。</button>
-                    <button type="button" class="sample-chip">请说明 JAK2 p.V617F 是否提示 MPN 分型和治疗思路。</button>
-                    <button type="button" class="sample-chip">请说明 CEBPA 突变在 AML 中的预后意义和分型价值。</button>
-                  </div>
-                </div>
-                <div class="question-category">
-                  <div class="question-category-head">
-                    <span class="question-category-title">实体瘤 / 靶向治疗</span>
-                    <span class="question-category-count">12 条</span>
-                  </div>
-                  <div class="question-pills">
-                    <button type="button" class="sample-chip">请解读 EGFR p.L858R 的蛋白功能影响、通路和靶向药物线索。</button>
-                    <button type="button" class="sample-chip">请解读 EGFR p.T790M 是否提示获得性耐药和治疗调整。</button>
-                    <button type="button" class="sample-chip">请解读 KRAS p.G12D 是否提示 MAPK 通路激活及治疗耐药风险。</button>
-                    <button type="button" class="sample-chip">请解读 KRAS p.G12C 的临床意义和靶向治疗新进展。</button>
-                    <button type="button" class="sample-chip">请说明 BRAF p.V600E 的临床意义、分型和靶向治疗证据。</button>
-                    <button type="button" class="sample-chip">请说明 ALK 融合是否提示可靶向治疗，并建议补充何种验证。</button>
-                    <button type="button" class="sample-chip">请说明 ROS1 融合在当前肿瘤中的意义和用药价值。</button>
-                    <button type="button" class="sample-chip">请说明 MET 扩增或 MET exon 14 skipping 是否具有可操作性。</button>
-                    <button type="button" class="sample-chip">请解读 ERBB2 扩增在乳腺癌/胃癌中的治疗指导意义。</button>
-                    <button type="button" class="sample-chip">请说明 PIK3CA p.H1047R 是否提示 PI3K 通路激活和靶向价值。</button>
-                    <button type="button" class="sample-chip">请说明 RET 融合在甲状腺癌或 NSCLC 中的临床意义和用药。</button>
-                    <button type="button" class="sample-chip">请说明 NTRK 融合是否提示泛癌种靶向治疗机会。</button>
-                  </div>
-                </div>
-                <div class="question-category">
-                  <div class="question-category-head">
-                    <span class="question-category-title">DNA 修复 / 遗传风险</span>
-                    <span class="question-category-count">10 条</span>
-                  </div>
-                  <div class="question-pills">
-                    <button type="button" class="sample-chip">请解读 BRCA1 致病变异是否提示同源重组修复缺陷和治疗线索。</button>
-                    <button type="button" class="sample-chip">请解读 BRCA2 致病变异是否提示胚系风险和 PARP 抑制剂相关价值。</button>
-                    <button type="button" class="sample-chip">请说明 ATM 变异是否提示 DNA 损伤应答异常及临床边界。</button>
-                    <button type="button" class="sample-chip">请说明 PTEN 变异是否提示 PI3K-AKT 通路异常及肿瘤抑制功能丢失。</button>
-                    <button type="button" class="sample-chip">请说明 RB1 变异是否提示细胞周期失控和预后不良风险。</button>
-                    <button type="button" class="sample-chip">请说明 PALB2 变异是否提示同源重组修复缺陷和治疗价值。</button>
-                    <button type="button" class="sample-chip">请说明 CHEK2 变异是否提示中等风险遗传易感。</button>
-                    <button type="button" class="sample-chip">请说明 MLH1/MSH2/MSH6/PMS2 变异是否提示 MMR 缺陷和 MSI 状态。</button>
-                    <button type="button" class="sample-chip">请说明 CDH1 变异是否提示弥漫型胃癌遗传风险。</button>
-                    <button type="button" class="sample-chip">请说明 STK11 变异是否提示 Peutz-Jeghers 综合征及相关肿瘤风险。</button>
-                  </div>
-                </div>
-                <div class="question-category">
-                  <div class="question-category-head">
-                    <span class="question-category-title">免疫治疗 / TMB</span>
-                    <span class="question-category-count">6 条</span>
-                  </div>
-                  <div class="question-pills">
-                    <button type="button" class="sample-chip">请说明 PDCD1LG2 扩增是否提示免疫逃逸和 PD-L1 高表达。</button>
-                    <button type="button" class="sample-chip">请说明 JAK1/JAK2 LOF 突变是否提示免疫治疗抵抗。</button>
-                    <button type="button" class="sample-chip">请说明 B2M 突变是否提示抗原递呈缺陷和免疫逃逸。</button>
-                    <button type="button" class="sample-chip">请说明 STK11 + KEAP1 共突变在 NSCLC 中对免疫治疗的影响。</button>
-                    <button type="button" class="sample-chip">请说明 POLE/POLD1 校正域突变是否提示超高 TMB 和免疫获益。</button>
-                    <button type="button" class="sample-chip">请说明 MSI-H 状态是否提示免疫检查点抑制剂获益。</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="me-actions">
-              <div class="left">
-                <button class="btn primary" id="submitBtn" type="submit">开始分析</button>
-                <button class="btn" id="fillExampleBtn" type="button">填充示例</button>
-              </div>
-              <div class="right">
-                <button class="btn ghost" id="resetBtn" type="button">清空</button>
-              </div>
-            </div>
-            <div class="loading" id="loadingRow"><span class="spinner"></span><span>正在标准化变异、检索证据并生成安全回答…</span></div>
-            <div id="errorBox" class="error-box" hidden></div>
-          </form>
-        </div>
-      </section>
-
-      <section class="me-card me-output">
-        <div class="me-card-head">
-          <div>
-            <h2 style="margin:0 0 6px;font-size:18px;">结果面板</h2>
-            <div class="muted small">先看摘要，再看证据、门控与完整 markdown</div>
+        <div class="me-summary-grid" id="summaryGrid" hidden>
+          <div class="summary-card">
+            <span class="label">变异数</span>
+            <strong id="variantCount">-</strong>
           </div>
-          <div class="badge-row" id="resultBadges">
-            <span class="status-badge">等待查询</span>
+          <div class="summary-card">
+            <span class="label">证据卡</span>
+            <strong id="evidenceCount">-</strong>
+          </div>
+          <div class="summary-card">
+            <span class="label">门控状态</span>
+            <strong id="gateState">-</strong>
           </div>
         </div>
-        <div class="me-card-body" style="display:grid;gap:12px;min-height:0;">
-          <div class="me-summary-grid" id="summaryGrid">
-            <div class="summary-card">
-              <span class="label">变异数</span>
-              <strong id="variantCount">-</strong>
-            </div>
-            <div class="summary-card">
-              <span class="label">证据卡</span>
-              <strong id="evidenceCount">-</strong>
-            </div>
-            <div class="summary-card">
-              <span class="label">门控状态</span>
-              <strong id="gateState">-</strong>
-            </div>
-          </div>
-          <div class="result-section">
-            <div class="me-actions" style="margin-bottom:10px;">
-              <div class="left">
-                <button class="btn" id="historyToggleBtn" type="button">查看查询历史</button>
-                <button class="btn ghost" id="logsToggleBtn" type="button">查看审计面板</button>
-                <button class="btn ghost" id="clearHistoryBtn" type="button">清空历史</button>
-              </div>
-              <div class="right">
-                <span class="status-badge" id="historyCountBadge">历史 0 条</span>
-              </div>
-            </div>
-            <div id="historyPanel" class="history-panel" hidden></div>
-            <div id="auditPanel" class="history-panel" hidden style="margin-top:12px;"></div>
-          </div>
-          <div class="result-stack" id="resultStack">
-            <div class="result-section">
-              <h3>直接回答</h3>
-              <div class="result-muted">请先发起一次查询。</div>
-            </div>
+
+        <div id="historyPanel" class="history-panel" hidden></div>
+
+        <div class="result-stack" id="resultStack">
+          <div class="empty-result">
+            <strong>等待输入分子信息</strong>
+            <span>请在下方粘贴文字或上传基因测序报告图片，完成后点击发送。</span>
           </div>
         </div>
       </section>
     </main>
+
+    <!-- 底部浮动输入 -->
+    <div class="floating-composer" id="floatingComposer" role="region" aria-label="输入分子信息">
+      <div class="floating-composer-box">
+        <textarea id="composerText" rows="1" placeholder="输入分子信息，例如 MYD88 p.L265P, CD79B p.Y196H…"></textarea>
+        <div class="composer-toolbar">
+          <div class="composer-toolbar-left">
+            <div class="param-chip-wrap">
+              <button type="button" class="param-chip has-popover" id="paramChip" aria-haspopup="true" aria-expanded="false" title="设置疾病 / 样本 / 模式等查询参数">
+                <svg class="param-chip-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/>
+                  <path d="M1 14h6M9 8h6M17 16h6"/>
+                </svg>
+                <span class="param-chip-label" id="paramChipLabel">疾病 DLBCL · 样本 tumor tissue · 模式 mock</span>
+              </button>
+              <div class="composer-settings" id="settingsPanel" hidden>
+                <div class="settings-panel">
+                  <label>疾病
+                    <select id="disease">
+                      <option value="DLBCL" selected>DLBCL</option>
+                      <option value="LBCL">LBCL</option>
+                      <option value="Follicular lymphoma">Follicular lymphoma</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </label>
+                  <label>样本类型
+                    <select id="sampleType">
+                      <option value="tumor tissue" selected>tumor tissue</option>
+                      <option value="bone marrow">bone marrow</option>
+                      <option value="peripheral blood">peripheral blood</option>
+                      <option value="cfDNA">cfDNA</option>
+                    </select>
+                  </label>
+                  <label>GRCh 版本
+                    <select id="genomeBuild">
+                      <option value="">未提供</option>
+                      <option value="GRCh37">GRCh37</option>
+                      <option value="GRCh38">GRCh38</option>
+                    </select>
+                  </label>
+                  <label>转录本
+                    <input id="transcript" placeholder="例如：NM_002468.6" />
+                  </label>
+                  <label>变异类型
+                    <input id="variantType" placeholder="SNV / fusion / amplification" />
+                  </label>
+                  <label>数据源模式
+                    <select id="providerMode">
+                      <option value="live" selected>Agent 在线检索（ClinVar + CIViC + MyVariant）</option>
+                      <option value="hybrid">Agent 混合检索（在线 + 本地示例）</option>
+                      <option value="mock">Agent 本地测试（模拟三库）</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="composer-toolbar-right">
+            <button class="composer-toolbar-btn" id="composerAddBtn" type="button" aria-label="导入基因测序报告图片" title="上传报告图片">+</button>
+            <button class="composer-send-btn" id="composerSendBtn" type="button" aria-label="开始分析">↑</button>
+          </div>
+        </div>
+      </div>
+      <div class="composer-tip" id="composerStatus" aria-live="polite">输入分子信息（如 MYD88 p.L265P, CD79B p.Y196H），或通过“+”上传报告图片</div>
+      <input id="reportImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/bmp,application/pdf" hidden />
+    </div>
   </div>
 
   <script src="./vendor/marked.min.js?v=20260814"></script>
   <script src="./vendor/purify.min.js?v=20260814"></script>
   <script>
-    function guideflowDefaultApiBase() {
-      var path = location.pathname || '';
-      if (path.indexOf('/app') === 0 || location.port === '8001') return '';
-      return 'http://127.0.0.1:8001';
-    }
-    const API_BASE = window.API_BASE ?? guideflowDefaultApiBase();
-    const $ = (id) => document.getElementById(id);
-    const els = {
-      form: $('meForm'),
-      variantsText: $('variantsText'),
-      institution: $('institution'),
-      doctorName: $('doctorName'),
-      department: $('department'),
-      reportDate: $('reportDate'),
-      disease: $('disease'),
-      sampleType: $('sampleType'),
-      genomeBuild: $('genomeBuild'),
-      transcript: $('transcript'),
-      variantType: $('variantType'),
-      providerMode: $('providerMode'),
-      question: $('question'),
-      errorBox: $('errorBox'),
-      loadingRow: $('loadingRow'),
-      resultStack: $('resultStack'),
-      resultBadges: $('resultBadges'),
-      variantCount: $('variantCount'),
-      evidenceCount: $('evidenceCount'),
-      gateState: $('gateState'),
-      submitBtn: $('submitBtn'),
-      fillExampleBtn: $('fillExampleBtn'),
-      resetBtn: $('resetBtn'),
-      copyAnswerBtn: $('copyAnswerBtn'),
-      copySummaryBtn: $('copySummaryBtn'),
-      toggleSummaryDetailsBtn: $('toggleSummaryDetailsBtn'),
-      exportMenu: $('exportMenu'),
-      exportMenuBtn: $('exportMenuBtn'),
-      exportMenuPanel: $('exportMenuPanel'),
-      exportMarkdownBtn: $('exportMarkdownBtn'),
-      exportReportBtn: $('exportReportBtn'),
-      exportJsonBtn: $('exportJsonBtn'),
-      historyToggleBtn: $('historyToggleBtn'),
-      logsToggleBtn: $('logsToggleBtn'),
-      historyPanel: $('historyPanel'),
-      auditPanel: $('auditPanel'),
-      historyCountBadge: $('historyCountBadge'),
-      clearHistoryBtn: $('clearHistoryBtn'),
-      sampleChips: $('sampleChips'),
-    };
+    (function () {
+      'use strict';
 
-    const HISTORY_KEY = 'gf_molecular_evidence_history';
-    const HISTORY_LIMIT = 30;
-    const state = { lastPayload: null, history: [], historyVisible: false, auditVisible: false, auditLogs: [], auditCache: [], selectedCardFilter: 'all', selectedProviderFilter: 'all', selectedAuditType: null, selectedAuditId: null, summaryDetailsVisible: false, summaryEvidenceFilter: 'all' };
-
-    function escapeHtml(text) {
-      return String(text ?? '').replace(/[&<>"']/g, (s) => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-      }[s]));
-    }
-
-    function api(path, options = {}) {
-      return fetch(`${API_BASE}${path}`, {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-        ...options,
-      });
-    }
-
-    function setError(msg) {
-      els.errorBox.hidden = !msg;
-      els.errorBox.textContent = msg || '';
-    }
-
-    function setLoading(isLoading) {
-      els.loadingRow.style.display = isLoading ? 'inline-flex' : 'none';
-      els.submitBtn.disabled = isLoading;
-      els.copyAnswerBtn.disabled = isLoading || !state.lastPayload;
-      els.copySummaryBtn.disabled = isLoading || !state.lastPayload?.doctor_summary;
-      els.toggleSummaryDetailsBtn.disabled = isLoading || !state.lastPayload?.doctor_summary;
-      els.exportMenuBtn.disabled = isLoading || !state.lastPayload;
-      if (isLoading || !state.lastPayload) {
-        els.exportMenuPanel.hidden = true;
-        els.exportMenuBtn.setAttribute('aria-expanded', 'false');
+      function guideflowDefaultApiBase() {
+        var path = location.pathname || '';
+        if (path.indexOf('/app') === 0 || location.port === '8001') return '';
+        return 'http://127.0.0.1:8001';
       }
-      els.exportMarkdownBtn.disabled = isLoading || !state.lastPayload;
-      els.exportReportBtn.disabled = isLoading || !state.lastPayload;
-      els.exportJsonBtn.disabled = isLoading || !state.lastPayload;
-    }
-
-    function md(raw) {
-      const value = String(raw || '');
-      let html;
-      try {
-        html = window.marked?.parse ? window.marked.parse(value, { breaks: true }) : value;
-      } catch {
-        html = escapeHtml(value).replace(/\n/g, '<br>');
-      }
-      return window.DOMPurify ? window.DOMPurify.sanitize(html) : html;
-    }
-
-    function clinicalAnswerHtml(raw) {
-      const strip = (value) => String(value || '')
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/__(.*?)__/g, '$1')
-        .replace(/(?<!\*)\*(?!\*)(.*?)\*(?!\*)/g, '$1')
-        .replace(/`([^`]+)`/g, '$1')
-        .trim();
-      const lines = String(raw || '').split(/\r?\n/);
-      const html = [];
-      let listOpen = false;
-      const closeList = () => {
-        if (listOpen) html.push('</ul>');
-        listOpen = false;
+      const API_BASE = window.API_BASE ?? guideflowDefaultApiBase();
+      const $ = (id) => document.getElementById(id);
+      const els = {
+        providerStatusGrid: $('providerStatusGrid'),
+        clinvarStatus: $('clinvarStatus'),
+        clinvarQueryCount: $('clinvarQueryCount'),
+        clinvarRecordCount: $('clinvarRecordCount'),
+        civicStatus: $('civicStatus'),
+        civicQueryCount: $('civicQueryCount'),
+        civicRecordCount: $('civicRecordCount'),
+        myvariantStatus: $('myvariantStatus'),
+        myvariantQueryCount: $('myvariantQueryCount'),
+        myvariantRecordCount: $('myvariantRecordCount'),
+        summaryGrid: $('summaryGrid'),
+        variantCount: $('variantCount'),
+        evidenceCount: $('evidenceCount'),
+        gateState: $('gateState'),
+        heroStateBadge: $('heroStateBadge'),
+        heroTime: $('heroTime'),
+        heroMode: $('heroMode'),
+        copySummaryBtn: null,
+        copyAnswerBtn: null,
+        summaryEvidenceBadge: $('summaryEvidenceBadge'),
+        historyToggleBtn: $('historyToggleBtn'),
+        clearHistoryBtn: $('clearHistoryBtn'),
+        historyCountBadge: $('historyCountBadge'),
+        historyPanel: $('historyPanel'),
+        resultStack: $('resultStack'),
+        resultSidebar: $('resultSidebar'),
+        composerText: $('composerText'),
+        composerSendBtn: $('composerSendBtn'),
+        composerAddBtn: $('composerAddBtn'),
+        composerStatus: $('composerStatus'),
+        settingsPanel: $('settingsPanel'),
+        reportImageInput: $('reportImageInput'),
+        paramChip: $('paramChip'),
+        paramChipLabel: $('paramChipLabel'),
+        disease: $('disease'),
+        sampleType: $('sampleType'),
+        genomeBuild: $('genomeBuild'),
+        transcript: $('transcript'),
+        variantType: $('variantType'),
+        providerMode: $('providerMode'),
       };
-      lines.forEach((line) => {
-        const text = line.trim();
-        if (!text) {
-          closeList();
-          return;
-        }
-        const heading = text.match(/^#{1,6}\s+(.+)$/);
-        if (heading) {
-          closeList();
-          html.push(`<h3>${escapeHtml(strip(heading[1]))}</h3>`);
-          return;
-        }
-        const listItem = text.match(/^(?:[-*]|\d+\.)\s+(.+)$/);
-        if (listItem) {
-          if (!listOpen) html.push('<ul>');
-          listOpen = true;
-          html.push(`<li>${escapeHtml(strip(listItem[1]))}</li>`);
-          return;
-        }
-        closeList();
-        html.push(`<p>${escapeHtml(strip(text))}</p>`);
-      });
-      closeList();
-      return html.join('');
-    }
 
-    const UI_TRANSLATIONS = {
-      unique: '唯一匹配', protein_level_only: '仅蛋白层匹配', ambiguous: '存在歧义', insufficient: '信息不足', conflicting: '存在冲突',
-      allow: '允许', downgrade: '降级使用', ask_for_confirmation: '需要确认', refuse: '拒绝输出',
-      strong: '较强', moderate: '中等', weak: '较弱', none: '无',
-      metadata_only: '仅元数据', live_metadata: '在线元数据', abstract_only: '仅摘要', not_accessible: '无法访问',
-      accepted: '已接受', submitted: '已提交，尚待审核', supported: '有证据支持', verified: '已核验', curated: '已人工整理', mock_accepted: '本地示例', mock: '本地示例',
-      supports: '支持', does_not_support: '不支持', database_record: '数据库记录',
-      predictive: '预测性', diagnostic: '诊断性', prognostic: '预后性', oncogenic: '致癌性', functional: '功能性', biological: '生物学',
-      'germline pathogenicity': '胚系致病性', 'somatic oncogenicity': '体细胞致癌性', 'somatic clinical impact': '体细胞临床影响',
-      confirm: '需要确认', weak_only: '仅可作弱结论', moderate_only: '仅可作中等强度结论', strong_allowed: '允许较强结论',
-      variant_level_evidence_lookup: '仅允许进行变异层证据检索', no_definitive_variant_claim: '不得形成确定性变异结论',
-      evidence_supported_contextual_claim: '允许在证据支持的语境内表述', literature_lead_or_database_signal_only: '仅作为文献线索或数据库信号',
-      extrapolation_only: '仅允许外推性参考', conflicted_evidence: '仅允许描述存在冲突的证据', unaccepted_or_uncertain_record: '仅作为未接受或不确定记录', low_level_evidence: '仅作为低等级证据线索',
-      treatment_recommendation: '治疗建议', patient_level_prognosis: '患者个体预后判断', definitive_diagnosis: '确定性诊断', diagnosis: '诊断结论',
-      patient_level_treatment_plan: '患者级治疗方案', individual_prognosis_prediction: '个体预后预测', drug_dose: '药物剂量建议', infer_targetability_from_oncogenicity: '仅凭致癌性推断可靶向性',
-      'tumor tissue': '肿瘤组织', 'bone marrow': '骨髓', 'peripheral blood': '外周血',
-      live: '双库在线检索', hybrid: '在线与本地混合检索', civic: 'CIViC在线检索', clinvar: 'ClinVar在线检索',
-      'cache hit': '命中缓存', 'cache miss': '未命中缓存',
-    };
-
-    function zh(value) {
-      if (value === null || value === undefined || value === '') return '-';
-      const text = String(value);
-      const direct = UI_TRANSLATIONS[text.toLowerCase()];
-      if (direct) return direct;
-      return text.split(/(\s*\/\s*|\s*;\s*)/).map((part) => UI_TRANSLATIONS[part.trim().toLowerCase()] || part).join('');
-    }
-
-    function providerLabel(value) {
-      const key = String(value || '').toLowerCase();
-      if (key === 'clinvar') return 'ClinVar临床变异数据库';
-      if (key === 'civic') return 'CIViC肿瘤临床证据库';
-      if (key === 'mock') return '本地示例库';
-      return zh(value);
-    }
-
-    function badgeClass(stateText) {
-      const lower = String(stateText || '').toLowerCase();
-      if (lower.includes('ask') || lower.includes('confirm')) return 'warn';
-      if (lower.includes('refuse')) return 'bad';
-      return 'ok';
-    }
-
-    function cardFilterMatches(card, filter) {
-      const disease = String(card?.disease_match || '').toLowerCase();
-      const level = String(card?.evidence_level || '').toUpperCase();
-      if (filter === 'direct') return disease.includes('dlbcl直接证据'.toLowerCase());
-      if (filter === 'near') return disease.includes('lbcl近似证据'.toLowerCase());
-      if (filter === 'proxy') return disease.includes('外推');
-      if (filter === 'low') return ['L4', 'L5'].includes(level);
-      return true;
-    }
-
-    function summaryEvidenceMatches(card, filter) {
-      if (!filter || filter === 'all') return true;
-      if (filter === 'clinvar') return String(card?.provider || '').toLowerCase() === 'clinvar';
-      if (filter === 'civic') return String(card?.provider || '').toLowerCase() === 'civic';
-      return cardFilterMatches(card, filter);
-    }
-
-    function providerMatches(card, filter) {
-      if (!filter || filter === 'all') return true;
-      return String(card?.provider || '').toLowerCase() === filter;
-    }
-
-    function summaryCoverageLabel(summary) {
-      if (!summary) return '未知';
-      if ((summary.direct_evidence_count || 0) > 0) return '可进入临床讨论';
-      if ((summary.near_evidence_count || 0) > 0) return '仅作近似参考';
-      if ((summary.proxy_evidence_count || 0) > 0) return '仅作外推参考';
-      return '需补充信息';
-    }
-
-    function summaryCoverageTone(summary) {
-      if (!summary) return 'warn';
-      if ((summary.direct_evidence_count || 0) > 0) return 'ok';
-      if ((summary.near_evidence_count || 0) > 0) return 'warn';
-      if ((summary.proxy_evidence_count || 0) > 0) return 'warn';
-      return 'alert';
-    }
-
-    function auditTypeLabel(item) {
-      if (!item) return '全部';
-      if (item === 'log') return '查询日志';
-      if (item === 'cache') return '缓存条目';
-      return '全部';
-    }
-
-    function normalizeWarnings(list) {
-      return Array.isArray(list) ? list.filter(Boolean) : [];
-    }
-
-    function buildDoctorBanner(summary, gateState, variants, cards) {
-      if (!summary || !summary.conclusion) return '';
-      const highlights = Array.isArray(summary.highlights) ? summary.highlights : [];
-      const topEvidence = Array.isArray(summary.top_evidence) ? summary.top_evidence : [];
-      const providerCounts = summary.provider_counts || {};
-      const priority = String(summary.priority_action || '—');
-      const nextStep = String(summary.recommended_next_step || summary.next_step || '—');
-      const actionTone = summary.evidence_strength === 'confirm' ? 'alert' : summary.evidence_strength === 'downgrade' ? 'warn' : 'ok';
-      const coverageText = summaryCoverageLabel(summary);
-      return `
-        <section class="doctor-banner ${actionTone}" id="doctorSummaryCard" data-summary-filter-row data-provider-filter-row>
-          <div class="doctor-banner-head">
-            <div>
-              <p class="doctor-banner-title">医生摘要</p>
-              <p class="doctor-banner-conclusion">${escapeHtml(summary.conclusion || '—')}</p>
-              <p class="doctor-banner-subtitle">${escapeHtml(coverageText)}</p>
-            </div>
-            <div class="badge-row" style="justify-content:flex-end;">
-              <span class="risk-chip ${actionTone}">${escapeHtml(zh(summary.evidence_strength || gateState))}</span>
-              <button class="btn ghost" type="button" id="summaryDetailsToggleInlineBtn">${state.summaryDetailsVisible ? '收起摘要证据' : '查看摘要证据'}</button>
-            </div>
-          </div>
-          <div class="doctor-banner-grid">
-            <div class="doctor-mini action ${actionTone}">
-              <span class="label">优先动作</span>
-              <span class="risk-chip ${actionTone}">${escapeHtml(priority)}</span>
-            </div>
-            <div class="doctor-mini">
-              <span class="label">下一步</span>
-              <span class="risk-chip ${actionTone}">${escapeHtml(nextStep)}</span>
-            </div>
-            <div class="doctor-mini">
-              <span class="label">证据卡</span>
-              <strong>${escapeHtml(String(summary.card_count ?? cards.length ?? 0))}</strong>
-            </div>
-            <div class="doctor-mini">
-              <span class="label">直接证据</span>
-              <strong>${escapeHtml(String(summary.direct_evidence_count ?? 0))}</strong>
-            </div>
-          </div>
-          <div class="doctor-banner-grid">
-            <div class="doctor-mini">
-              <span class="label">变异数</span>
-              <strong>${escapeHtml(String(summary.variant_count ?? variants.length ?? 0))}</strong>
-            </div>
-            <div class="doctor-mini">
-              <span class="label">近似证据</span>
-              <strong>${escapeHtml(String(summary.near_evidence_count ?? 0))}</strong>
-            </div>
-            <div class="doctor-mini">
-              <span class="label">外推证据</span>
-              <strong>${escapeHtml(String(summary.proxy_evidence_count ?? 0))}</strong>
-            </div>
-            <div class="doctor-mini">
-              <span class="label">关键信息缺失</span>
-              <strong>${escapeHtml(String(summary.missing_information_count ?? 0))}</strong>
-            </div>
-          </div>
-          <div class="doctor-mini" style="margin-top:12px;">
-            <span class="label">是否可进入临床讨论</span>
-            <span class="risk-chip ${summaryCoverageTone(summary)}">${escapeHtml(coverageText)}</span>
-          </div>
-          ${Object.keys(providerCounts).length ? `<div class="doctor-mini" style="margin-top:8px;">
-            <span class="label">来源分布</span>
-            <span class="risk-chip ok">${escapeHtml(Object.entries(providerCounts).map(([k, v]) => `${providerLabel(k)} ${v} 条`).join('；'))}</span>
-          </div>` : ''}
-          <div class="doctor-banner-details" ${state.summaryDetailsVisible ? '' : 'hidden'}>
-            <div class="doctor-banner-filter">
-              <button type="button" class="filter-chip ${state.summaryEvidenceFilter === 'all' ? 'active' : ''}" data-summary-evidence-filter="all">全部证据</button>
-              <button type="button" class="filter-chip ${state.summaryEvidenceFilter === 'direct' ? 'active' : ''}" data-summary-evidence-filter="direct">仅直接证据</button>
-              <button type="button" class="filter-chip ${state.summaryEvidenceFilter === 'near' ? 'active' : ''}" data-summary-evidence-filter="near">仅近似证据</button>
-              <button type="button" class="filter-chip ${state.summaryEvidenceFilter === 'proxy' ? 'active' : ''}" data-summary-evidence-filter="proxy">仅外推证据</button>
-              <button type="button" class="filter-chip ${state.summaryEvidenceFilter === 'clinvar' ? 'active' : ''}" data-summary-evidence-filter="clinvar">仅 ClinVar</button>
-              <button type="button" class="filter-chip ${state.summaryEvidenceFilter === 'civic' ? 'active' : ''}" data-summary-evidence-filter="civic">仅 CIViC</button>
-            </div>
-            <div class="doctor-banner-filter" style="margin-top:8px;">
-              <button type="button" class="filter-chip ${state.selectedProviderFilter === 'all' ? 'active' : ''}" data-provider-filter="all">全部来源</button>
-              <button type="button" class="filter-chip ${state.selectedProviderFilter === 'civic' ? 'active' : ''}" data-provider-filter="civic">只看 CIViC</button>
-              <button type="button" class="filter-chip ${state.selectedProviderFilter === 'clinvar' ? 'active' : ''}" data-provider-filter="clinvar">只看 ClinVar</button>
-            </div>
-            ${highlights.length ? `<ul class="doctor-banner-list">${highlights.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<div class="result-muted">暂无摘要要点。</div>'}
-            ${topEvidence.length ? `<div class="result-muted" style="margin-top:12px">优先阅读：${escapeHtml(topEvidence.filter((e) => summaryEvidenceMatches(e, state.summaryEvidenceFilter)).map((e) => e.source_title || e.source_id || 'Evidence').join('；') || '暂无匹配证据')}</div>` : ''}
-          </div>
-        </section>
-      `;
-    }
-
-    function renderSummary(payload) {
-      const variants = payload.variants || [];
-      const cards = payload.evidence_cards || [];
-      const gates = payload.safety_gate_results || [];
-      const allowCount = gates.filter((g) => g.decision === 'allow').length;
-      const warnCount = gates.filter((g) => g.decision === 'downgrade' || g.decision === 'ask_for_confirmation').length;
-      const gateState = warnCount ? '降级 / 需注意' : (allowCount ? '允许' : '未知');
-      els.variantCount.textContent = String(variants.length || 0);
-      els.evidenceCount.textContent = String(cards.length || 0);
-      els.gateState.textContent = gateState;
-      els.resultBadges.innerHTML = `
-        <span class="status-badge ${badgeClass(gateState)}">${escapeHtml(gateState)}</span>
-        <span class="status-badge">检索时间 ${escapeHtml(payload.retrieved_at || '-')}</span>
-      `;
-      const banner = buildDoctorBanner(payload.doctor_summary || {}, gateState, variants, cards);
-      const existing = $('doctorSummaryCard');
-      if (existing) existing.remove();
-      if (banner) els.resultStack.insertAdjacentHTML('afterbegin', banner);
-    }
-
-    function renderVariants(payload) {
-      const variants = payload.variants || [];
-      if (!variants.length) {
-        return `<div class="result-section"><h3>变异标准化</h3><div class="result-muted">暂无结果。</div></div>`;
-      }
-      return `
-        <div class="result-section">
-          <h3>变异标准化</h3>
-          <div class="evidence-grid">
-            ${variants.map((v) => `
-              <div class="evidence-item">
-                <div class="evidence-item-head">
-                  <strong>${escapeHtml([v.gene, v.protein_hgvs || v.cdna_hgvs || v.genomic_hgvs || '未明确位点'].filter(Boolean).join(' '))}</strong>
-                  <span class="status-badge ${badgeClass(v.mapping_status)}">${escapeHtml(zh(v.mapping_status || 'unknown'))}</span>
-                </div>
-                <div class="result-muted">${escapeHtml(v.raw_input || '')}</div>
-                <div class="evidence-meta">
-                  <span>疾病：${escapeHtml(v.disease || '-')}</span>
-                  <span>样本：${escapeHtml(zh(v.sample_type || '-'))}</span>
-                  <span>转录本：${escapeHtml(v.transcript || '未提供')}</span>
-                  <span>GRCh：${escapeHtml(v.genome_build || '未提供')}</span>
-                </div>
-                ${normalizeWarnings(v.warnings).length ? `<div class="result-muted" style="margin-top:8px">警告：${escapeHtml(normalizeWarnings(v.warnings).join('；'))}</div>` : ''}
-              </div>
-            `).join('')}
-          </div>
-        </div>`;
-    }
-
-    function isDisplayableCard(card) {
-      const status = String(card?.access_status || '').toLowerCase();
-      const title = `${card?.source_title || ''} ${card?.source_id || ''}`.toLowerCase();
-      if (status === 'not_accessible' || status === 'query_error') return false;
-      if (title.includes('query error') || title.includes('query_error')) return false;
-      if (status === 'metadata_only' && /query error|查询错误|查询失败|检索失败/.test(title)) return false;
-      return true;
-    }
-
-    function renderCards(payload) {
-      const allCards = (payload.evidence_cards || []).filter(isDisplayableCard);
-      const cards = allCards.filter((card) => {
-        if (!providerMatches(card, state.selectedProviderFilter)) return false;
-        if (state.selectedCardFilter === 'all') return true;
-        if (state.selectedCardFilter === 'clinvar') return String(card?.provider || '').toLowerCase() === 'clinvar';
-        if (state.selectedCardFilter === 'civic') return String(card?.provider || '').toLowerCase() === 'civic';
-        return cardFilterMatches(card, state.selectedCardFilter);
-      });
-      const totalCards = allCards;
-      if (!totalCards.length) {
-        return `<div class="result-section"><h3>证据卡</h3><div class="result-muted">暂无可展示证据卡。</div></div>`;
-      }
-      return `
-        <div class="result-section">
-          <h3>证据卡</h3>
-          <div class="filter-row" id="cardFilterRow">
-            <button type="button" class="filter-chip ${state.selectedCardFilter === 'all' ? 'active' : ''}" data-card-filter="all">全部</button>
-            <button type="button" class="filter-chip ${state.selectedCardFilter === 'direct' ? 'active' : ''}" data-card-filter="direct">DLBCL 直接</button>
-            <button type="button" class="filter-chip ${state.selectedCardFilter === 'near' ? 'active' : ''}" data-card-filter="near">LBCL 近似</button>
-            <button type="button" class="filter-chip ${state.selectedCardFilter === 'proxy' ? 'active' : ''}" data-card-filter="proxy">外推</button>
-            <button type="button" class="filter-chip ${state.selectedCardFilter === 'low' ? 'active' : ''}" data-card-filter="low">低等级</button>
-            <button type="button" class="filter-chip ${state.selectedCardFilter === 'clinvar' ? 'active' : ''}" data-card-filter="clinvar">ClinVar</button>
-            <button type="button" class="filter-chip ${state.selectedCardFilter === 'civic' ? 'active' : ''}" data-card-filter="civic">CIViC</button>
-          </div>
-          <div class="result-muted" style="margin-bottom:8px">显示 ${escapeHtml(String(cards.length))} / ${escapeHtml(String(totalCards.length))} 条</div>
-          <div class="evidence-grid">
-            ${cards.map((card, idx) => {
-              const cardKey = `${card.source_id || 'card'}-${idx}`;
-              return `
-              <article class="evidence-item" data-card-key="${escapeHtml(cardKey)}">
-                <div class="evidence-item-head">
-                  <div style="min-width:0;flex:1;">
-                    <strong>${escapeHtml(card.source_title || card.source_id || 'Evidence')}</strong>
-                    <div class="evidence-meta" style="margin-top:6px">
-                      <span class="provider-badge ${escapeHtml(String(card.provider || 'mock').toLowerCase())}">${escapeHtml(providerLabel(card.provider || '-'))}</span>
-                      <span>内部等级：${escapeHtml(card.evidence_level || '-')}</span>
-                      ${card.amp_tier ? `<span title="AMP/ASCO/CAP 2017">AMP ${escapeHtml(card.amp_tier)}</span>` : ''}
-                      ${card.escat_level ? `<span title="ESMO ESCAT">ESCAT ${escapeHtml(card.escat_level)}</span>` : ''}
-                      ${card.acmg_class ? `<span title="ACMG/AMP 2015 胚系致病性">ACMG ${escapeHtml(card.acmg_class)}</span>` : ''}
-                      <span>疾病匹配：${escapeHtml(card.disease_match || '-')}</span>
-                    </div>
-                  </div>
-                  <a class="btn ghost" href="${escapeHtml(card.source_url || '#')}" target="_blank" rel="noopener noreferrer" title="打开 ${escapeHtml(card.source_id || card.provider || '数据库')} 原始记录">打开来源</a>
-                </div>
-                <div class="evidence-claim">${escapeHtml(card.claim || '')}</div>
-                <div class="evidence-meta">
-                  <span>获取状态：${escapeHtml(zh(card.access_status || '-'))}</span>
-                  <span>记录状态：${escapeHtml(zh(card.record_status || '-'))}</span>
-                  <span>证据类型：${escapeHtml(zh(card.evidence_type || '-'))}</span>
-                  <span>证据方向：${escapeHtml(zh(card.direction || '-'))}</span>
-                  <span>相关药物：${escapeHtml(zh(card.drug || '-'))}</span>
-                  <span>匹配变异：${escapeHtml(card.matched_variant || '-')}</span>
-                  ${card.review_status ? `<span class="${String(card.record_status || '').toLowerCase() === 'submitted' ? 'status-badge warn' : ''}">审核状态：${escapeHtml(zh(card.review_status))}</span>` : ''}
-                </div>
-                <div class="me-actions" style="margin-top:8px; justify-content:flex-end;">
-                  <button class="btn ghost" type="button" data-expand-card="${escapeHtml(cardKey)}" aria-expanded="false" aria-controls="${escapeHtml(`detail-${cardKey}`)}">展开详情</button>
-                </div>
-                <div class="card-detail" id="${escapeHtml(`detail-${cardKey}`)}" data-card-detail="${escapeHtml(cardKey)}" hidden style="margin-top:10px; border-top:1px dashed rgba(0,0,0,.08); padding-top:10px;">
-                  <div class="result-muted">来源记录：${escapeHtml(card.source_id || '—')}</div>
-                  <div class="result-muted">匹配变异：${escapeHtml(card.matched_variant || '—')}</div>
-                  ${card.review_status ? `<div class="result-muted">审核状态：${escapeHtml(zh(card.review_status))}</div>` : ''}
-                  ${card.star_rating ? `<div class="result-muted">ClinVar 星级/审核信息：${escapeHtml(card.star_rating)}</div>` : ''}
-                  <div class="result-muted">人口学/人群：${escapeHtml(card.population || '—')}</div>
-                  <div class="result-muted">干预与结局：${escapeHtml(card.intervention_and_outcome || '—')}</div>
-                  <div class="result-muted">适用性：${escapeHtml(card.applicability || '—')}</div>
-                  <div class="result-muted">局限性：${escapeHtml(card.limitations || '—')}</div>
-                  ${card.conflict?.has_conflict ? `<div class="result-muted" style="margin-top:8px">冲突：${escapeHtml(card.conflict.description || '存在冲突')}</div>` : ''}
-                  ${card.conflict?.resolution ? `<div class="result-muted">处理：${escapeHtml(card.conflict.resolution)}</div>` : ''}
-                  ${card.safety_flags?.length ? `<div class="result-muted" style="margin-top:8px">安全提示：${escapeHtml(card.safety_flags.join('；'))}</div>` : ''}
-                  ${card.original_claim ? `<details style="margin-top:10px"><summary class="result-muted" style="cursor:pointer">查看数据库英文原文</summary><div class="result-muted" lang="en" style="margin-top:8px">${escapeHtml(card.original_claim)}</div></details>` : ''}
-                </div>
-              </article>`;
-            }).join('')}
-          </div>
-        </div>`;
-    }
-
-    function renderGateResults(payload) {
-      const sourceGates = (payload.safety_gate_results || []).filter((gate) => {
-        const reasons = normalizeWarnings(gate.reasons || []).join(' ').toLowerCase();
-        return !reasons.includes('query error') && !reasons.includes('查询错误') && !reasons.includes('查询失败');
-      });
-      const grouped = new Map();
-      sourceGates.forEach((gate) => {
-        const key = JSON.stringify({
-          decision: gate.decision || '',
-          strength: gate.allowed_claim_strength || '',
-          warnings: [...normalizeWarnings(gate.required_warnings)].sort(),
-          blocked: [...normalizeWarnings(gate.blocked_outputs)].sort(),
-          reasons: [...normalizeWarnings(gate.reasons)].sort(),
-        });
-        const existing = grouped.get(key);
-        if (existing) {
-          existing.count += 1;
-          if (gate.evidence_id) existing.evidenceIds.push(gate.evidence_id);
-        } else {
-          grouped.set(key, { ...gate, count: 1, evidenceIds: gate.evidence_id ? [gate.evidence_id] : [] });
-        }
-      });
-      const gates = Array.from(grouped.values());
-      if (!gates.length) {
-        return `<details class="result-section collapsible"><summary>安全门控</summary><div class="collapsible-body"><div class="result-muted" style="margin-top:12px">暂无门控结果。</div></div></details>`;
-      }
-      return `
-        <details class="result-section collapsible">
-          <summary>安全门控 <span class="status-badge">${escapeHtml(String(gates.length))} 类规则</span></summary>
-          <div class="collapsible-body"><div class="evidence-grid" style="margin-top:12px">
-            ${gates.map((gate) => {
-              const target = gate.evidenceIds.length === 1 ? `证据 ${gate.evidenceIds[0]}` : gate.evidenceIds.length > 1 ? `${gate.evidenceIds.length} 条证据` : `${gate.count} 个变异`;
-              return `
-              <div class="evidence-item">
-                <div class="evidence-item-head">
-                  <strong>${escapeHtml(target)}</strong>
-                  <span class="status-badge ${badgeClass(gate.decision)}">${escapeHtml(zh(gate.decision || '-'))}</span>
-                </div>
-                <div class="result-muted">允许结论强度：${escapeHtml(zh(gate.allowed_claim_strength || '-'))}</div>
-                ${normalizeWarnings(gate.required_warnings).length ? `<div class="result-muted" style="margin-top:8px">要求提示：${escapeHtml(normalizeWarnings(gate.required_warnings).join('；'))}</div>` : ''}
-                ${normalizeWarnings(gate.blocked_outputs).length ? `<div class="result-muted" style="margin-top:8px">阻断输出：${escapeHtml(normalizeWarnings(gate.blocked_outputs).map(zh).join('、'))}</div>` : ''}
-                ${normalizeWarnings(gate.reasons).length ? `<div class="result-muted" style="margin-top:8px">原因：${escapeHtml(normalizeWarnings(gate.reasons).join('；'))}</div>` : ''}
-              </div>`;
-            }).join('')}
-          </div></div>
-        </details>`;
-    }
-
-    function renderAnswer(payload) {
-      const reportItems = Array.isArray(payload.doctor_summary?.report_template) ? payload.doctor_summary.report_template : [];
-      const pathwayNotes = Array.isArray(payload.doctor_summary?.pathway_notes) ? payload.doctor_summary.pathway_notes : [];
-      return `
-        <div class="result-section">
-          <h3>临床解释</h3>
-          <div class="answer-md">${clinicalAnswerHtml(payload.answer_markdown || '')}</div>
-          ${pathwayNotes.length ? `<div class="report-template" style="margin-top:14px;"><h4>通路与功能注释</h4><ul class="report-template-list">${pathwayNotes.map((x) => `<li>${escapeHtml(x)}</li>`).join('')}</ul></div>` : ''}
-          ${reportItems.length ? `<div class="report-template"><h4>分子诊断报告模板</h4><ol class="report-template-list">${reportItems.map((x) => `<li>${escapeHtml(x)}</li>`).join('')}</ol></div>` : ''}
-        </div>`;
-    }
-
-    function classifyMissingItem(text) {
-      const value = String(text || '');
-      if (!value) return 'advisory';
-      if (/未提供转录本|GRCh37|GRCh38|精确外显子|基因组坐标精确匹配|建议补充|如需精确/.test(value)) return 'advisory';
-      return 'blocking';
-    }
-
-    function renderMissingAndWarnings(payload) {
-      const missing = payload.missing_information || [];
-      const warnings = payload.global_warnings || [];
-      const blockingMissing = missing.filter((x) => classifyMissingItem(x) === 'blocking');
-      const advisoryMissing = missing.filter((x) => classifyMissingItem(x) === 'advisory');
-      const missingTone = blockingMissing.length ? 'bad' : 'warn';
-      return `
-        <details class="result-section collapsible">
-          <summary>补充信息与全局边界 <span class="status-badge ${blockingMissing.length ? 'bad' : 'warn'}">${blockingMissing.length ? `${blockingMissing.length} 项待补充` : `${advisoryMissing.length} 项建议`}</span></summary>
-          <div class="collapsible-body"><div class="evidence-grid" style="margin-top:12px">
-            <div class="evidence-item">
-              <div class="evidence-item-head">
-                <strong>需要优先补充</strong>
-                <span class="status-badge ${blockingMissing.length ? 'bad' : 'ok'}">${blockingMissing.length ? `${blockingMissing.length} 项` : '无阻断项'}</span>
-              </div>
-              <div class="result-muted" style="margin-top:8px">${blockingMissing.length ? blockingMissing.map((x) => `• ${escapeHtml(x)}`).join('<br>') : '当前核心信息已满足基础解析。'}</div>
-            </div>
-            <div class="evidence-item">
-              <div class="evidence-item-head">
-                <strong>建议补充以提高精度</strong>
-                <span class="status-badge ${advisoryMissing.length ? 'warn' : 'ok'}">${advisoryMissing.length ? `${advisoryMissing.length} 项` : '无建议项'}</span>
-              </div>
-              <div class="result-muted" style="margin-top:8px">${advisoryMissing.length ? advisoryMissing.map((x) => `• ${escapeHtml(x)}`).join('<br>') : '暂无。'}</div>
-            </div>
-            <div class="evidence-item">
-              <div class="evidence-item-head">
-                <strong>全局使用边界</strong>
-                <span class="status-badge ${missingTone}">${blockingMissing.length ? '需谨慎' : '可继续讨论'}</span>
-              </div>
-              <div class="result-muted" style="margin-top:8px">${warnings.length ? warnings.map((x) => `• ${escapeHtml(x)}`).join('<br>') : '暂无'}</div>
-            </div>
-          </div></div>
-        </details>`;
-    }
-
-    function renderHistory() {
-      const list = state.history || [];
-      els.historyCountBadge.textContent = `历史 ${list.length} 条`;
-      els.historyPanel.hidden = !state.historyVisible;
-      if (!list.length) {
-        els.historyPanel.innerHTML = '<div class="result-muted">暂无历史记录。查询后会自动保存到本地。</div>';
-        return;
-      }
-      els.historyPanel.innerHTML = list.map((item, idx) => `
-        <article class="history-item ${idx === 0 ? 'active' : ''}" data-history-index="${idx}">
-          <div class="history-item-head">
-            <div>
-              <div class="history-item-title">${escapeHtml(item.label || '未命名查询')}</div>
-              <div class="history-item-meta">${escapeHtml([item.reportMeta?.institution, item.reportMeta?.doctorName, item.reportMeta?.department].filter(Boolean).join(' · ') || '未填写报告元数据')}</div>
-            </div>
-            <span class="status-badge ${badgeClass(item.gateState)}">${escapeHtml(item.gateState || '未知')}</span>
-          </div>
-          <div class="history-item-meta">
-            <div>时间：${escapeHtml(item.retrieved_at || '-')}</div>
-            <div>变异：${escapeHtml(item.variantsText || '')}</div>
-            <div>证据卡：${escapeHtml(String(item.evidenceCount ?? 0))} · 变异数：${escapeHtml(String(item.variantCount ?? 0))}</div>
-          </div>
-        </article>
-      `).join('');
-    }
-
-    function renderAuditPanel() {
-      const logs = state.auditLogs || [];
-      const cache = state.auditCache || [];
-      els.auditPanel.hidden = !state.auditVisible;
-      if (!state.auditVisible) return;
-      if (!logs.length && !cache.length) {
-        els.auditPanel.innerHTML = '<div class="result-muted">暂无审计数据。先完成一次查询，再点击“刷新审计”。</div>';
-        return;
-      }
-      const filteredLogs = state.selectedAuditType === 'log' ? logs : logs;
-      const filteredCache = state.selectedAuditType === 'cache' ? cache : cache;
-      const activeLabel = auditTypeLabel(state.selectedAuditType);
-      els.auditPanel.innerHTML = `
-        <div class="evidence-grid">
-          <div class="evidence-item">
-            <div class="evidence-item-head">
-              <strong>查询日志</strong>
-              <button class="btn ghost" id="refreshAuditBtn" type="button">刷新审计</button>
-            </div>
-            <div class="filter-row" id="auditFilterRow">
-              <button type="button" class="filter-chip ${!state.selectedAuditType ? 'active' : ''}" data-audit-filter="all">全部</button>
-              <button type="button" class="filter-chip ${state.selectedAuditType === 'log' ? 'active' : ''}" data-audit-filter="log">查询日志</button>
-              <button type="button" class="filter-chip ${state.selectedAuditType === 'cache' ? 'active' : ''}" data-audit-filter="cache">缓存条目</button>
-            </div>
-            <div class="result-muted">当前：${escapeHtml(activeLabel)}；共 ${escapeHtml(String(filteredLogs.length))} 条日志</div>
-            <div style="display:grid;gap:8px;margin-top:10px;">
-              ${filteredLogs.slice(0, 5).map((log) => `
-                <div class="history-item" data-audit-id="${escapeHtml(log.id || '')}" data-audit-kind="log">
-                  <div class="history-item-head">
-                    <div>
-                      <div class="history-item-title">${escapeHtml(log.query_key || '未知查询')}</div>
-                      <div class="history-item-meta">${escapeHtml(zh(log.provider_mode || '-'))} · ${escapeHtml(log.cache_hit ? '命中缓存' : '未命中缓存')}</div>
-                    </div>
-                    <span class="status-badge ${badgeClass(log.cache_hit ? 'ok' : 'warn')}" >${escapeHtml(log.cache_hit ? 'hit' : 'miss')}</span>
-                  </div>
-                  <div class="history-item-meta">${escapeHtml(log.retrieved_at || '-')}</div>
-                  <div class="me-actions" style="margin-top:8px; justify-content:flex-end;">
-                    <button class="btn ghost" type="button" data-expand-audit="${escapeHtml(log.id || '')}" data-audit-kind="log">展开详情</button>
-                  </div>
-                  <div class="audit-detail" data-audit-detail="${escapeHtml(log.id || '')}" hidden style="margin-top:10px; border-top:1px dashed rgba(0,0,0,.08); padding-top:10px;">
-                    <div class="result-muted">输入：${escapeHtml(log.input_json || '')}</div>
-                    <div class="result-muted">标准化：${escapeHtml(JSON.stringify(log.normalized || []).slice(0, 220))}</div>
-                    <div class="result-muted">回答：${escapeHtml((log.answer_markdown || '').slice(0, 260) || '—')}</div>
-                  </div>
-                </div>
-              `).join('') || '<div class="result-muted">暂无日志。</div>'}
-            </div>
-          </div>
-          <div class="evidence-item">
-            <div class="evidence-item-head">
-              <strong>缓存条目</strong>
-            </div>
-            <div class="result-muted">共 ${escapeHtml(String(filteredCache.length))} 条缓存</div>
-            <div style="display:grid;gap:8px;margin-top:10px;">
-              ${filteredCache.slice(0, 5).map((entry) => `
-                <div class="history-item" data-audit-id="${escapeHtml(entry.id || '')}" data-audit-kind="cache">
-                  <div class="history-item-head">
-                    <div>
-                      <div class="history-item-title">${escapeHtml(entry.query_key || '未知缓存')}</div>
-                      <div class="history-item-meta">${escapeHtml(zh(entry.provider_mode || '-'))}</div>
-                    </div>
-                    <span class="status-badge ok">cache</span>
-                  </div>
-                  <div class="history-item-meta">到期：${escapeHtml(entry.expires_at || '-')}</div>
-                  <div class="me-actions" style="margin-top:8px; justify-content:flex-end;">
-                    <button class="btn ghost" type="button" data-expand-audit="${escapeHtml(entry.id || '')}" data-audit-kind="cache">展开详情</button>
-                  </div>
-                  <div class="audit-detail" data-audit-detail="${escapeHtml(entry.id || '')}" hidden style="margin-top:10px; border-top:1px dashed rgba(0,0,0,.08); padding-top:10px;">
-                    <div class="result-muted">Payload：${escapeHtml((entry.payload || '').slice(0, 300) || '—')}</div>
-                  </div>
-                </div>
-              `).join('') || '<div class="result-muted">暂无缓存。</div>'}
-            </div>
-          </div>
-        </div>
-      `;
-      const refreshBtn = $('refreshAuditBtn');
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => refreshAuditData());
-      }
-      const auditFilterRow = $('auditFilterRow');
-      if (auditFilterRow) {
-        auditFilterRow.querySelectorAll('[data-audit-filter]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            const value = btn.dataset.auditFilter;
-            state.selectedAuditType = value === 'all' ? null : value;
-            renderAuditPanel();
-          });
-        });
-      }
-      els.auditPanel.querySelectorAll('[data-expand-audit]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.expandAudit || '';
-          const detail = els.auditPanel.querySelector(`[data-audit-detail="${CSS.escape(id)}"]`);
-          if (!detail) return;
-          detail.hidden = !detail.hidden;
-          btn.textContent = detail.hidden ? '展开详情' : '收起详情';
-          btn.setAttribute('aria-expanded', String(!detail.hidden));
-        });
-      });
-    }
-
-    async function refreshAuditData() {
-      try {
-        const [logResp, cacheResp] = await Promise.all([
-          api('/api/molecular-evidence/logs?limit=5'),
-          api('/api/molecular-evidence/cache?limit=5'),
-        ]);
-        const [logData, cacheData] = await Promise.all([logResp.json().catch(() => ({})), cacheResp.json().catch(() => ({}))]);
-        state.auditLogs = Array.isArray(logData.items) ? logData.items : [];
-        state.auditCache = Array.isArray(cacheData.items) ? cacheData.items : [];
-        renderAuditPanel();
-      } catch (err) {
-        setError(`审计数据加载失败：${String(err?.message || err)}`);
-      }
-    }
-
-    function addHistoryEntry(payload, variantsText) {
-      const cards = payload.evidence_cards || [];
-      const gates = payload.safety_gate_results || [];
-      const warnCount = gates.filter((g) => g.decision === 'downgrade' || g.decision === 'ask_for_confirmation').length;
-      const gateState = warnCount ? '降级 / 需注意' : (gates.some((g) => g.decision === 'allow') ? '允许' : '未知');
-      const entry = {
-        label: String(variantsText || payload.question || '分子证据查询').slice(0, 60),
-        variantsText: String(variantsText || '').slice(0, 200),
-        retrieved_at: payload.retrieved_at || new Date().toISOString(),
-        variantCount: (payload.variants || []).length,
-        evidenceCount: cards.length,
-        gateState,
-        reportMeta: {
-          institution: String(els.institution.value || '').trim(),
-          doctorName: String(els.doctorName.value || '').trim(),
-          department: String(els.department.value || '').trim(),
-          reportDate: String(els.reportDate.value || '').trim(),
-        },
-        payload,
+      const HISTORY_KEY = 'gf_molecular_evidence_history_v3';
+      const HISTORY_LIMIT = 30;
+      const state = {
+        lastPayload: null,
+        history: [],
+        historyVisible: false,
+        summaryVisible: true,
+        cardFilter: 'all',
       };
-      state.history = [entry, ...state.history.filter((item) => item.retrieved_at !== entry.retrieved_at)].slice(0, HISTORY_LIMIT);
-      try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history));
-      } catch {
-        /* ignore */
+
+      /* ---------------- 工具函数 ---------------- */
+      function escapeHtml(text) {
+        return String(text ?? '').replace(/[&<>"']/g, (s) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[s]));
       }
-      renderHistory();
-      return entry;
-    }
-
-    function loadHistory() {
-      try {
-        const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-        state.history = Array.isArray(raw) ? raw : [];
-      } catch {
-        state.history = [];
+      function normalizeWarnings(list) {
+        return Array.isArray(list) ? list.filter(Boolean) : [];
       }
-      renderHistory();
-    }
-
-    function hydrateFromHistoryItem(item) {
-      if (!item?.payload) return;
-      if (item.reportMeta) {
-        els.institution.value = item.reportMeta.institution || '';
-        els.doctorName.value = item.reportMeta.doctorName || '';
-        els.department.value = item.reportMeta.department || '';
-        els.reportDate.value = item.reportMeta.reportDate || '';
-      }
-      state.lastPayload = item.payload;
-      renderResult(item.payload);
-    }
-
-    function exportTextFile(name, text, type = 'text/plain;charset=utf-8') {
-      const blob = new Blob([text], { type });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-
-    function formatReportMarkdown(payload) {
-      const variants = payload.variants || [];
-      const cards = payload.evidence_cards || [];
-      const gates = payload.safety_gate_results || [];
-      const missing = payload.missing_information || [];
-      const warnings = payload.global_warnings || [];
-      const question = String(payload.question || els.question.value || '请输出 DLBCL 分子证据闭环结果，并提示安全边界。').trim();
-      const institution = String(els.institution.value || '未填写').trim();
-      const doctorName = String(els.doctorName.value || '未填写').trim();
-      const department = String(els.department.value || '未填写').trim();
-      const reportDate = String(els.reportDate.value || new Date().toISOString().slice(0, 10)).trim();
-      const lines = [];
-      lines.push('# 分子证据分析报告');
-      lines.push('');
-      lines.push(`- 报告机构：${institution}`);
-      lines.push(`- 报告医生：${doctorName}`);
-      lines.push(`- 所属科室：${department}`);
-      lines.push(`- 报告日期：${reportDate}`);
-      lines.push(`- 检索时间：${payload.retrieved_at || new Date().toISOString()}`);
-      lines.push(`- Query：${question}`);
-      lines.push(`- 数据来源模式：${zh(payload.provider_mode || els.providerMode.value || 'mock')}`);
-      lines.push(`- 疾病：${payload.disease || els.disease.value || 'DLBCL'}`);
-      lines.push(`- 样本类型：${payload.sample_type || els.sampleType.value || 'tumor tissue'}`);
-      lines.push('');
-      lines.push('## 1. 基本信息');
-      lines.push(`- 医疗机构：${institution}`);
-      lines.push(`- 医生姓名：${doctorName}`);
-      lines.push(`- 科室：${department}`);
-      lines.push(`- 报告日期：${reportDate}`);
-      lines.push('');
-      lines.push('## 2. 医生问题');
-      lines.push(question || '—');
-      lines.push('');
-      lines.push('## 3. 结论摘要');
-      lines.push((String(payload.answer_markdown || '').trim().split('\n').slice(0, 8).join('\n')) || '—');
-      lines.push('');
-      lines.push('## 4. 变异标准化');
-      if (!variants.length) {
-        lines.push('- 暂无变异结果');
-      } else {
-        variants.forEach((v, idx) => {
-          lines.push(`- ${idx + 1}. ${[v.gene, v.protein_hgvs || v.cdna_hgvs || v.genomic_hgvs || '未明确位点'].filter(Boolean).join(' ')}`);
-          lines.push(`  - 原始输入：${v.raw_input || '—'}`);
-          lines.push(`  - 映射状态：${zh(v.mapping_status || '—')}`);
-          lines.push(`  - 疾病：${v.disease || '—'}；样本：${v.sample_type || '—'}；转录本：${v.transcript || '未提供'}；GRCh：${v.genome_build || '未提供'}`);
-          if (Array.isArray(v.warnings) && v.warnings.length) lines.push(`  - 警告：${v.warnings.join('；')}`);
+      function api(path, options = {}) {
+        return fetch(`${API_BASE}${path}`, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+          ...options,
         });
       }
-      lines.push('');
-      lines.push('## 5. 证据依据');
-      if (!cards.length) {
-        lines.push('- 暂无证据卡');
-      } else {
-        cards.forEach((card, idx) => {
-          lines.push(`- ${idx + 1}. ${card.source_title || card.source_id || 'Evidence'}`);
-          lines.push(`  - claim：${card.claim || '—'}`);
-          lines.push(`  - 来源：${card.provider || '—'} | 证据等级：${card.evidence_level || '—'} | 疾病匹配：${card.disease_match || '—'}`);
-          lines.push(`  - 获取状态：${zh(card.access_status || '—')} | 记录状态：${zh(card.record_status || '—')} | 类型：${zh(card.evidence_type || '—')} | 方向：${zh(card.direction || '—')} | 药物：${zh(card.drug || '—')}`);
-          if (card.source_url) lines.push(`  - 链接：${card.source_url}`);
-          if (card.safety_flags?.length) lines.push(`  - 安全提示：${card.safety_flags.join('；')}`);
-          if (card.conflict?.has_conflict) lines.push(`  - 冲突：${card.conflict.description || '存在冲突'}`);
-        });
+      function setError(msg) {
+        els.composerStatus.textContent = msg || '输入分子信息（如 MYD88 p.L265P, CD79B p.Y196H），或通过“+”上传报告图片';
+        els.composerStatus.classList.toggle('composer-error', Boolean(msg));
       }
-      lines.push('');
-      lines.push('## 6. 安全门控');
-      if (!gates.length) {
-        lines.push('- 暂无门控结果');
-      } else {
-        gates.forEach((gate, idx) => {
-          lines.push(`- ${idx + 1}. ${gate.evidence_id || 'global'}：${gate.decision || '—'}（${gate.allowed_claim_strength || '—'}）`);
-          if (gate.required_warnings?.length) lines.push(`  - 要求提示：${gate.required_warnings.join('；')}`);
-          if (gate.blocked_outputs?.length) lines.push(`  - 阻断输出：${gate.blocked_outputs.join('、')}`);
-          if (gate.reasons?.length) lines.push(`  - 原因：${gate.reasons.join('；')}`);
-        });
+      function md(raw) {
+        const value = String(raw || '');
+        let html;
+        try {
+          html = window.marked?.parse ? window.marked.parse(value, { breaks: true }) : escapeHtml(value).replace(/\n/g, '<br>');
+        } catch {
+          html = escapeHtml(value).replace(/\n/g, '<br>');
+        }
+        return window.DOMPurify ? window.DOMPurify.sanitize(html) : html;
       }
-      lines.push('');
-      lines.push('## 7. 缺失信息');
-      if (!missing.length) lines.push('- 暂无');
-      else missing.forEach((x) => lines.push(`- ${x}`));
-      lines.push('');
-      lines.push('## 8. 全局边界');
-      if (!warnings.length) lines.push('- 暂无');
-      else warnings.forEach((x) => lines.push(`- ${x}`));
-      lines.push('');
-      lines.push('## 9. 正文回答');
-      lines.push(String(payload.answer_markdown || '').trim() || '—');
-      lines.push('');
-      lines.push('## 10. 使用说明');
-      lines.push('本报告仅用于分子证据解释，不构成患者级诊断或治疗建议。');
-      return lines.join('\n');
-    }
 
-    function exportCurrentMarkdown() {
-      if (!state.lastPayload?.answer_markdown) return;
-      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-      exportTextFile(`molecular-evidence-${stamp}.md`, state.lastPayload.answer_markdown);
-    }
+      const UI_TRANSLATIONS = {
+        unique: '唯一匹配', protein_level_only: '仅蛋白层匹配', ambiguous: '存在歧义', insufficient: '信息不足', conflicting: '存在冲突',
+        allow: '允许', downgrade: '保守使用', ask_for_confirmation: '需要确认', refuse: '拒绝输出',
+        metadata_only: '仅元数据', live_metadata: '在线元数据', abstract_only: '仅摘要', not_accessible: '无法访问',
+        accepted: '已接受', submitted: '已提交，尚待审核', supported: '有证据支持', verified: '已核验', curated: '已人工整理', mock_accepted: '本地示例', mock: '本地示例',
+        supports: '支持', does_not_support: '不支持', database_record: '数据库记录',
+        predictive: '预测性', diagnostic: '诊断性', prognostic: '预后性', oncogenic: '致癌性', functional: '功能性', biological: '生物学',
+        'germline pathogenicity': '胚系致病性', 'somatic oncogenicity': '体细胞致癌性', 'somatic clinical impact': '体细胞临床影响',
+        live: '多库在线检索', hybrid: '在线与本地混合检索', mock: '本地测试',
+        civic: 'CIViC在线检索', clinvar: 'ClinVar在线检索', myvariant: 'MyVariant注释',
+        'tumor tissue': '肿瘤组织', 'bone marrow': '骨髓', 'peripheral blood': '外周血',
+        success: '成功', no_evidence: '无证据', degraded: '受限', incomplete: '不完整', pending: '待执行',
+        // allowed_claim_strength
+        variant_level_evidence_lookup: '变异级证据查询',
+        no_definitive_variant_claim: '暂不给出确定性结论',
+        evidence_supported_contextual_claim: '有证据支持的语境化结论',
+        literature_lead_or_database_signal_only: '仅线索参考（摘要/数据库信号）',
+        extrapolation_only: '仅外推参考',
+        conflicted_evidence: '存在冲突，结论保守',
+        unaccepted_or_uncertain_record: '记录未确认，仅作线索',
+        low_level_evidence: '低等级证据，仅作线索',
+        // blocked_outputs
+        patient_level_treatment_plan: '患者级治疗方案',
+        individual_prognosis_prediction: '个体预后预测',
+        drug_dose: '药物剂量',
+        definitive_diagnosis: '明确诊断',
+        patient_level_prognosis: '患者级预后',
+        infer_targetability_from_oncogenicity: '由致癌性推断靶向药',
+        treatment_recommendation: '治疗推荐',
+        diagnosis: '诊断',
+      };
+      function zh(value) {
+        if (value === null || value === undefined || value === '') return '-';
+        const text = String(value);
+        const direct = UI_TRANSLATIONS[text.toLowerCase()];
+        if (direct) return direct;
+        return text.split(/(\s*\/\s*|\s*;\s*)/).map((part) => UI_TRANSLATIONS[part.trim().toLowerCase()] || part).join('');
+      }
+      function providerLabel(value) {
+        const key = String(value || '').toLowerCase();
+        if (key === 'clinvar') return 'ClinVar临床变异数据库';
+        if (key === 'civic') return 'CIViC肿瘤临床证据库';
+        if (key === 'myvariant') return 'MyVariant变异注释';
+        if (key === 'mock') return '本地示例库';
+        return zh(value);
+      }
+      function toneOf(value) {
+        const lower = String(value || '').toLowerCase();
+        if (lower.includes('refuse')) return 'bad';
+        if (lower.includes('ask') || lower.includes('confirm') || lower.includes('downgrade') || lower.includes('ambiguous') || lower.includes('insufficient')) return 'warn';
+        return 'ok';
+      }
+      function variantLabel(v) {
+        return [v.gene, v.protein_hgvs || v.cdna_hgvs || v.genomic_hgvs || '未明确位点'].filter(Boolean).join(' ');
+      }
 
-    function exportCurrentReport() {
-      if (!state.lastPayload) return;
-      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-      const report = formatReportMarkdown(state.lastPayload);
-      exportTextFile(`molecular-evidence-report-${stamp}.md`, report);
-    }
+function formatRetrievedAt(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return String(value);
+        const p = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+      }
 
-    function exportCurrentJson() {
-      if (!state.lastPayload) return;
-      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-      exportTextFile(`molecular-evidence-${stamp}.json`, JSON.stringify(state.lastPayload, null, 2), 'application/json;charset=utf-8');
-    }
+      /* ---------------- 渲染：数据源状态 ---------------- */
+      function renderProviderStatus(payload) {
+        const audit = payload.audit || {};
+        const providerStatus = audit.provider_status || {};
+        
+        // ClinVar
+        const clinvar = providerStatus.ClinVar || {};
+        els.clinvarStatus.textContent = zh(clinvar.state || '-');
+        els.clinvarStatus.className = 'status-value ' + (clinvar.state || '');
+        els.clinvarQueryCount.textContent = String(clinvar.query_count || 0);
+        els.clinvarRecordCount.textContent = String(clinvar.record_count || 0);
+        
+        // CIViC
+        const civic = providerStatus.CIViC || {};
+        els.civicStatus.textContent = zh(civic.state || '-');
+        els.civicStatus.className = 'status-value ' + (civic.state || '');
+        els.civicQueryCount.textContent = String(civic.query_count || 0);
+        els.civicRecordCount.textContent = String(civic.record_count || 0);
+        
+        // MyVariant
+        const myvariant = providerStatus.MyVariant || {};
+        els.myvariantStatus.textContent = zh(myvariant.state || '-');
+        els.myvariantStatus.className = 'status-value ' + (myvariant.state || '');
+        els.myvariantQueryCount.textContent = String(myvariant.query_count || 0);
+        els.myvariantRecordCount.textContent = String(myvariant.record_count || 0);
+        
+        els.providerStatusGrid.hidden = false;
+      }
 
-    function renderResult(payload) {
-      renderSummary(payload);
-      els.copyAnswerBtn.disabled = !payload?.answer_markdown;
-      els.copySummaryBtn.disabled = !payload?.doctor_summary;
-      els.exportMenuBtn.disabled = !payload;
-      els.exportMarkdownBtn.disabled = !payload?.answer_markdown;
-      els.exportReportBtn.disabled = !payload;
-      els.exportJsonBtn.disabled = !payload;
-      const doctorBanner = buildDoctorBanner(payload.doctor_summary, (() => {
-        const gates = payload.safety_gate_results || [];
-        const allowCount = gates.filter((g) => g.decision === 'allow').length;
-        const warnCount = gates.filter((g) => g.decision === 'downgrade' || g.decision === 'ask_for_confirmation').length;
-        const blockedCount = gates.filter((g) => g.decision === 'refuse').length;
-        if (blockedCount) return 'refuse';
-        return warnCount ? 'downgrade' : (allowCount ? 'allow' : 'unknown');
-      })(), payload.variants || [], payload.evidence_cards || []);
-      els.resultStack.innerHTML = [
-        doctorBanner,
-        renderVariants(payload),
-        renderCards(payload),
-        renderAnswer(payload),
-        renderGateResults(payload),
-        renderMissingAndWarnings(payload),
-      ].join('');
-      bindCardFilters();
-      bindCardDetails();
-    }
+      /* ---------------- 渲染：医生摘要 / 概况 ---------------- */
+      function renderSummarySection(payload) {
+        const summary = payload.summary || {};
+        const variants = payload.variants || [];
+        const cards = payload.evidence || [];
+        const gates = [...(payload.safety?.variant_gates || []), ...(payload.safety?.card_gates || [])];
+        const warnCount = gates.filter((g) => g.decision === 'downgrade' || g.decision === 'ask_for_confirmation' || g.decision === 'refuse').length;
+        const gateState = warnCount ? '保守 / 需注意' : (gates.some((g) => g.decision === 'allow') ? '允许' : '未知');
+        els.variantCount.textContent = String(variants.length || 0);
+        els.evidenceCount.textContent = String(cards.length || 0);
+        els.gateState.textContent = gateState;
+        els.gateState.className = warnCount ? 'warn' : 'ok';
+        els.heroStateBadge.textContent = gateState;
+        els.heroStateBadge.className = `status-badge ${warnCount ? 'warn' : 'ok'}`;
+        els.heroTime.textContent = `检索时间 ${formatRetrievedAt(payload.meta?.retrieved_at)}`;
+        els.heroMode.textContent = `模式 ${zh(payload.meta?.provider_mode || '-')}`;
 
-    function bindCardDetails() {
-      els.resultStack?.querySelectorAll('[data-expand-card]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const key = btn.dataset.expandCard || '';
-          const detail = Array.from(els.resultStack.querySelectorAll('[data-card-detail]'))
-            .find((node) => node.dataset.cardDetail === key);
-          if (!detail) return;
-          detail.hidden = !detail.hidden;
-          btn.textContent = detail.hidden ? '展开详情' : '收起详情';
+        if (!summary || !summary.conclusion) {
+          return `<div class="result-muted">当前输入未生成医生摘要。请检查下方变异与证据分区。</div>`;
+        }
+        const evidenceStrength = String(summary.evidence_strength || gateState || '');
+        const conclusionTone = evidenceStrength === 'confirm' ? 'alert' : (evidenceStrength === 'downgrade' ? 'warn' : (evidenceStrength === 'allow' ? 'ok' : ''));
+        const highlights = Array.isArray(summary.highlights) ? summary.highlights : [];
+        const providerCounts = summary.provider_counts || {};
+        const topEvidence = dedupeCards((Array.isArray(summary.top_evidence) ? summary.top_evidence : []).filter(isDisplayableCard));
+
+        const stats = [
+          { label: '优先动作', value: summary.priority_action || '—', tone: conclusionTone || 'warn' },
+          { label: '下一步建议', value: summary.recommended_next_step || summary.next_step || '—', tone: '' },
+          { label: '变异数 / 证据卡', value: `${summary.variant_count ?? variants.length ?? 0} / ${summary.card_count ?? cards.length ?? 0}`, tone: '' },
+          { label: '直接 / 近似 / 外推', value: `${summary.direct_evidence_count ?? 0} / ${summary.near_evidence_count ?? 0} / ${summary.proxy_evidence_count ?? 0}`, tone: '' },
+        ];
+        const providerChips = Object.entries(providerCounts).map(([k, v]) => {
+          const cls = String(k).toLowerCase();
+          return `<span class="provider-badge ${escapeHtml(cls)}">${escapeHtml(providerLabel(k))} ${escapeHtml(String(v))} 条</span>`;
+        }).join('');
+
+        let topEvidenceHtml = '';
+        if (topEvidence.length && state.summaryVisible) {
+          topEvidenceHtml = `
+            <div class="summary-block" id="summaryEvidenceBlock">
+              <h4>优先阅读的证据</h4>
+              <div style="display:grid;gap:8px;margin-top:8px;">
+                ${topEvidence.map((e) => `
+                  <div style="border:1px solid rgba(0,0,0,.06);border-radius:10px;padding:9px 12px;background:#fafbfd;">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">
+                      <strong style="font-size:13px;">${escapeHtml(e.source_title || e.source_id || 'Evidence')}</strong>
+                      <span class="provider-badge ${escapeHtml(String(e.provider || 'mock').toLowerCase())}">${escapeHtml(providerLabel(e.provider))}</span>
+                    </div>
+                    <div style="margin-top:6px;font-size:12px;color:var(--me-muted);line-height:1.7;">${escapeHtml(e.claim || '')}</div>
+                    <div style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--me-muted);">
+                      <span>内部等级：${escapeHtml(e.evidence_level || '-')}</span>
+                      <span>疾病匹配：${escapeHtml(e.disease_match || '-')}</span>
+                      ${e.source_url ? `<a href="${escapeHtml(e.source_url)}" target="_blank" rel="noopener noreferrer">打开来源 →</a>` : ''}
+                    </div>
+                  </div>`).join('')}
+              </div>
+            </div>`;
+        }
+
+        return `
+          <div class="doctor-summary">
+            <p class="doctor-summary-conclusion ${escapeHtml(conclusionTone)}">${escapeHtml(summary.conclusion || '—')}</p>
+            <div class="doctor-grid">
+              ${stats.map((s) => `<div class="doctor-mini"><span class="label">${escapeHtml(s.label)}</span><span class="value ${escapeHtml(s.tone)}">${escapeHtml(s.value)}</span></div>`).join('')}
+            </div>
+            ${highlights.length ? `<div class="summary-block"><h4>摘要要点</h4><ul>${highlights.map((x) => `<li>${escapeHtml(x)}</li>`).join('')}</ul></div>` : ''}
+            ${providerChips ? `<div class="summary-block"><h4>来源分布</h4><div class="provider-chips">${providerChips}</div></div>` : ''}
+            ${topEvidenceHtml}
+          </div>`;
+      }
+
+      /* ---------------- 渲染：变异分析 ---------------- */
+      function renderVariantsSection(payload) {
+        const variants = payload.variants || [];
+        if (!variants.length) return `<div class="result-muted">未从输入中识别到标准变异，请检查下方补充信息。</div>`;
+        return variants.map((v) => {
+          const summary = v.evidence_summary || {};
+          const gate = v.gate || {};
+          const missing = v.missing || {};
+          const ann = v.molecular_annotation || {};
+          const proteinEffect = ann.protein_effect === 'loss_of_function' ? '功能缺失（LOF）' : ann.protein_effect === 'gain_of_function' ? '功能获得（GOF）' : ann.protein_effect === 'possible_missense_effect' ? '可能错义效应' : '未知';
+          const mappingStatusZh = {
+            'unique': '唯一匹配',
+            'protein_level_only': '仅蛋白层匹配',
+            'ambiguous': '存在歧义',
+            'insufficient': '信息不足',
+            'conflicting': '存在冲突'
+          };
+          const kv = [
+            { k: '官方符号', v: v.gene || '—' },
+            { k: '变异位点', v: v.protein_hgvs || v.cdna_hgvs || v.genomic_hgvs || '未明确位点' },
+            { k: '变异类型', v: ann.variant_type || v.variant_type || 'unknown' },
+            { k: '位点性质', v: ann.exon_relevance || 'unknown' },
+            { k: '转录本', v: v.transcript || '未提供' },
+            { k: 'GRCh 版本', v: v.genome_build || '未提供' },
+            { k: '基因组坐标', v: v.genomic_hgvs || '未提供', wide: true },
+            { k: '蛋白质效应', v: proteinEffect },
+            { k: '蛋白影响说明', v: ann.protein_impact_note || '当前证据不足', wide: true },
+            { k: '基因属性', v: ann.gene_role || '未知' },
+            { k: '肿瘤作用', v: ann.oncology_effect || '未知' },
+            { k: '数据库分型提示', v: ann.database_class_hint || 'context_dependent' },
+            { k: '靶向线索', v: (ann.targetability || []).length ? ann.targetability.join('、') : '暂无', wide: true },
+          ];
+          const pathwayItems = [];
+          if ((ann.upstream_pathways || []).length) pathwayItems.push(`上游：${ann.upstream_pathways.join('、')}`);
+          if ((ann.downstream_pathways || []).length) pathwayItems.push(`下游：${ann.downstream_pathways.join('、')}`);
+          if ((ann.go_terms || []).length) pathwayItems.push(`功能归类：${ann.go_terms.join('、')}`);
+          const providerParts = Object.entries(summary.providers || {}).map(([k, n]) => `${providerLabel(k)} ${n}`);
+          const warnings = normalizeWarnings(v.warnings);
+          const blockingMissing = normalizeWarnings(missing.blocking);
+          const advisoryMissing = normalizeWarnings(missing.advisory);
+
+          return `
+            <article class="variant-card">
+              <div class="variant-head">
+                <div style="min-width:0;">
+                  <div class="variant-name">${escapeHtml(variantLabel(v))}</div>
+                  <div class="variant-raw">原始输入：${escapeHtml(v.raw_input || '—')}</div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                  <span class="status-badge ${toneOf(v.mapping_status)}">映射：${escapeHtml(mappingStatusZh[v.mapping_status] || zh(v.mapping_status))}</span>
+                  ${gate.decision ? `<span class="status-badge ${toneOf(gate.decision)}">门控：${escapeHtml(zh(gate.decision))}</span>` : ''}
+                </div>
+              </div>
+              <div class="kv-grid">
+                ${kv.map((item) => `<div class="kv-item ${item.wide ? 'wide' : ''}"><div class="k">${escapeHtml(item.k)}</div><div class="v">${escapeHtml(item.v || '—')}</div></div>`).join('')}
+              </div>
+              ${pathwayItems.length ? `
+                <div class="variant-footer">
+                  ${pathwayItems.map((x) => `<span class="resolver-badge blue">${escapeHtml(x)}</span>`).join('')}
+                </div>` : ''}
+              ${v.enrichment && Object.keys((v.enrichment.resolved_fields || {})).length ? `
+                <div class="variant-footer">
+                  <span class="resolver-badge">坐标补充</span>
+                  <span style="font-size:12px;color:var(--me-muted);">${escapeHtml(v.genomic_hgvs || '')} · 来源：${escapeHtml(v.enrichment.source || '解析器')}</span>
+                </div>` : ''}
+              <div class="variant-footer">
+                <span class="status-badge ok">证据 ${escapeHtml(String(summary.total ?? 0))} 条</span>
+                <span class="status-badge ok">直接 ${escapeHtml(String(summary.direct ?? 0))}</span>
+                <span class="status-badge warn">近似 ${escapeHtml(String(summary.near ?? 0))}</span>
+                <span class="status-badge warn">外推 ${escapeHtml(String(summary.proxy ?? 0))}</span>
+                <span class="status-badge neutral">其他 ${escapeHtml(String(summary.unknown ?? 0))}</span>
+                ${providerParts.length ? `<span class="resolver-badge blue">${escapeHtml(providerParts.join('、'))}</span>` : ''}
+              </div>
+              ${warnings.length ? `<div class="warning-block">解析警告：${escapeHtml(warnings.join('；'))}</div>` : ''}
+              ${blockingMissing.length ? `<div class="warning-block bad"><strong>待补充：</strong>${escapeHtml(blockingMissing.join('；'))}</div>` : ''}
+              ${advisoryMissing.length ? `<div class="warning-block"><strong>建议补充：</strong>${escapeHtml(advisoryMissing.join('；'))}</div>` : ''}
+            </article>`;
+        }).join('');
+      }
+
+      /* ---------------- 渲染：临床判断与建议 ---------------- */
+      function renderAnswerSection(payload) {
+        const summary = payload.summary || {};
+        const pathwayNotes = Array.isArray(summary.pathway_notes) ? summary.pathway_notes : [];
+        const reportItems = Array.isArray(summary.report_template) ? summary.report_template : [];
+        const rawAnswer = String(payload.answer?.markdown || '暂无完整回答。');
+        const answerText = rawAnswer
+          .replace(/^\s*#{1,6}\s*(直接回答|针对临床问题的判断)\s*$/gim, '')
+          .replace(/^\s*#{1,6}\s*/gim, '')
+          .replace(/\*\*/g, '')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+        const hasAnswer = Boolean(payload.answer?.markdown);
+        const hasSummary = Boolean(payload.summary);
+        const adviceItems = [
+          summary.recommended_next_step || summary.next_step ? `下一步建议：${summary.recommended_next_step || summary.next_step}` : '',
+          summary.priority_action ? `优先动作：${summary.priority_action}` : '',
+          ...pathwayNotes.map((x) => `通路提示：${x}`),
+          ...reportItems.map((x) => `报告建议：${x}`),
+        ].filter(Boolean);
+        return `
+          <div class="summary-block" style="margin-bottom:12px;">
+            <h4>临床判断</h4>
+            <p style="margin:0;line-height:1.8;">${escapeHtml(summary.conclusion || '当前结果仅支持线索性解释，需结合病理、分型和完整临床资料综合判断。')}</p>
+          </div>
+          ${adviceItems.length ? `<div class="sub-box"><h4>临床建议</h4><ul>${adviceItems.map((x) => `<li>${escapeHtml(x)}</li>`).join('')}</ul></div>` : ''}
+          <div class="answer-md">${md(answerText)}</div>
+          <div class="answer-actions" role="toolbar" aria-label="复制操作">
+            <button type="button" class="btn ghost" data-copy-action="summary" ${hasSummary ? '' : 'disabled'}>复制摘要</button>
+            <button type="button" class="btn ghost" data-copy-action="answer" ${hasAnswer ? '' : 'disabled'}>复制结果</button>
+          </div>`;
+      }
+
+      /* ---------------- 渲染：证据来源 ---------------- */
+      function isDisplayableCard(card) {
+        const status = String(card?.access_status || '').toLowerCase();
+        const title = `${card?.source_title || ''} ${card?.source_id || ''}`.toLowerCase();
+        if (status === 'not_accessible' || status === 'query_error') return false;
+        if (title.includes('query error') || title.includes('query_error')) return false;
+        return true;
+      }
+      function dedupeCards(cards) {
+        const seen = new Set();
+        const out = [];
+        (cards || []).forEach((card) => {
+          const key = [
+            card?.variant_id || '',
+            String(card?.provider || '').toLowerCase(),
+            String(card?.source_title || '').trim(),
+            String(card?.claim || '').trim(),
+            String(card?.evidence_level || '').toUpperCase(),
+            String(card?.disease_match || '').trim(),
+          ].join('|');
+          if (seen.has(key)) return;
+          seen.add(key);
+          out.push(card);
         });
-      });
-    }
+        return out;
+      }
+      function cardMatchesFilter(card) {
+        const f = state.cardFilter;
+        if (f === 'all') return true;
+        const disease = String(card?.disease_match || '').toLowerCase();
+        const level = String(card?.evidence_level || '').toUpperCase();
+        const provider = String(card?.provider || '').toLowerCase();
+        if (f === 'direct') return disease.includes('直接');
+        if (f === 'near') return disease.includes('近似');
+        if (f === 'proxy') return disease.includes('外推');
+        if (f === 'low') return level === 'L4' || level === 'L5';
+        if (f === 'clinvar') return provider === 'clinvar';
+        if (f === 'civic') return provider === 'civic';
+        if (f === 'myvariant') return provider === 'myvariant';
+        return true;
+      }
+      function renderEvidenceSection(payload) {
+        const allCards = dedupeCards((payload.evidence || []).filter(isDisplayableCard));
+        const cards = allCards.filter(cardMatchesFilter);
+        if (!allCards.length) {
+          return `<div class="result-muted">暂无可展示证据卡。注意：未检索到记录≠该变异无证据，请结合数据源状态判断。</div>`;
+        }
+        return `
+          <div class="filter-row">
+            ${[['all', '全部'], ['direct', 'DLBCL 直接'], ['near', 'LBCL 近似'], ['proxy', '外推'], ['low', '低等级'], ['clinvar', 'ClinVar'], ['civic', 'CIViC'], ['myvariant', 'MyVariant']].map(([key, label]) =>
+              `<button type="button" class="filter-chip ${state.cardFilter === key ? 'active' : ''}" data-card-filter="${key}">${label}</button>`
+            ).join('')}
+          </div>
+          <div class="result-muted" style="margin-bottom:12px;font-size:12px;">显示 ${cards.length} / ${allCards.length} 条证据</div>
+          ${cards.map((card) => {
+            const readingHint = card.gate?.decision === 'downgrade' && normalizeWarnings(card.gate.required_warnings).length
+              ? normalizeWarnings(card.gate.required_warnings)[0] : '';
+            const details = [
+              { k: '来源记录', v: card.source_id || '—' },
+              { k: '匹配变异', v: card.matched_variant || card.variant_id || '—' },
+              { k: '获取状态', v: zh(card.access_status) },
+              { k: '记录状态', v: zh(card.record_status) },
+              { k: '审核状态', v: zh(card.review_status) },
+              { k: '证据类型', v: zh(card.evidence_type) },
+              { k: '证据方向', v: zh(card.direction) },
+              { k: '相关药物', v: zh(card.drug) },
+              { k: '更新时间', v: card.publication_or_release_date || '—' },
+              { k: 'ClinVar 星级', v: card.star_rating || '—' },
+              { k: '人群 / 入组', v: card.population || '—', wide: true },
+              { k: '干预与结局', v: card.intervention_and_outcome || '—', wide: true },
+              { k: '适用性', v: card.applicability || '—', wide: true },
+              { k: '局限性', v: card.limitations || '—', wide: true },
+            ];
+            const frameworkBits = [
+              card.amp_tier ? `AMP ${card.amp_tier}` : '',
+              card.escat_level ? `ESCAT ${card.escat_level}` : '',
+              card.acmg_class ? `ACMG ${card.acmg_class}` : '',
+            ].filter(Boolean);
+            return `
+            <article class="evidence-card">
+              <div class="evidence-head">
+                <div style="min-width:0;flex:1;">
+                  <div class="evidence-title">${escapeHtml(card.source_title || card.source_id || 'Evidence')}</div>
+                  <div class="evidence-meta">
+                    <span class="provider-badge ${escapeHtml(String(card.provider || 'mock').toLowerCase())}">${escapeHtml(providerLabel(card.provider))}</span>
+                    <span>内部等级：${escapeHtml(card.evidence_level || '-')}</span>
+                    ${frameworkBits.map((x) => `<span>${escapeHtml(x)}</span>`).join('')}
+                    <span>疾病匹配：${escapeHtml(card.disease_match || '-')}</span>
+                    ${card.gate?.decision ? `<span class="status-badge ${toneOf(card.gate.decision)}">门控：${escapeHtml(zh(card.gate.decision))}</span>` : ''}
+                  </div>
+                </div>
+                ${card.source_url ? `<a class="btn ghost" href="${escapeHtml(card.source_url)}" target="_blank" rel="noopener noreferrer" style="padding:7px 11px;font-size:12px;">打开来源</a>` : ''}
+              </div>
+              ${readingHint ? `<div class="reading-hint"><strong>阅读提示：</strong>${escapeHtml(readingHint)}</div>` : ''}
+              <div class="evidence-claim">${escapeHtml(card.claim || '')}</div>
+              <div class="detail-grid">
+                ${details.map((d) => `<div class="detail-item ${d.wide ? 'wide' : ''}"><div class="k">${escapeHtml(d.k)}</div><div class="v">${escapeHtml(d.v || '—')}</div></div>`).join('')}
+              </div>
+              ${card.conflict?.has_conflict ? `<div class="warning-block bad">冲突：${escapeHtml(card.conflict.description || '存在未解决冲突')}${card.conflict.resolution ? `；处理：${escapeHtml(card.conflict.resolution)}` : ''}</div>` : ''}
+              ${normalizeWarnings(card.safety_flags).length ? `<div class="warning-block">安全提示：${escapeHtml(card.safety_flags.join('；'))}</div>` : ''}
+              ${card.original_claim ? `<div class="sub-box" style="margin-top:10px;"><h4>数据库原始英文表述</h4><div style="font-size:12px;line-height:1.7;" lang="en">${escapeHtml(card.original_claim)}</div></div>` : ''}
+            </article>`;
+          }).join('')}`;
+      }
 
-    function bindCardFilters() {
-      const filterRow = $('cardFilterRow');
-      if (filterRow) {
-        filterRow.querySelectorAll('[data-card-filter]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            state.selectedCardFilter = btn.dataset.cardFilter || 'all';
-            renderResult(state.lastPayload || {
-              variants: [], evidence_cards: [], safety_gate_results: [], missing_information: [], global_warnings: [], answer_markdown: '请先发起一次查询。', retrieved_at: '-'
-            });
+      /* ---------------- 渲染：安全门控 ---------------- */
+      function renderGatesSection(payload) {
+        const variantsById = new Map((payload.variants || []).map((v) => [v.variant_id, v]));
+        const gates = [...(payload.safety?.variant_gates || []), ...(payload.safety?.card_gates || [])].filter((gate) => {
+          const reasons = normalizeWarnings(gate.reasons || []).join(' ').toLowerCase();
+          return !reasons.includes('query error') && !reasons.includes('查询错误') && !reasons.includes('查询失败');
+        });
+        const grouped = new Map();
+        gates.forEach((gate) => {
+          const key = JSON.stringify({
+            decision: gate.decision || '',
+            strength: gate.allowed_claim_strength || '',
+            reasons: [...normalizeWarnings(gate.reasons)].sort(),
+            blocked: [...normalizeWarnings(gate.blocked_outputs)].sort(),
           });
+          const existing = grouped.get(key);
+          if (existing) {
+            existing.count += 1;
+            if (gate.evidence_id) existing.evidenceIds.push(gate.evidence_id);
+            if (gate.variant_id) existing.variantIds.push(gate.variant_id);
+          } else {
+            grouped.set(key, { ...gate, count: 1, evidenceIds: gate.evidence_id ? [gate.evidence_id] : [], variantIds: gate.variant_id ? [gate.variant_id] : [] });
+          }
         });
+        const list = Array.from(grouped.values());
+        if (!list.length) return `<div class="result-muted">暂无门控结果。</div>`;
+        return list.map((gate) => {
+          const target = gate.evidenceIds.length === 1
+            ? `证据 ${gate.evidenceIds[0]}`
+            : gate.evidenceIds.length > 1
+              ? `${gate.evidenceIds.length} 条证据`
+              : gate.variantIds.length === 1
+                ? `${escapeHtml(variantLabel(variantsById.get(gate.variantIds[0]) || {}))}（变异）`
+                : `${gate.count} 个变异`;
+          const reasons = normalizeWarnings(gate.reasons);
+          let note = '';
+          if (reasons.length) {
+            note = `<div class="gate-note">${reasons.map((r) => `<span>${escapeHtml(r)}</span>`).join('')}</div>`;
+          } else if (gate.decision && gate.decision !== 'allow') {
+            const warnings = normalizeWarnings(gate.required_warnings);
+            if (warnings.length) note = `<div class="gate-note"><span>${escapeHtml(warnings[0])}</span></div>`;
+          }
+          const blocked = normalizeWarnings(gate.blocked_outputs);
+          return `
+            <div class="gate-card">
+              <div class="gate-head">
+                <div>
+                  <div class="gate-target">${target}</div>
+                  <div class="gate-strength">结论强度：${escapeHtml(zh(gate.allowed_claim_strength))}</div>
+                </div>
+                <span class="status-badge ${toneOf(gate.decision)}">${escapeHtml(zh(gate.decision))}</span>
+              </div>
+              ${note}
+              ${blocked.length ? `<div class="gate-blocks"><span class="gate-blocks-label">阻断输出</span>${blocked.map((b) => `<span class="gate-block-tag">${escapeHtml(zh(b))}</span>`).join('')}</div>` : ''}
+            </div>`;
+        }).join('');
       }
-      const summaryFilterRow = els.resultStack?.querySelector('[data-summary-filter-row]');
-      if (summaryFilterRow) {
-        summaryFilterRow.querySelectorAll('[data-summary-evidence-filter]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            state.summaryEvidenceFilter = btn.dataset.summaryEvidenceFilter || 'all';
-            renderResult(state.lastPayload || {
-              variants: [], evidence_cards: [], safety_gate_results: [], missing_information: [], global_warnings: [], answer_markdown: '请先发起一次查询。', retrieved_at: '-'
-            });
-          });
-        });
-      }
-      const providerFilterRow = els.resultStack?.querySelector('[data-provider-filter-row]');
-      if (providerFilterRow) {
-        providerFilterRow.querySelectorAll('[data-provider-filter]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            state.selectedProviderFilter = btn.dataset.providerFilter || 'all';
-            renderResult(state.lastPayload || {
-              variants: [], evidence_cards: [], safety_gate_results: [], missing_information: [], global_warnings: [], answer_markdown: '请先发起一次查询。', retrieved_at: '-'
-            });
-          });
-        });
-      }
-      const inlineToggle = $('summaryDetailsToggleInlineBtn');
-      if (inlineToggle) {
-        inlineToggle.addEventListener('click', () => {
-          state.summaryDetailsVisible = !state.summaryDetailsVisible;
-          renderResult(state.lastPayload || {
-            variants: [], evidence_cards: [], safety_gate_results: [], missing_information: [], global_warnings: [], answer_markdown: '请先发起一次查询。', retrieved_at: '-'
-          });
-        });
-      }
-      if (els.toggleSummaryDetailsBtn) {
-        els.toggleSummaryDetailsBtn.addEventListener('click', () => {
-          state.summaryDetailsVisible = !state.summaryDetailsVisible;
-          renderResult(state.lastPayload || {
-            variants: [], evidence_cards: [], safety_gate_results: [], missing_information: [], global_warnings: [], answer_markdown: '请先发起一次查询。', retrieved_at: '-'
-          });
-        });
-      }
-    }
 
-    function fillExample() {
-      els.variantsText.value = '患者诊断为弥漫性大B细胞淋巴瘤，肿瘤组织NGS检出：\n1. MYD88 NM_002468.5:c.794T>C，p.Leu265Pro，VAF 32.4%，深度1486×；\n2. CD79B NM_001039933.4:c.586T>C，p.Tyr196His，VAF 21.8%，深度1260×。\n问题：这两个变异是否支持MCD分子亚型？是否提示BTK抑制剂治疗机会？是否具有预后意义？还需要补充哪些检测？';
-      els.institution.value = 'XX 医院';
-      els.doctorName.value = '张医生';
-      els.department.value = '血液内科';
-      els.reportDate.value = new Date().toISOString().slice(0, 10);
-      els.disease.value = 'DLBCL';
-      els.sampleType.value = 'tumor tissue';
-      els.genomeBuild.value = '';
-      els.transcript.value = '';
-      els.variantType.value = '';
-      els.providerMode.value = 'live';
-      els.question.value = '';
-      setError('');
-    }
-
-    const QUICK_QUESTION_BY_TEXT = {
-      '请判断 MYD88 p.L265P 是否影响蛋白功能，并说明通路和靶向线索。': {
-        variants: 'MYD88 p.L265P',
-        question: '请判断 MYD88 p.L265P 是否影响蛋白功能，并说明通路和靶向线索。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请解读 CD79B p.Y196H 在 DLBCL 中的临床意义和证据等级。': {
-        variants: 'CD79B p.Y196H',
-        question: '请解读 CD79B p.Y196H 在 DLBCL 中的临床意义和证据等级。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请说明 TP53 p.R248Q 是否属于抑癌基因失活型改变，以及对预后的提示。': {
-        variants: 'TP53 p.R248Q',
-        question: '请说明 TP53 p.R248Q 是否属于抑癌基因失活型改变，以及对预后的提示。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请说明 EZH2 p.Y641 是否提示表观遗传调控异常及可操作性。': {
-        variants: 'EZH2 p.Y641',
-        question: '请说明 EZH2 p.Y641 是否提示表观遗传调控异常及可操作性。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请说明 BCL2 相关异常在 DLBCL 中是否提示抗凋亡增强或治疗分层意义。': {
-        variants: 'BCL2 p.V600E',
-        question: '请说明 BCL2 相关异常在 DLBCL 中是否提示抗凋亡增强或治疗分层意义。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请说明 BCL6 相关异常是否提示生发中心程序重编程。': {
-        variants: 'BCL6 rearrangement',
-        question: '请说明 BCL6 相关异常是否提示生发中心程序重编程。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请说明 CREBBP 和 KMT2D 异常是否属于表观遗传抑癌基因改变。': {
-        variants: 'CREBBP p.Rxxxx, KMT2D p.Lxxxx',
-        question: '请说明 CREBBP 和 KMT2D 异常是否属于表观遗传抑癌基因改变。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请说明 MYC 异常是否提示增殖增强及 double-hit 相关风险。': {
-        variants: 'MYC amplification',
-        question: '请说明 MYC 异常是否提示增殖增强及 double-hit 相关风险。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请解读 NOTCH1 p.P2415fs 在淋巴瘤中的意义和通路提示。': {
-        variants: 'NOTCH1 p.P2415fs',
-        question: '请解读 NOTCH1 p.P2415fs 在淋巴瘤中的意义和通路提示。',
-        providerMode: 'hybrid',
-        disease: 'CLL',
-      },
-      '请说明 SF3B1 p.K700E 是否提示剪接异常和预后价值。': {
-        variants: 'SF3B1 p.K700E',
-        question: '请说明 SF3B1 p.K700E 是否提示剪接异常和预后价值。',
-        providerMode: 'hybrid',
-        disease: 'MDS',
-      },
-      '请解读 XPO1 p.E571K 在血液肿瘤中的致癌性和可操作性。': {
-        variants: 'XPO1 p.E571K',
-        question: '请解读 XPO1 p.E571K 在血液肿瘤中的致癌性和可操作性。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请把 MYD88、CD79B、BCL2、TP53 的分子异常整理成会诊可用摘要。': {
-        variants: 'MYD88 p.L265P, CD79B p.Y196H, BCL2 p.V600E, TP53 p.R248Q',
-        question: '请把 MYD88、CD79B、BCL2、TP53 的分子异常整理成会诊可用摘要。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请说明 FLT3-ITD 是否提示高危分子事件和靶向治疗机会。': {
-        variants: 'FLT3-ITD',
-        question: '请说明 FLT3-ITD 是否提示高危分子事件和靶向治疗机会。',
-        providerMode: 'hybrid',
-        disease: 'AML',
-      },
-      '请解读 NPM1 p.W288fs 在 AML 中的意义和预后分层价值。': {
-        variants: 'NPM1 p.W288fs',
-        question: '请解读 NPM1 p.W288fs 在 AML 中的意义和预后分层价值。',
-        providerMode: 'hybrid',
-        disease: 'AML',
-      },
-      '请说明 IDH1 p.R132H 是否提示代谢和表观遗传重编程及靶向线索。': {
-        variants: 'IDH1 p.R132H',
-        question: '请说明 IDH1 p.R132H 是否提示代谢和表观遗传重编程及靶向线索。',
-        providerMode: 'hybrid',
-        disease: 'AML',
-      },
-      '请说明 IDH2 p.R140Q 的临床意义和靶向治疗证据。': {
-        variants: 'IDH2 p.R140Q',
-        question: '请说明 IDH2 p.R140Q 的临床意义和靶向治疗证据。',
-        providerMode: 'hybrid',
-        disease: 'AML',
-      },
-      '请解读 RUNX1 突变在 AML 中是否提示不良预后或家族性风险。': {
-        variants: 'RUNX1 variant',
-        question: '请解读 RUNX1 突变在 AML 中是否提示不良预后或家族性风险。',
-        providerMode: 'hybrid',
-        disease: 'AML',
-      },
-      '请说明 ASXL1 突变是否提示表观遗传失调和预后分层价值。': {
-        variants: 'ASXL1 variant',
-        question: '请说明 ASXL1 突变是否提示表观遗传失调和预后分层价值。',
-        providerMode: 'hybrid',
-        disease: 'AML',
-      },
-      '请说明 JAK2 p.V617F 是否提示 MPN 分型和治疗思路。': {
-        variants: 'JAK2 p.V617F',
-        question: '请说明 JAK2 p.V617F 是否提示 MPN 分型和治疗思路。',
-        providerMode: 'hybrid',
-        disease: 'MPN',
-      },
-      '请说明 CEBPA 突变在 AML 中的预后意义和分型价值。': {
-        variants: 'CEBPA variant',
-        question: '请说明 CEBPA 突变在 AML 中的预后意义和分型价值。',
-        providerMode: 'hybrid',
-        disease: 'AML',
-      },
-      '请解读 EGFR p.L858R 的蛋白功能影响、通路和靶向药物线索。': {
-        variants: 'EGFR p.L858R',
-        question: '请解读 EGFR p.L858R 的蛋白功能影响、通路和靶向药物线索。',
-        providerMode: 'hybrid',
-        disease: 'NSCLC',
-      },
-      '请解读 EGFR p.T790M 是否提示获得性耐药和治疗调整。': {
-        variants: 'EGFR p.T790M',
-        question: '请解读 EGFR p.T790M 是否提示获得性耐药和治疗调整。',
-        providerMode: 'hybrid',
-        disease: 'NSCLC',
-      },
-      '请解读 KRAS p.G12D 是否提示 MAPK 通路激活及治疗耐药风险。': {
-        variants: 'KRAS p.G12D',
-        question: '请解读 KRAS p.G12D 是否提示 MAPK 通路激活及治疗耐药风险。',
-        providerMode: 'hybrid',
-        disease: 'COLON CANCER',
-      },
-      '请解读 KRAS p.G12C 的临床意义和靶向治疗新进展。': {
-        variants: 'KRAS p.G12C',
-        question: '请解读 KRAS p.G12C 的临床意义和靶向治疗新进展。',
-        providerMode: 'hybrid',
-        disease: 'NSCLC',
-      },
-      '请说明 BRAF p.V600E 的临床意义、分型和靶向治疗证据。': {
-        variants: 'BRAF p.V600E',
-        question: '请说明 BRAF p.V600E 的临床意义、分型和靶向治疗证据。',
-        providerMode: 'hybrid',
-        disease: 'MELANOMA',
-      },
-      '请说明 ALK 融合是否提示可靶向治疗，并建议补充何种验证。': {
-        variants: 'ALK fusion',
-        question: '请说明 ALK 融合是否提示可靶向治疗，并建议补充何种验证。',
-        providerMode: 'hybrid',
-        disease: 'NSCLC',
-      },
-      '请说明 ROS1 融合在当前肿瘤中的意义和用药价值。': {
-        variants: 'ROS1 fusion',
-        question: '请说明 ROS1 融合在当前肿瘤中的意义和用药价值。',
-        providerMode: 'hybrid',
-        disease: 'NSCLC',
-      },
-      '请说明 MET 扩增或 MET exon 14 skipping 是否具有可操作性。': {
-        variants: 'MET amplification, MET exon 14 skipping',
-        question: '请说明 MET 扩增或 MET exon 14 skipping 是否具有可操作性。',
-        providerMode: 'hybrid',
-        disease: 'NSCLC',
-      },
-      '请解读 ERBB2 扩增在乳腺癌/胃癌中的治疗指导意义。': {
-        variants: 'ERBB2 amplification',
-        question: '请解读 ERBB2 扩增在乳腺癌/胃癌中的治疗指导意义。',
-        providerMode: 'hybrid',
-        disease: 'BREAST CANCER',
-      },
-      '请说明 PIK3CA p.H1047R 是否提示 PI3K 通路激活和靶向价值。': {
-        variants: 'PIK3CA p.H1047R',
-        question: '请说明 PIK3CA p.H1047R 是否提示 PI3K 通路激活和靶向价值。',
-        providerMode: 'hybrid',
-        disease: 'BREAST CANCER',
-      },
-      '请说明 RET 融合在甲状腺癌或 NSCLC 中的临床意义和用药。': {
-        variants: 'RET fusion',
-        question: '请说明 RET 融合在甲状腺癌或 NSCLC 中的临床意义和用药。',
-        providerMode: 'hybrid',
-        disease: 'NSCLC',
-      },
-      '请说明 NTRK 融合是否提示泛癌种靶向治疗机会。': {
-        variants: 'NTRK fusion',
-        question: '请说明 NTRK 融合是否提示泛癌种靶向治疗机会。',
-        providerMode: 'hybrid',
-        disease: 'SOLID TUMOR',
-      },
-      '请解读 BRCA1 致病变异是否提示同源重组修复缺陷和治疗线索。': {
-        variants: 'BRCA1 pathogenic variant',
-        question: '请解读 BRCA1 致病变异是否提示同源重组修复缺陷和治疗线索。',
-        providerMode: 'hybrid',
-        disease: 'OVARY CANCER',
-      },
-      '请解读 BRCA2 致病变异是否提示胚系风险和 PARP 抑制剂相关价值。': {
-        variants: 'BRCA2 pathogenic variant',
-        question: '请解读 BRCA2 致病变异是否提示胚系风险和 PARP 抑制剂相关价值。',
-        providerMode: 'hybrid',
-        disease: 'BREAST CANCER',
-      },
-      '请说明 ATM 变异是否提示 DNA 损伤应答异常及临床边界。': {
-        variants: 'ATM variant',
-        question: '请说明 ATM 变异是否提示 DNA 损伤应答异常及临床边界。',
-        providerMode: 'hybrid',
-        disease: 'SOLID TUMOR',
-      },
-      '请说明 PTEN 变异是否提示 PI3K-AKT 通路异常及肿瘤抑制功能丢失。': {
-        variants: 'PTEN variant',
-        question: '请说明 PTEN 变异是否提示 PI3K-AKT 通路异常及肿瘤抑制功能丢失。',
-        providerMode: 'hybrid',
-        disease: 'SOLID TUMOR',
-      },
-      '请说明 RB1 变异是否提示细胞周期失控和预后不良风险。': {
-        variants: 'RB1 variant',
-        question: '请说明 RB1 变异是否提示细胞周期失控和预后不良风险。',
-        providerMode: 'hybrid',
-        disease: 'SOLID TUMOR',
-      },
-      '请说明 PDCD1LG2 扩增是否提示免疫逃逸和 PD-L1 高表达。': {
-        variants: 'PDCD1LG2 amplification',
-        question: '请说明 PDCD1LG2 扩增是否提示免疫逃逸和 PD-L1 高表达。',
-        providerMode: 'hybrid',
-        disease: 'DLBCL',
-      },
-      '请说明 JAK1/JAK2 LOF 突变是否提示免疫治疗抵抗。': {
-        variants: 'JAK1 variant, JAK2 variant',
-        question: '请说明 JAK1/JAK2 LOF 突变是否提示免疫治疗抵抗。',
-        providerMode: 'hybrid',
-        disease: 'MELANOMA',
-      },
-      '请说明 B2M 突变是否提示抗原递呈缺陷和免疫逃逸。': {
-        variants: 'B2M variant',
-        question: '请说明 B2M 突变是否提示抗原递呈缺陷和免疫逃逸。',
-        providerMode: 'hybrid',
-        disease: 'SOLID TUMOR',
-      },
-      '请说明 STK11 + KEAP1 共突变在 NSCLC 中对免疫治疗的影响。': {
-        variants: 'STK11 variant, KEAP1 variant',
-        question: '请说明 STK11 + KEAP1 共突变在 NSCLC 中对免疫治疗的影响。',
-        providerMode: 'hybrid',
-        disease: 'NSCLC',
-      },
-      '请说明 POLE/POLD1 校正域突变是否提示超高 TMB 和免疫获益。': {
-        variants: 'POLE variant, POLD1 variant',
-        question: '请说明 POLE/POLD1 校正域突变是否提示超高 TMB 和免疫获益。',
-        providerMode: 'hybrid',
-        disease: 'SOLID TUMOR',
-      },
-      '请说明 MSI-H 状态是否提示免疫检查点抑制剂获益。': {
-        variants: 'MSI-H',
-        question: '请说明 MSI-H 状态是否提示免疫检查点抑制剂获益。',
-        providerMode: 'hybrid',
-        disease: 'SOLID TUMOR',
-      },
-    };
-
-    async function copyResult() {
-      if (!state.lastPayload?.answer_markdown) return;
-      const text = state.lastPayload.answer_markdown;
-      try {
-        await navigator.clipboard.writeText(text);
-        els.copyAnswerBtn.textContent = '已复制';
-        setTimeout(() => { els.copyAnswerBtn.textContent = '复制结果'; }, 1200);
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        ta.remove();
+      /* ---------------- 渲染：补充信息 ---------------- */
+      function renderMissingSection(payload) {
+        const missing = payload.missing || {};
+        const blocking = missing.blocking || [];
+        const advisory = missing.advisory || [];
+        const warnings = payload.global_warnings || [];
+        return `
+          <div class="missing-grid">
+            <div class="missing-card">
+              <h4>需要优先补充 <span class="status-badge ${blocking.length ? 'bad' : 'ok'}">${blocking.length ? `${blocking.length} 项` : '无阻断项'}</span></h4>
+              ${blocking.length ? `<ul>${blocking.map((x) => `<li>${escapeHtml(x)}</li>`).join('')}</ul>` : '<div class="result-muted" style="font-size:13px;">当前核心信息已满足基础解析。</div>'}
+            </div>
+            <div class="missing-card">
+              <h4>建议补充以提高精度 <span class="status-badge ${advisory.length ? 'warn' : 'ok'}">${advisory.length ? `${advisory.length} 项` : '无建议项'}</span></h4>
+              ${advisory.length ? `<ul>${advisory.map((x) => `<li>${escapeHtml(x)}</li>`).join('')}</ul>` : '<div class="result-muted" style="font-size:13px;">暂无。</div>'}
+            </div>
+            <div class="missing-card">
+              <h4>全局使用边界 <span class="status-badge ${blocking.length ? 'bad' : 'neutral'}">${blocking.length ? '需谨慎' : '可继续讨论'}</span></h4>
+              ${warnings.length ? `<ul>${warnings.map((x) => `<li>${escapeHtml(x)}</li>`).join('')}</ul>` : '<div class="result-muted" style="font-size:13px;">暂无。</div>'}
+            </div>
+          </div>`;
       }
-    }
 
-    async function copySummary() {
-      if (!state.lastPayload?.doctor_summary) return;
-      const summary = state.lastPayload.doctor_summary;
-      const lines = [
-        `医生摘要：${summary.conclusion || '—'}`,
-        `优先动作：${summary.priority_action || '—'}`,
-        `下一步：${summary.recommended_next_step || summary.next_step || '—'}`,
-        `变异数：${summary.variant_count ?? 0}；证据卡：${summary.card_count ?? 0}`,
-        `直接证据：${summary.direct_evidence_count ?? 0}；近似证据：${summary.near_evidence_count ?? 0}；外推证据：${summary.proxy_evidence_count ?? 0}`,
+      /* ---------------- 主渲染 ---------------- */
+      const SECTIONS = [
+        { id: 'sec-summary', title: '医生摘要 / 概况', sub: '先验结论与优先动作', render: renderSummarySection },
+        { id: 'sec-variants', title: '变异解析与结构', sub: '映射·坐标·功能', render: renderVariantsSection, count: (p) => `${(p.variants || []).length} 个变异` },
+        { id: 'sec-answer', title: '临床解释与通路', sub: '完整 markdown 问答', render: renderAnswerSection },
+        { id: 'sec-evidence', title: '变异与证据数据', sub: '证据卡·等级·来源', render: renderEvidenceSection, count: (p) => `${(p.evidence || []).filter(isDisplayableCard).length} 条证据` },
+        { id: 'sec-gates', title: '安全门控', sub: '受限与阻断范围', render: renderGatesSection, count: (p) => {
+          const gates = [...(p.safety?.variant_gates || []), ...(p.safety?.card_gates || [])];
+          const warnCount = gates.filter((g) => g.decision === 'downgrade' || g.decision === 'ask_for_confirmation' || g.decision === 'refuse').length;
+          return warnCount ? `<span class="status-badge warn">${warnCount} 项需注意</span>` : `<span class="status-badge ok">${gates.length} 项门控</span>`;
+        } },
+        { id: 'sec-missing', title: '补充信息与边界', sub: '待补充与使用边界', render: renderMissingSection, count: (p) => {
+          const missing = p.missing || {};
+          const blocking = (missing.blocking || []).length;
+          const advisory = (missing.advisory || []).length;
+          if (blocking) return `<span class="status-badge bad">${blocking} 项待补充</span>`;
+          if (advisory) return `<span class="status-badge warn">${advisory} 项建议</span>`;
+          return `<span class="status-badge ok">无缺失</span>`;
+        } },
       ];
-      const text = lines.join('\n');
-      try {
-        await navigator.clipboard.writeText(text);
-        els.copySummaryBtn.textContent = '已复制';
-        setTimeout(() => { els.copySummaryBtn.textContent = '复制医生摘要'; }, 1200);
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        ta.remove();
-      }
-    }
 
-    els.fillExampleBtn.addEventListener('click', fillExample);
-    const questionLibraryHeader = $('questionLibraryHeader');
-    const questionLibraryBody = $('questionLibraryBody');
-    const questionLibraryToggle = $('questionLibraryToggle');
-    questionLibraryHeader?.addEventListener('click', () => {
-      const willOpen = !!questionLibraryBody && questionLibraryBody.hidden;
-      if (questionLibraryBody) questionLibraryBody.hidden = !willOpen;
-      if (questionLibraryToggle) questionLibraryToggle.textContent = willOpen ? '收起' : '展开';
-    });
-    els.questionChips?.addEventListener('click', (e) => {
-      const btn = e.target.closest('.sample-chip');
-      if (!btn) return;
-      const text = btn.textContent.trim();
-      const cfg = QUICK_QUESTION_BY_TEXT[text];
-      if (cfg?.variants || cfg?.question) els.variantsText.value = [cfg?.variants, cfg?.question].filter(Boolean).join('\n问题：');
-      els.question.value = '';
-      if (cfg?.providerMode) els.providerMode.value = cfg.providerMode;
-      if (cfg?.disease) els.disease.value = cfg.disease;
-      els.sampleType.value = 'tumor tissue';
-      setError('');
-    });
-    els.resetBtn.addEventListener('click', () => {
-      els.form.reset();
-      els.sampleType.value = 'tumor tissue';
-      els.providerMode.value = 'hybrid';
-      els.disease.value = 'DLBCL';
-      els.reportDate.value = new Date().toISOString().slice(0, 10);
-      setError('');
-    });
-    els.copyAnswerBtn.addEventListener('click', copyResult);
-    els.copySummaryBtn.addEventListener('click', copySummary);
-    els.toggleSummaryDetailsBtn.addEventListener('click', () => {
-      state.summaryDetailsVisible = !state.summaryDetailsVisible;
-      if (state.lastPayload) renderResult(state.lastPayload);
-    });
-    els.exportMenuBtn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const willOpen = els.exportMenuPanel.hidden;
-      els.exportMenuPanel.hidden = !willOpen;
-      els.exportMenuBtn.setAttribute('aria-expanded', String(willOpen));
-    });
-    document.addEventListener('click', (event) => {
-      if (!els.exportMenu.contains(event.target)) {
-        els.exportMenuPanel.hidden = true;
-        els.exportMenuBtn.setAttribute('aria-expanded', 'false');
+      function geneSectionHtml(sec, payload) {
+        const countHtml = sec.count ? sec.count(payload) : '';
+        return `
+          <section class="gene-section" id="${sec.id}" data-nav-target="${sec.id}">
+            <div class="gene-section-head">
+              <div>
+                <span class="gene-section-title">${escapeHtml(sec.title)}</span>
+                <span class="gene-section-sub">${escapeHtml(sec.sub)}</span>
+              </div>
+              ${countHtml ? `<span class="gene-section-count">${countHtml}</span>` : ''}
+            </div>
+            <div class="gene-section-body">${sec.render(payload)}</div>
+          </section>`;
       }
-    });
-    els.exportMenuPanel.addEventListener('click', (event) => event.stopPropagation());
-    const closeExportMenu = () => {
-      els.exportMenuPanel.hidden = true;
-      els.exportMenuBtn.setAttribute('aria-expanded', 'false');
-    };
-    els.exportMarkdownBtn.addEventListener('click', () => { exportCurrentMarkdown(); closeExportMenu(); });
-    els.exportReportBtn.addEventListener('click', () => { exportCurrentReport(); closeExportMenu(); });
-    els.exportJsonBtn.addEventListener('click', () => { exportCurrentJson(); closeExportMenu(); });
-    els.historyToggleBtn.addEventListener('click', () => {
-      state.historyVisible = !state.historyVisible;
-      renderHistory();
-    });
-    els.logsToggleBtn.addEventListener('click', async () => {
-      state.auditVisible = !state.auditVisible;
-      renderAuditPanel();
-      if (state.auditVisible) {
-        await refreshAuditData();
-      }
-    });
-    els.clearHistoryBtn.addEventListener('click', () => {
-      if (!confirm('确认清空所有本地查询历史？')) return;
-      state.history = [];
-      localStorage.removeItem(HISTORY_KEY);
-      renderHistory();
-    });
-    els.historyPanel.addEventListener('click', (e) => {
-      const card = e.target.closest('.history-item');
-      if (!card) return;
-      const idx = Number(card.dataset.historyIndex);
-      if (!Number.isFinite(idx)) return;
-      const item = state.history[idx];
-      if (!item) return;
-      els.historyPanel.querySelectorAll('.history-item').forEach((el) => el.classList.remove('active'));
-      card.classList.add('active');
-      hydrateFromHistoryItem(item);
-    });
-    els.sampleChips.addEventListener('click', (e) => {
-      const btn = e.target.closest('.sample-chip');
-      if (!btn) return;
-      els.variantsText.value = btn.textContent.trim();
-      setError('');
-    });
 
-    els.form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      setError('');
-      const variantsText = String(els.variantsText.value || '').trim();
-      if (!variantsText) {
-        setError('请输入临床分子问题，包括至少一个基因变异。');
-        els.variantsText.focus();
-        return;
+      function renderResult(payload) {
+        state.lastPayload = payload;
+        els.summaryGrid.hidden = false;
+        els.summaryEvidenceBadge.hidden = !payload?.summary;
+        
+        // 渲染数据源状态
+        renderProviderStatus(payload);
+        
+        els.resultStack.innerHTML = SECTIONS.map((sec) => geneSectionHtml(sec, payload)).join('');
+        bindCardFilters();
+        bindScrollspy();
       }
-      setLoading(true);
-      try {
-        const resp = await api('/api/molecular-evidence/query', {
-          method: 'POST',
-          body: JSON.stringify({
-            variants_text: variantsText,
-            disease: els.disease.value || 'DLBCL',
-            sample_type: els.sampleType.value || 'tumor tissue',
-            genome_build: (els.genomeBuild.value || '').trim() || null,
-            transcript: (els.transcript.value || '').trim() || null,
-            variant_type: (els.variantType.value || '').trim() || null,
-            question: variantsText,
-            provider_mode: els.providerMode.value || 'mock',
-          }),
+
+      function bindCardFilters() {
+        els.resultStack.querySelectorAll('[data-card-filter]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.cardFilter = btn.dataset.cardFilter || 'all';
+            renderResult(state.lastPayload || emptyPayload());
+          });
         });
-        const data = await resp.json().catch(() => ({}));
-        if (!resp.ok) {
-          const detail = Array.isArray(data.detail)
-            ? data.detail.map((d) => d.msg || JSON.stringify(d)).join('；')
-            : (data.detail || data.message || '查询失败');
-          setError(detail);
+      }
+
+      /* ---------------- 滚动定位 ---------------- */
+      function bindScrollspy() {
+        const links = new Map();
+        els.resultSidebar.querySelectorAll('[data-result-nav]').forEach((a) => {
+          const href = a.getAttribute('href');
+          if (href) links.set(href.slice(1), a);
+        });
+        if (!('IntersectionObserver' in window)) {
+          links.forEach((a, id) => a.addEventListener('click', () => setActiveLink(id)));
           return;
         }
-        state.lastPayload = data;
-        renderResult(data);
-        addHistoryEntry(data, variantsText);
-      } catch (err) {
-        setError(`网络错误：${String(err?.message || err)}`);
-      } finally {
-        setLoading(false);
+        const setActiveLink = (id) => {
+          links.forEach((a, key) => a.classList.toggle('active', key === id));
+        };
+        const observer = new IntersectionObserver(
+          (entries) => {
+            const visible = entries.filter((e) => e.isIntersecting);
+            if (!visible.length) return;
+            visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+            setActiveLink(visible[0].target.id);
+          },
+          { rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+        );
+        SECTIONS.forEach((sec) => {
+          const el = document.getElementById(sec.id);
+          if (el) observer.observe(el);
+        });
       }
-    });
+      els.resultSidebar.addEventListener('click', (e) => {
+        const link = e.target.closest('[data-result-nav]');
+        if (!link) return;
+        const id = (link.getAttribute('href') || '').slice(1);
+        const target = document.getElementById(id);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
 
-    loadHistory();
-    if (!els.reportDate.value) els.reportDate.value = new Date().toISOString().slice(0, 10);
-    fillExample();
-    renderAuditPanel();
-    renderResult({
-      variants: [],
-      evidence_cards: [],
-      safety_gate_results: [],
-      missing_information: [],
-      global_warnings: [],
-      answer_markdown: '请先发起一次查询。',
-      retrieved_at: '-',
-    });
+      /* ---------------- 历史 ---------------- */
+      function emptyPayload() {
+        return {
+          meta: { provider_mode: '-', retrieved_at: '-', cache_hit: false },
+          query: {},
+          variants: [],
+          evidence: [],
+          safety: { variant_gates: [], card_gates: [] },
+          answer: { markdown: '请先发起一次查询。' },
+          summary: {},
+          missing: { blocking: [], advisory: [] },
+          global_warnings: [],
+          audit: { provider_status: {}, agent_trace: [], resolver_status: {} },
+        };
+      }
+      function renderHistory() {
+        const list = state.history || [];
+        els.historyCountBadge.textContent = `历史 ${list.length} 条`;
+        els.historyPanel.hidden = !state.historyVisible;
+        if (!list.length) {
+          els.historyPanel.innerHTML = '<div class="history-item"><div class="result-muted">暂无历史记录，查询后会自动保存到本地。</div></div>';
+          return;
+        }
+        els.historyPanel.innerHTML = list.map((item, idx) => `
+          <article class="history-item ${idx === 0 ? 'active' : ''}" data-history-index="${idx}">
+            <div class="history-item-head">
+              <div style="min-width:0;">
+                <div class="history-item-title">${escapeHtml(item.label || '未命名查询')}</div>
+                <div class="history-item-meta">时间：${escapeHtml(formatRetrievedAt(item.retrieved_at))} · 证据卡：${escapeHtml(String(item.evidenceCount ?? 0))} · 变异：${escapeHtml(String(item.variantCount ?? 0))}</div>
+              </div>
+              <span class="status-badge ${toneOf(item.gateState)}">${escapeHtml(item.gateState || '未知')}</span>
+            </div>
+            <div class="history-item-meta">${escapeHtml(item.variantsText || '')}</div>
+          </article>`).join('');
+      }
+      function addHistoryEntry(payload, variantsText) {
+        const gates = [...(payload.safety?.variant_gates || []), ...(payload.safety?.card_gates || [])];
+        const warnCount = gates.filter((g) => g.decision === 'downgrade' || g.decision === 'ask_for_confirmation' || g.decision === 'refuse').length;
+        const gateState = warnCount ? '保守 / 需注意' : (gates.some((g) => g.decision === 'allow') ? '允许' : '未知');
+        const entry = {
+          label: String(variantsText || '分子证据查询').slice(0, 60),
+          variantsText: String(variantsText || '').slice(0, 200),
+          retrieved_at: payload.meta?.retrieved_at || new Date().toISOString(),
+          variantCount: (payload.variants || []).length,
+          evidenceCount: (payload.evidence || []).length,
+          gateState,
+          payload,
+        };
+        state.history = [entry, ...state.history.filter((item) => item.retrieved_at !== entry.retrieved_at)].slice(0, HISTORY_LIMIT);
+        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history)); } catch { /* ignore */ }
+        renderHistory();
+      }
+      function loadHistory() {
+        try {
+          const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+          state.history = Array.isArray(raw) ? raw : [];
+        } catch {
+          state.history = [];
+        }
+        renderHistory();
+      }
+
+      /* ---------------- 复制 ---------------- */
+      async function copyText(text, btn, label) {
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = '已复制';
+          setTimeout(() => { btn.textContent = label; }, 1200);
+        } catch {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          btn.textContent = '已复制';
+          setTimeout(() => { btn.textContent = label; }, 1200);
+        }
+      }
+      // 复制摘要 / 复制结果：在回答下方展示，与问答助手的操作栏一致。
+      els.resultStack.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-copy-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-copy-action');
+        if (action === 'answer') {
+          if (state.lastPayload?.answer?.markdown) copyText(state.lastPayload.answer.markdown, btn, '复制结果');
+        } else if (action === 'summary') {
+          const summary = state.lastPayload?.summary;
+          if (!summary) return;
+          const lines = [
+            `医生摘要：${summary.conclusion || '—'}`,
+            `优先动作：${summary.priority_action || '—'}`,
+            `下一步：${summary.recommended_next_step || summary.next_step || '—'}`,
+            `变异数：${summary.variant_count ?? 0}；证据卡：${summary.card_count ?? 0}`,
+            `直接证据：${summary.direct_evidence_count ?? 0}；近似证据：${summary.near_evidence_count ?? 0}；外推证据：${summary.proxy_evidence_count ?? 0}`,
+          ];
+          copyText(lines.join('\n'), btn, '复制摘要');
+        }
+      });
+
+      /* ---------------- 历史按钮 ---------------- */      
+      els.historyToggleBtn.addEventListener('click', () => {
+        state.historyVisible = !state.historyVisible;
+        renderHistory();
+      });
+      els.clearHistoryBtn.addEventListener('click', () => {
+        if (!confirm('确认清空所有本地查询历史？')) return;
+        state.history = [];
+        localStorage.removeItem(HISTORY_KEY);
+        renderHistory();
+      });
+      els.historyPanel.addEventListener('click', (e) => {
+        const card = e.target.closest('.history-item');
+        if (!card) return;
+        const idx = Number(card.dataset.historyIndex);
+        if (!Number.isFinite(idx)) return;
+        const item = state.history[idx];
+        if (!item?.payload) return;
+        els.historyPanel.querySelectorAll('.history-item').forEach((el) => el.classList.remove('active'));
+        card.classList.add('active');
+        renderResult(item.payload);
+      });
+
+      /* ---------------- 参数面板 / 弹层 ---------------- */
+      function currentParamSummary() {
+        const disease = els.disease.value || 'DLBCL';
+        const sample = els.sampleType.value || 'tumor tissue';
+        const mode = els.providerMode.value || 'mock';
+        return `疾病 ${disease} · 样本 ${sample} · 模式 ${mode}`;
+      }
+      function syncParamChip() {
+        if (els.paramChipLabel) els.paramChipLabel.textContent = currentParamSummary();
+      }
+      function setSettingsOpen(open) {
+        els.settingsPanel.hidden = !open;
+        els.paramChip.setAttribute('aria-expanded', String(open));
+        els.paramChip.classList.toggle('is-open', open);
+      }
+      els.paramChip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setSettingsOpen(els.settingsPanel.hidden);
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.param-chip-wrap') && !els.settingsPanel.hidden) {
+          setSettingsOpen(false);
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !els.settingsPanel.hidden) setSettingsOpen(false);
+      });
+      ['disease', 'sampleType', 'genomeBuild', 'transcript', 'variantType', 'providerMode'].forEach((id) => {
+        els[id]?.addEventListener('change', syncParamChip);
+        els[id]?.addEventListener('input', syncParamChip);
+      });
+      syncParamChip();
+
+      /* ---------------- OCR ---------------- */
+      async function uploadReportForOcr(file) {
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        els.composerStatus.textContent = `正在 OCR 识别 ${file.name}…`;
+        els.composerStatus.classList.remove('composer-error');
+        try {
+          const resp = await fetch(`${API_BASE}/api/molecular-evidence/ocr`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) throw new Error(data.detail || 'OCR 失败');
+          if (data.text) {
+            els.composerText.value = data.text;
+            els.composerText.style.height = 'auto';
+            els.composerText.style.height = Math.min(320, Math.max(44, els.composerText.scrollHeight)) + 'px';
+            els.composerStatus.textContent = `${data.message || 'OCR 已完成'} 请核对文字后发送。`;
+          } else {
+            els.composerStatus.textContent = data.message || 'OCR 未获得文字，请改用文字粘贴。';
+          }
+        } catch (err) {
+          els.composerStatus.textContent = `OCR 失败：${String(err?.message || err)}`;
+          els.composerStatus.classList.add('composer-error');
+        } finally {
+          els.reportImageInput.value = '';
+        }
+      }
+      els.composerAddBtn.addEventListener('click', () => els.reportImageInput.click());
+      els.reportImageInput.addEventListener('change', (e) => uploadReportForOcr(e.target.files?.[0]));
+
+      /* ---------------- 查询 ---------------- */
+      function currentVariantsText() {
+        return String(els.composerText.value || '').trim();
+      }
+      function setLoading(isLoading) {
+        els.composerSendBtn.disabled = isLoading;
+        els.composerSendBtn.textContent = isLoading ? '…' : '↑';
+        if (isLoading) {
+          els.composerStatus.textContent = '正在标准化变异、检索证据并生成分析结果…';
+          els.composerStatus.classList.remove('composer-error');
+        } else if (state.lastPayload) {
+          els.composerStatus.textContent = '分析完成，可继续输入新的分子信息。';
+        }
+      }
+      async function submitQuery() {
+        const variantsText = currentVariantsText();
+        if (!variantsText) {
+          setError('请输入分子信息，例如 MYD88 p.L265P, CD79B p.Y196H。');
+          els.composerText.focus();
+          return;
+        }
+        setLoading(true);
+        try {
+          const resp = await api('/api/molecular-evidence/query', {
+            method: 'POST',
+            body: JSON.stringify({
+              variants_text: variantsText,
+              disease: els.disease.value || 'DLBCL',
+              sample_type: els.sampleType.value || 'tumor tissue',
+              genome_build: (els.genomeBuild.value || '').trim() || null,
+              transcript: (els.transcript.value || '').trim() || null,
+              variant_type: (els.variantType.value || '').trim() || null,
+              question: null,
+              provider_mode: els.providerMode.value || 'mock',
+            }),
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            const detail = Array.isArray(data.detail)
+              ? data.detail.map((d) => d.msg || JSON.stringify(d)).join('；')
+              : (data.detail || data.message || '查询失败');
+            setError(detail);
+            return;
+          }
+          document.body.classList.remove('pre-query');
+          state.cardFilter = 'all';
+          state.summaryVisible = true;
+          renderResult(data);
+          els.composerText.value = '';
+          els.composerText.style.height = 'auto';
+          addHistoryEntry(data, variantsText);
+        } catch (err) {
+          setError(`网络错误：${String(err?.message || err)}`);
+        } finally {
+          setLoading(false);
+        }
+      }
+      els.composerSendBtn.addEventListener('click', submitQuery);
+      els.composerText.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+          event.preventDefault();
+          submitQuery();
+        }
+      });
+      els.composerText.addEventListener('input', () => {
+        els.composerText.style.height = 'auto';
+        els.composerText.style.height = Math.min(160, Math.max(44, els.composerText.scrollHeight)) + 'px';
+      });
+
+      /* ---------------- 初始化 ---------------- */
+      loadHistory();
+      els.heroStateBadge.textContent = '等待查询';
+      els.heroTime.textContent = '检索时间 -';
+      els.heroMode.textContent = '模式 -';
+      
+      // 隐藏数据源状态面板
+      els.providerStatusGrid.hidden = true;
+    })();
   </script>
 </body>
 </html>
