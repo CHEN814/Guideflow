@@ -14,6 +14,11 @@ bcrypt>=4.0.0,<5
 email-validator>=2.0.0
 pydantic[email]>=2.0.0
 httpx>=0.27.0
+# Optional OCR for uploaded sequencing-report images
+# RapidOCR(onnxruntime) is the primary engine: pure-Python, offline, no system
+# binary, good Chinese support. PaddleOCR and Tesseract are optional fallbacks.
+Pillow>=10.0.0
+rapidocr-onnxruntime>=1.4.4
 
 # Optional: Neo4j for knowledge-graph visualization / neighborhood API
 # Pin to 5.x: driver 6.x has API differences vs Neo4jGraphService (written for 5.x).

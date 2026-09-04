@@ -516,14 +516,31 @@ a.composer-chip{text-decoration:none;color:inherit}
 .drawer-header{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
 .drawer-content{padding:16px 18px;overflow:auto;line-height:1.7}
 .evidence-card{padding:12px;border:1px solid rgba(0,0,0,.06);border-radius:var(--r-md);background:#fff;margin-bottom:10px}
-.drawer-panel-wide{width:min(1100px,100%)}
+.drawer-panel-wide{width:min(1380px,100%)}
+.graph-workbench{display:grid;grid-template-columns:190px minmax(0,1fr) 280px;gap:12px;align-items:start}
+.graph-filter-panel,.graph-detail-panel{min-height:640px;max-height:640px;overflow:auto;padding:14px}
+.graph-filter-panel{background:#fbfcfe}
+.graph-canvas{min-height:640px;overflow:auto;padding:0;background:#f8fafc}
+.graph-filter-hint{margin:5px 0 16px;line-height:1.5}
+.graph-filter-group{border-top:1px solid var(--line);padding:12px 0}
+.graph-filter-group strong{display:block;font-size:12px;margin-bottom:8px}
+.graph-filter-option{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);padding:5px 0;cursor:pointer}
+.graph-filter-option input{accent-color:var(--brand)}
+.graph-confidence{display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding:12px 0;margin-bottom:12px}
+.graph-confidence output{font-weight:700;color:var(--text)}
+.graph-confidence input{width:100%;accent-color:var(--brand)}
 .neo4j-node{cursor:pointer}
 .neo4j-node:hover text{font-weight:700}
+@media (max-width:1050px){.graph-workbench{grid-template-columns:170px minmax(0,1fr)}.graph-detail-panel{grid-column:1 / -1;min-height:auto;max-height:none}.graph-canvas{min-height:560px}}
+@media (max-width:700px){.graph-workbench{display:flex;flex-direction:column}.graph-filter-panel,.graph-detail-panel{width:100%;min-height:auto;max-height:none}.graph-canvas{width:100%;min-height:440px}.graph-filter-option{display:inline-flex;width:49%}}
 .context-menu{position:fixed;z-index:85;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow);padding:6px;min-width:140px}
 .context-menu button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer}
 .context-menu button:hover{background:rgba(229,111,61,.08)}
 .sidebar-backdrop{display:none;grid-column:1;grid-row:1}
 @media (max-width:1180px){
+  .graph-workbench{grid-template-columns:180px minmax(0,1fr)}
+  .graph-detail-panel{grid-column:1 / -1;min-height:auto;max-height:none;position:static!important}
+  .graph-filter-panel{min-height:640px}
   .app.evidence-open,
   .app.collapsed.evidence-open{--evidence-w:0px}
   .main{grid-column:2}
@@ -542,6 +559,8 @@ a.composer-chip{text-decoration:none;color:inherit}
   .evidence-backdrop[hidden]{display:none!important}
 }
 @media (max-width:900px){
+  .graph-workbench{grid-template-columns:1fr}
+  .graph-filter-panel,.graph-detail-panel{grid-column:auto;min-height:auto;max-height:none;position:static!important}
   /* Must beat .app.collapsed{grid-template-columns:0 ...} or main lands in a 0-width column */
   .app,
   .app.collapsed,

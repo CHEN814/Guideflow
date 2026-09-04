@@ -1721,7 +1721,7 @@ function projectClinicalGraph(data) {
 
   const edgeKeySet = new Set();
   const edges = [];
-  const pushEdge = (source, target, label) => {
+  const pushEdge = (source, target, label, properties = {}) => {
     if (!source || !target || source === target) return;
     const rel = String(label || 'RELATED_TO').toUpperCase();
     if (isStructuralRel(rel)) return;
@@ -1734,7 +1734,7 @@ function projectClinicalGraph(data) {
       target,
       label: rel,
       type: rel,
-      properties: {},
+      properties,
     });
   };
 
@@ -1770,7 +1770,10 @@ function projectClinicalGraph(data) {
     const sKey = subjId ? (idAlias.get(String(subjId)) || ensureConcept(byId.get(String(subjId))) || ensureConcept({ id: subjId, label: props.subject_name, type: 'OntologyConcept', properties: { name: props.subject_name } })) : null;
     const oKey = objId ? (idAlias.get(String(objId)) || ensureConcept(byId.get(String(objId))) || ensureConcept({ id: objId, label: props.object_name, type: 'OntologyConcept', properties: { name: props.object_name } })) : null;
     const rel = props.relation || n.label || 'RELATED_TO';
-    pushEdge(sKey, oKey, rel);
+    pushEdge(sKey, oKey, rel, {
+      confidence: Number(props.confidence ?? n.properties?.confidence ?? 1),
+      evidence_kind: props.evidence_kind || n.properties?.evidence_kind || 'graph',
+    });
   }
 
   // Direct non-structural edges between concepts
@@ -1840,10 +1843,48 @@ function projectClinicalGraph(data) {
   };
 }
 
-function renderNeo4jGraph(data, selectedId = '') {
+function graphNodeCategory(type, properties = {}, nodeId = '') {
+  const t = `${String(type || '')} ${String(properties.type || '')} ${String(nodeId || '')}`.toLowerCase();
+  if (t.includes('disease') || t.includes('diagnos')) return '疾病';
+  if (t.includes('subtype')) return '分型';
+  if (t.includes('treat') || t.includes('drug') || t.includes('therapy') || t.includes('regimen')) return '治疗';
+  if (t.includes('test') || t.includes('procedure')) return '检查';
+  if (t.includes('biomarker') || t.includes('gene') || t.includes('protein') || t.includes('mutation')) return '分子标志物';
+  if (t.includes('risk') || t.includes('scoring') || t.includes('patientgroup')) return '风险因素';
+  if (t.includes('outcome') || t.includes('prognos')) return '预后';
+  if (t.includes('page') || t.includes('reference') || t.includes('article')) return '证据来源';
+  const name = `${String(properties.name || '')} ${String(properties.label || '')}`.toLowerCase();
+  if (/dlbcl|\bfl\b|\bmcl\b|\blbcl\b|lymphoma|淋巴瘤/.test(name)) return '疾病';
+  if (/gcb|abc|double-hit|double-expressor|non-gcb|分型/.test(name)) return '分型';
+  if (/r-chop|pola|epoch|car-t|asct|antibody|抗体|治疗/.test(name)) return '治疗';
+  if (/pet|fish|biopsy|ldh|echocardiography|检查|活检/.test(name)) return '检查';
+  if (/tp53|myc|bcl2|bcl6|cd19|cd20|基因|蛋白/.test(name)) return '分子标志物';
+  if (/ipi|ecog|age|bulky|风险|评分/.test(name)) return '风险因素';
+  if (/prognosis|response|remission|预后|缓解/.test(name)) return '预后';
+  return '其他';
+}
+
+function renderNeo4jGraph(data, selectedId = '', filters = {}) {
   const projected = projectClinicalGraph(data || {});
-  const nodes = projected.nodes || [];
-  const edges = projected.edges || [];
+  let nodes = projected.nodes || [];
+  let edges = projected.edges || [];
+  const allowedTypes = filters.nodeTypes instanceof Set && filters.nodeTypes.size ? filters.nodeTypes : null;
+  const allowedRelations = filters.relations instanceof Set && filters.relations.size ? filters.relations : null;
+  const minConfidence = Number(filters.minConfidence || 0);
+  if (allowedTypes || allowedRelations || minConfidence > 0) {
+    const visibleIds = new Set(nodes.filter((node) => {
+      return !allowedTypes || allowedTypes.has(graphNodeCategory(node.type, node.properties, node.id));
+    }).map((node) => String(node.id)));
+    edges = edges.filter((edge) => {
+      const relation = String(edge.label || edge.type || 'RELATED_TO').toUpperCase();
+      return visibleIds.has(String(edge.source)) && visibleIds.has(String(edge.target))
+        && (!allowedRelations || allowedRelations.has(relation))
+        && Number(edge.properties?.confidence ?? 1) >= minConfidence;
+    });
+    const connectedIds = new Set(edges.flatMap((edge) => [String(edge.source), String(edge.target)]));
+    if (projected.center && visibleIds.has(String(projected.center))) connectedIds.add(String(projected.center));
+    nodes = nodes.filter((node) => connectedIds.has(String(node.id)));
+  }
   if (!nodes.length) return '<div class="muted" style="padding:16px">没有可视化数据（请换一个临床实体 seed，如 DLBCL / TP53 / R-CHOP）</div>';
 
   const typeWeight = (type) => {
@@ -1923,7 +1964,7 @@ function renderNeo4jGraph(data, selectedId = '') {
     const label = escapeHtml(rawLabel.slice(0, 22));
     return `
       <g>
-        <line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" stroke="#9aa4b2" stroke-width="1.6" marker-end="url(#arrow)" />
+        <line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" stroke="${edge.properties?.evidence_kind === 'literature' ? '#c08457' : '#9aa4b2'}" stroke-width="${edge.properties?.evidence_kind === 'flowchart' ? '2.8' : '1.6'}" stroke-dasharray="${edge.properties?.evidence_kind === 'predicted' ? '4 4' : 'none'}" marker-end="url(#arrow)" />
         ${label ? `<rect x="${midX - Math.min(40, label.length * 3)}" y="${midY - 11}" width="${Math.min(90, Math.max(28, label.length * 6))}" height="15" rx="7" fill="rgba(248,250,252,.96)" stroke="rgba(148,163,184,.35)" />` : ''}
         ${label ? `<text x="${midX}" y="${midY}" text-anchor="middle" font-size="9" fill="#64748b">${label}</text>` : ''}
       </g>`;
@@ -1943,7 +1984,12 @@ function renderNeo4jGraph(data, selectedId = '') {
     const selected = String(node.id) === String(selectedId);
     const isCenter = String(node.id) === String(centerNode?.id);
     const isFocus = Boolean(node.__focus);
-    const fill = isCenter ? '#fff7ed' : '#e2e8f0';
+    const fills = {
+      '疾病': '#4f86f7', '分型': '#a855f7', '治疗': '#2f9e6a', '检查': '#38bdf8',
+      '分子标志物': '#f59e0b', '风险因素': '#eab308', '预后': '#ec7caa', '证据来源': '#94a3b8', '其他': '#cbd5e1',
+    };
+    const category = graphNodeCategory(node.type);
+    const fill = isCenter ? '#fff7ed' : fills[category];
     const opacity = 1;
     const labelRaw = String(node.displayLabel || node.label || node.id);
     const label = escapeHtml(labelRaw.length > 18 ? `${labelRaw.slice(0, 16)}…` : labelRaw);
@@ -1956,7 +2002,7 @@ function renderNeo4jGraph(data, selectedId = '') {
     return `
       <g class="neo4j-node ${selected ? 'selected' : ''}" data-node-id="${escapeHtml(String(node.id))}" data-node-label="${escapeHtml(labelRaw)}" style="cursor:pointer;opacity:${opacity}">
         <title>${tooltip}</title>
-        <circle cx="${node.x}" cy="${node.y}" r="${r}" fill="${fill}" stroke="${selected || isCenter ? '#ea580c' : typeColor(node.type)}" stroke-width="${selected || isCenter ? '3' : '1.6'}" />
+        <circle cx="${node.x}" cy="${node.y}" r="${r}" fill="${fill}" fill-opacity="${isCenter ? '1' : '.88'}" stroke="${selected || isCenter ? '#ea580c' : typeColor(node.type)}" stroke-width="${selected || isCenter ? '3' : '1.6'}" />
         <text x="${node.x}" y="${node.y + 4}" text-anchor="middle" font-size="${isCenter ? 12 : 10}" fill="#1e293b" font-weight="${isCenter ? '600' : '500'}">${label}</text>
       </g>`;
   }).join('');
@@ -3043,9 +3089,19 @@ function openToolsDrawer(kind, seedOverride = '') {
           <button class="btn" id="neo4jZoomOutBtn">缩小</button>
         </div>
       </div>
-      <div class="neo4j-shell" style="display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px;align-items:start;">
-        <div id="neo4jGraphCanvas" class="evidence-card" style="min-height:640px; overflow:auto;">${escapeHtml('正在加载...')}</div>
-        <aside id="neo4jSidePanel" class="evidence-card" style="position:sticky;top:12px;min-height:640px;max-height:640px;overflow:auto;padding:14px;">
+      <div class="neo4j-shell graph-workbench">
+        <aside id="neo4jFilterPanel" class="evidence-card graph-filter-panel">
+          <div class="ref-title">图谱筛选</div>
+          <div class="muted small graph-filter-hint">选择节点和关系类型，图谱会即时更新</div>
+          <div class="graph-filter-group"><strong>节点类型</strong><div id="neo4jNodeFilters"></div></div>
+          <div class="graph-filter-group"><strong>关系类型</strong><div id="neo4jRelationFilters"></div></div>
+          <label class="graph-confidence">最小置信度 <output id="neo4jConfidenceValue">0.00</output>
+            <input id="neo4jConfidenceFilter" type="range" min="0" max="1" step="0.05" value="0" />
+          </label>
+          <button class="btn" id="neo4jClearFiltersBtn">清除筛选</button>
+        </aside>
+        <div id="neo4jGraphCanvas" class="evidence-card graph-canvas">${escapeHtml('正在加载...')}</div>
+        <aside id="neo4jSidePanel" class="evidence-card graph-detail-panel">
           <div class="ref-title" style="margin-bottom:10px">图谱概览</div>
           <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
             <button class="btn" id="neo4jPathBtn">路径模式</button>
@@ -3098,13 +3154,33 @@ function openToolsDrawer(kind, seedOverride = '') {
     let selectedNodeId = '';
     const historyStack = [];
     let mode = 'path';
+    const filterState = { nodeTypes: null, relations: null, minConfidence: 0 };
+    const nodeFiltersEl = overlay.querySelector('#neo4jNodeFilters');
+    const relationFiltersEl = overlay.querySelector('#neo4jRelationFilters');
+    const confidenceInput = overlay.querySelector('#neo4jConfidenceFilter');
+    const confidenceValue = overlay.querySelector('#neo4jConfidenceValue');
+    const renderFilterOptions = (data) => {
+      const projected = projectClinicalGraph(data || {});
+      const categories = [...new Set((projected.nodes || []).map((node) => graphNodeCategory(node.type, node.properties, node.id)))].sort();
+      const relations = [...new Set((projected.edges || []).map((edge) => String(edge.label || edge.type || 'RELATED_TO')))].sort();
+      if (!filterState.nodeTypes) filterState.nodeTypes = new Set(categories);
+      if (!filterState.relations) filterState.relations = new Set(relations);
+      const checkbox = (kind, value, checked) => `<label class="graph-filter-option"><input type="checkbox" data-filter-kind="${kind}" data-filter-value="${escapeHtml(value)}" ${checked ? 'checked' : ''}><span>${escapeHtml(value)}</span></label>`;
+      if (nodeFiltersEl) nodeFiltersEl.innerHTML = categories.map((value) => checkbox('node', value, filterState.nodeTypes.has(value))).join('') || '<span class="muted small">暂无节点类型</span>';
+      if (relationFiltersEl) relationFiltersEl.innerHTML = relations.map((value) => checkbox('relation', value, filterState.relations.has(value))).join('') || '<span class="muted small">暂无关系类型</span>';
+      overlay.querySelectorAll('[data-filter-kind]').forEach((input) => input.addEventListener('change', () => {
+        const target = input.dataset.filterKind === 'node' ? filterState.nodeTypes : filterState.relations;
+        if (input.checked) target.add(input.dataset.filterValue); else target.delete(input.dataset.filterValue);
+        paintCanvas();
+      }));
+    };
     const renderStats = (data) => {
       if (!statsEl || !data) return;
       const projected = projectClinicalGraph(data || {});
       const pNodes = projected.nodes || [];
       const pEdges = projected.edges || [];
       const typeCounts = pNodes.reduce((acc, n) => {
-        const k = String(n.type || 'Concept');
+        const k = graphNodeCategory(n.type, n.properties, n.id);
         acc[k] = (acc[k] || 0) + 1;
         return acc;
       }, {});
@@ -3161,7 +3237,7 @@ function openToolsDrawer(kind, seedOverride = '') {
       if (!canvas || !currentData) return;
       const projected = projectClinicalGraph(currentData, Array.isArray(window.__GF_GRAPH_FOCUS__) ? window.__GF_GRAPH_FOCUS__ : []);
       selectedNodeId = selectedNodeId || projected.center || '';
-      canvas.innerHTML = renderNeo4jGraph(currentData, selectedNodeId);
+      canvas.innerHTML = renderNeo4jGraph(currentData, selectedNodeId, filterState);
       canvas.style.transform = `scale(${currentScale})`;
       canvas.style.transformOrigin = 'top center';
       bindNeo4jGraphInteractions(
@@ -3220,6 +3296,9 @@ function openToolsDrawer(kind, seedOverride = '') {
       });
       currentData = { center, nodes, edges };
       selectedNodeId = nodes[0]?.id || '';
+      filterState.nodeTypes = null;
+      filterState.relations = null;
+      renderFilterOptions(currentData);
       paintCanvas();
       renderStats(currentData);
       renderDetail(nodes[0] || null);
@@ -3243,6 +3322,9 @@ function openToolsDrawer(kind, seedOverride = '') {
         const data = await resp.json();
         if (!resp.ok) throw new Error(formatApiDetail(data));
         currentData = data;
+      filterState.nodeTypes = null;
+        filterState.relations = null;
+        renderFilterOptions(currentData);
         selectedNodeId = '';
         if (mode === 'path') {
           const first = (projectClinicalGraph(data).nodes || [])[0];
@@ -3275,6 +3357,18 @@ function openToolsDrawer(kind, seedOverride = '') {
     overviewBtn?.addEventListener('click', () => { mode = 'overview'; navigateTo(currentSeed || seedInput?.value || '', 2, false); });
     zoomInBtn?.addEventListener('click', () => { currentScale = Math.min(1.8, currentScale + 0.1); if (canvas) canvas.style.transform = `scale(${currentScale})`; });
     zoomOutBtn?.addEventListener('click', () => { currentScale = Math.max(0.6, currentScale - 0.1); if (canvas) canvas.style.transform = `scale(${currentScale})`; });
+    confidenceInput?.addEventListener('input', () => {
+      filterState.minConfidence = Number(confidenceInput.value || 0);
+      if (confidenceValue) confidenceValue.value = filterState.minConfidence.toFixed(2);
+      paintCanvas();
+    });
+    overlay.querySelector('#neo4jClearFiltersBtn')?.addEventListener('click', () => {
+      filterState.minConfidence = 0;
+      if (confidenceInput) confidenceInput.value = '0';
+      if (confidenceValue) confidenceValue.value = '0.00';
+      renderFilterOptions(currentData || {});
+      paintCanvas();
+    });
     seedPills.forEach((pill) => pill.addEventListener('click', () => navigateTo(pill.dataset.seed || '', 1, true)));
     const payloadSeeds = Array.isArray(payload.graph_seed_candidates) ? payload.graph_seed_candidates.filter(Boolean) : [];
     if (payloadSeeds.length) {
