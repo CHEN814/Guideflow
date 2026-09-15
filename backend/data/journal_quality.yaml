@@ -3,7 +3,7 @@
 # Update data_version and updated_at when refreshing numbers.
 data_version: "curated-approx-2025"
 updated_at: "2026-08-18"
-source_note: "Hand-curated for GuideFlow DLBCL UX; IF/quartile approximate; CAS tiers approximate."
+source_note: "Hand-curated for DLBCL-Evidence UX; IF/quartile approximate; CAS tiers approximate."
 
 # tier:
 #   T0  general top (practice-changing phase III often lands here)

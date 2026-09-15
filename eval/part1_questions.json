@@ -1,0 +1,933 @@
+[
+  {
+    "id": "P1-001",
+    "source": "MedQA-USMLE-4-options",
+    "split": "test",
+    "original_id": "step1:test:20",
+    "lang": "en",
+    "disease": "DLBCL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "A 77-year-old woman presents to the emergency room with the complaints of fever, malaise, and night sweats. She recently observed an enlargement of her axillary lymph nodes, which she examines on a weekly basis. She has a remote history of breast cancer in her 60s that was treated with radiation and chemotherapy. She also reports a history of extensive travel to Africa and a 30-pack-year history of smoking. On physical exam, several axillary lymph nodes are palpable with a large non-tender palpable mass in her right axilla measuring 10 x 8 cm. Fine-needle aspiration demonstrates what the pathologist describes as \"a centroblastic and immunoblastic cell presence, suspicious for non-Hodgkin’s lymphoma (NHL)–diffuse large B cell variant\". Which of the following risk factors is responsible for this patient’s condition?",
+    "options": {
+      "A": "Travel to Africa",
+      "B": "Axillary lymph node involvement",
+      "C": "Previous radiation therapy",
+      "D": "Previous breast cancer"
+    }
+  },
+  {
+    "id": "P1-002",
+    "source": "MedQA-USMLE-4-options",
+    "split": "test",
+    "original_id": "step1:test:142",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "A",
+    "include": "Y",
+    "question": "A 67-year-woman with non-Hodgkin lymphoma comes to the physician because of progressively increasing numbness and tingling in her fingers and toes. Her last cycle of chemotherapy with vincristine was 1 week ago. Physical examination shows decreased sensation to light touch in all distal extremities. Knee and ankle deep tendon reflexes are decreased. Which of the following is the most likely underlying mechanism of this patient’s peripheral neuropathy?",
+    "options": {
+      "A": "Inhibition of beta-tubulin polymerization",
+      "B": "Creation of free radicals that unwind DNA",
+      "C": "Inhibition of dihydrofolate reductase",
+      "D": "Incorporation of false pyrimidine analogues into DNA"
+    }
+  },
+  {
+    "id": "P1-003",
+    "source": "MedQA-USMLE-4-options",
+    "split": "test",
+    "original_id": "step2&3:test:525",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 67-year-old man comes to the clinic complaining of fatigue and dizziness for the past 2 months. He reports that he gets tired easily compared to his baseline and feels dizzy when he exerts himself (e.g., when he walks long distances). His past medical history is significant for hypertension that is controlled with lisinopril. A physical examination demonstrates moderate hepatomegaly and lymphadenopathy. His laboratory studies are shown below.\n\nLeukocyte count and differential:\nLeukocyte count: 11,500/mm^3\nSegmented neutrophils: 40%\nBands: 3%\nEosinophils: 1%\nBasophils: 0%\nLymphocytes: 50%\nMonocytes: 8%\n\nHemoglobin: 11.2 g/dL\nPlatelet count: 120,000/mm^3\nMean corpuscular hemoglobin concentration: 31%\nMean corpuscular volume: 80 µm^3\nReticulocyte count: 3%\nLactate dehydrogenase: 45 U/L\n\nA subsequent flow cytometry test demonstrates CD20+ cells. What is the most likely finding you would expect in this patient?",
+    "options": {
+      "A": "Low levels of erythropoietin",
+      "B": "Low levels of leukocyte alkaline phosphatase (LAP)",
+      "C": "Presence of hairy cells",
+      "D": "Presence of smudge cells"
+    }
+  },
+  {
+    "id": "P1-004",
+    "source": "MedQA-USMLE-4-options",
+    "split": "test",
+    "original_id": "step2&3:test:565",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 63-year-old man comes to the physician for the evaluation of an unintentional 10-kg (22-lb) weight loss over the past 6 months. During this period, the patient has had recurrent episodes of high-grade fever, night sweats, and feelings of fatigue. Two months ago, he had herpes zoster that was treated with acyclovir. He appears pale. Temperature is 38.5°C (101.3°F), pulse is 90/min, and blood pressure 130/80 mm Hg. Physical examination shows generalized painless lymphadenopathy. The liver and the spleen are palpated 2–3 cm below the right and the left costal margin, respectively. Laboratory studies show:\nHematocrit 42%\nLeukocyte count 15,000/mm3\nSegmented neutrophils 46%\nEosinophils 1%\nLymphocytes 50%\nMonocytes 3%\nPlatelet count 120,000/mm3\nBlood smear shows mature lymphocytes that rupture easily and appear as artifacts on a blood smear. Flow cytometry shows lymphocytes expressing CD5, CD19, CD20, and CD23. Which of the following is the most appropriate treatment?\"",
+    "options": {
+      "A": "All-trans retinoic acid",
+      "B": "Fludarabine, cyclophosphamide, rituximab",
+      "C": "Observation and disease progression monitoring",
+      "D": "Imatinib only\n\""
+    }
+  },
+  {
+    "id": "P1-005",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:32",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "A 70-year-old man presents to a medical clinic reporting blood in his urine and lower abdominal pain for the past few days. He is also concerned about urinary frequency and urgency. He states that he recently completed a cycle of chemotherapy for non-Hodgkin lymphoma. Which medication in the chemotherapy regimen most likely caused his symptoms?",
+    "options": {
+      "A": "Methotrexate",
+      "B": "Rituximab",
+      "C": "Cyclophosphamide",
+      "D": "Prednisone"
+    }
+  },
+  {
+    "id": "P1-006",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:57",
+    "lang": "en",
+    "disease": "DLBCL",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "A 55-year-old man comes to the physician because of fatigue and worsening abdominal pain for 4 weeks. He also reports excessive night sweats and a 5.4-kg (12-lb) weight loss during this time. He has a neck swelling for 4 days. Physical examination shows a nontender, enlarged, and fixed supraclavicular lymph node. There is splenomegaly. A CT scan of the thorax and abdomen shows massively enlarged axillary, mediastinal, and cervical lymph nodes. Analysis of an excised cervical lymph node shows lymphocytes with a high proliferative index that stain positive for CD20. Which of the following is the most likely diagnosis?",
+    "options": {
+      "A": "Adult T-cell lymphoma",
+      "B": "Burkitt lymphoma",
+      "C": "Diffuse large B-cell lymphoma",
+      "D": "Hodgkin lymphoma"
+    }
+  },
+  {
+    "id": "P1-007",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:180",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 35-year-old man presents with a mass on the central part of his neck. He reports it has been growing steadily for the past 2 weeks, and he has also been experiencing fatigue and recurrent fevers. No significant past medical history. The patient denies any smoking history, or alcohol or recreational drug use. He denies any recent travel in the previous 6 months. On physical examination, there are multiple enlarged submandibular and cervical lymph nodes that are firm, mobile, and non-tender. A biopsy of one of the lymph nodes is performed and shows predominantly lymphocytes and histiocytes present in a pattern ‘resembling popcorn’. A flow cytometry analysis demonstrates cells that are CD19 and CD20 positive and CD15 and CD30 negative. Which of the following is the most likely diagnosis in this patient?",
+    "options": {
+      "A": "Lymphocyte rich classical Hodgkin lymphoma",
+      "B": "Nodular lymphocyte-predominant Hodgkin lymphoma",
+      "C": "Nodular sclerosis classical Hodgkin lymphoma",
+      "D": "Lymphocyte depleted Hodgkin lymphoma"
+    }
+  },
+  {
+    "id": "P1-008",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:253",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "分期预后",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 65-year-old man presents with painless swelling of the neck over the past week. He also has noted severe night sweats, which require a change of clothes and bed linens the next day. His medical history is significant for long-standing hypertension. He received a kidney transplant 6 years ago. His current medications include amlodipine, metoprolol, furosemide, aspirin, tacrolimus, and mycophenolate. His family history is significant for his sister, who died last year from lymphoma. A review of systems is positive for a 6-kg (13.2-lb) unintentional weight loss over the past 2 months. His vital signs include: temperature 37.8℃ (100.0℉) and blood pressure 120/75 mm Hg. On physical examination, there are multiple painless lymph nodes, averaging 2 cm in diameter, palpable in the anterior and posterior triangles of the neck bilaterally. Axillary and inguinal lymphadenopathy is palpated on the right side. Abdominal examination is significant for a spleen of 16 cm below the cost margin on percussion. Laboratory studies are significant for the following:\nHemoglobin 9 g/dL\nMean corpuscular volume 88 μm3\nLeukocyte count 12,000/mm3\nPlatelet count 130,000/mm3\nCreatinine 1.1 mg/dL\nLactate dehydrogenase (LDH) 1 000 U/L\nA peripheral blood smear is unremarkable. Which of the following is the most likely diagnosis in this patient?",
+    "options": {
+      "A": "Drug-induced lymphadenopathy",
+      "B": "Cytomegalovirus infection",
+      "C": "Multiple myeloma",
+      "D": "Non-Hodgkin’s lymphoma (NHL)"
+    }
+  },
+  {
+    "id": "P1-009",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:724",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "A",
+    "include": "Y",
+    "question": "A 67-year-old man comes to the physician because of numbness and burning sensation of his legs for the past week. He also complains that his stools have been larger and rougher than usual. He has non-Hodgkin lymphoma and is currently receiving chemotherapy with prednisone, vincristine, rituximab, cyclophosphamide, and doxorubicin. He has received 4 cycles of chemotherapy, and his last chemotherapy cycle was 2 weeks ago. His temperature is 37.1°C (98.8°F), pulse is 89/min, and blood pressure is 122/80 mm Hg. Examination shows decreased muscle strength in the distal muscles of the lower extremities. Ankle jerk is 1+ bilaterally and knee reflex is 2+ bilaterally. Sensation to pain, vibration, and position is decreased over the lower extremities. Serum concentrations of glucose, creatinine, electrolytes, and calcium are within the reference range. Which of the following is the most likely cause of this patient's symptoms?",
+    "options": {
+      "A": "Adverse effect of vincristine",
+      "B": "Spinal cord compression",
+      "C": "Paraneoplastic autoantibodies",
+      "D": "Charcot–Marie–Tooth disease"
+    }
+  },
+  {
+    "id": "P1-010",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:962",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "A",
+    "include": "Y",
+    "question": "Two days after hospitalization for urgent chemotherapy to treat Burkitt’s lymphoma, a 7-year-old boy develops dyspnea and reduced urine output. He also feels a tingling sensation in his fingers and toes. Blood pressure is 100/65 mm Hg, respirations are 28/min, pulse is 100/min, and temperature is 36.2°C (97.2°F). The lungs are clear to auscultation. He has excreted 20 mL of urine in the last 6 hours. Laboratory studies show:\nHemoglobin 15 g/dL\nLeukocyte count 6,000/mm3 with a normal differential serum\nK+ 6.5 mEq/L\nCa+ 7.6 mg/dL\nPhosphorus 5.4 mg/dL\nHCO3− 15 mEq/L\nUric acid 12 mg/dL\nUrea nitrogen 44 mg/dL\nCreatinine 2.4 mg/dL\nArterial blood gas analysis on room air:\npH 7.30\nPCO2 30 mm Hg\nO2 saturation 95%\nWhich of the following is most likely to have prevented this patient’s condition?",
+    "options": {
+      "A": "Allopurinol",
+      "B": "Ciprofloxacin",
+      "C": "Sodium bicarbonate",
+      "D": "No prevention would have been effective"
+    }
+  },
+  {
+    "id": "P1-011",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:1340",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 47-year-old woman presents to the clinic complaining of difficulty swallowing that started 1 month ago. The patient also reports a weight loss of 10 lbs during this time, without a change in her appetite. She denies fatigue, cough, hoarseness, pain, or hemoptysis. The patient has a history of childhood lymphoma, which was treated with radiation. She takes no medications. She has smoked 1 pack of cigarettes per day since she was 25 years old. Her physical exam is notable for a palpable nodule on the right side of the thyroid. An ultrasound is performed, which confirms a 1.2 cm hyperechoic nodule in the right lobe. Thyroid function labs are drawn and shown below:\n\nSerum TSH: 0.2 mU/L\nSerum thyroxine (T4): 187 nmol/L\nSerum triiodothyronine (T3): 3.3 nmol/L\n\nWhich of the following is the next best step in management?",
+    "options": {
+      "A": "Levothyroxine",
+      "B": "Partial thyroidectomy",
+      "C": "Radioactive iodine",
+      "D": "Thyroid scintigraphy"
+    }
+  },
+  {
+    "id": "P1-012",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:1417",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 60-year-old man comes to the physician because of a 2-day history of blood in his urine, lower abdominal pain, and a burning sensation while micturating. Five months ago, he was diagnosed with high-grade non-Hodgkin lymphoma and a deep vein thrombosis of his right popliteal vein. His medications include polychemotherapy every 3 weeks and a daily subcutaneous dose of low molecular weight heparin. The last cycle of chemotherapy was 2 weeks ago. His temperature is 37°C (98.6°F), pulse is 94/min, and blood pressure is 110/76 mm Hg. Examination shows bilateral axillary and inguinal lymphadenopathy, hepatosplenomegaly, and mild suprapubic tenderness. Laboratory studies show:\nHemoglobin 10.2 g/dL\nLeukocytes 4,300/mm3\nPlatelet count 145,000/mm3\nPartial thromboplastin time 55 seconds\nProthrombin time 11 seconds (INR=1)\nUrine\nRBCs 50–55/hpf\nRBC casts negative\nWBCs 7/hpf\nEpithelial cells 5/hpf\nBacteria occasional\nAdministration of which of the following is most likely to have prevented this patient's current condition?\"",
+    "options": {
+      "A": "Protamine sulfate",
+      "B": "Mercaptoethane sulfonate",
+      "C": "Ciprofloxacin",
+      "D": "Dexrazoxane"
+    }
+  },
+  {
+    "id": "P1-013",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:1627",
+    "lang": "en",
+    "disease": "MCL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 67-year-old man comes to the physician for a follow-up examination after he was diagnosed with mantle cell lymphoma. The physician recommends a chemotherapeutic regimen containing bortezomib. Which of the following best describes the effect of this drug?",
+    "options": {
+      "A": "Stabilization of tubulin polymers",
+      "B": "Accumulation of ubiquitinated proteins",
+      "C": "Preventing the relaxation of DNA supercoils",
+      "D": "Inhibition of tyrosine kinase receptors"
+    }
+  },
+  {
+    "id": "P1-014",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:1892",
+    "lang": "en",
+    "disease": "DLBCL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "A 65-year-old male with diffuse large B cell lymphoma is treated with a chemotherapy regimen including 6-mercaptopurine. Administration of which of the following agents would increase this patient’s risk for mercaptopurine toxicity?",
+    "options": {
+      "A": "Dexrazoxane",
+      "B": "Mesna",
+      "C": "Allopurinol",
+      "D": "Amifostine"
+    }
+  },
+  {
+    "id": "P1-015",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:2024",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "A 46-year-old African American woman presents to her primary care doctor complaining of muscle aches and weakness. She reports a 3 month history of gradually worsening upper and lower extremity pain. She is having trouble keeping up with her children and feels tired for most of the day. A review of systems reveals mild constipation. Her past medical history is notable for hypertension, diabetes, rheumatoid arthritis, and obesity. She takes lisinopril, metformin, and methotrexate. Her family history is notable for chronic lymphocytic leukemia in her mother and prostate cancer in her father. Her temperature is 99°F (37.2°C), blood pressure is 145/95 mmHg, pulse is 80/min, and respirations are 17/min. On exam, she appears well and in no acute distress. Muscle strength is 4/5 in her upper and lower extremities bilaterally. Patellar and brachioradialis reflexes are 2+ bilaterally. A serum analysis in this patient would most likely reveal which of the following?",
+    "options": {
+      "A": "Decreased PTH, decreased phosphate, and increased calcium",
+      "B": "Decreased PTH, increased phosphate, and decreased calcium",
+      "C": "Increased PTH, decreased phosphate, and increased calcium",
+      "D": "Increased PTH, increased phosphate, and decreased calcium"
+    }
+  },
+  {
+    "id": "P1-016",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:2331",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "Six days after being admitted to the hospital for a cholecystectomy, a 56-year-old woman has high-grade fevers, chills, malaise, and generalized weakness. She has been hospitalized twice in the last year for acute cholecystitis. She had a molar extraction around 2 weeks ago. Her last colonoscopy was 8 months ago and showed a benign polyp that was removed. She has mitral valve prolapse, hypertension, rheumatoid arthritis, and hypothyroidism. Current medications include metformin, rituximab, levothyroxine, and enalapril. Her temperature is 38.3°C (101°F), pulse is 112/min, and blood pressure is 138/90 mm Hg. Examination shows painless macules over her palms and soles and linear hemorrhages under her nail beds. The lungs are clear to auscultation. There is a grade 3/6 systolic murmur heard best at the apex. Blood is drawn and she is started on intravenous antibiotic therapy. Two sets of blood cultures grow coagulase-negative staphylococci. An echocardiography shows a large oscillating vegetation on the mitral valve and moderate mitral regurgitation. Which of the following is the strongest predisposing factor for this patient's condition?",
+    "options": {
+      "A": "Predamaged heart valve",
+      "B": "Recent dental procedure",
+      "C": "Immunosuppression",
+      "D": "Infected peripheral venous catheter"
+    }
+  },
+  {
+    "id": "P1-017",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:2707",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 68-year-old man is brought to the emergency department 25 minutes after he was found shaking violently on the bathroom floor. His wife reports that he has become increasingly confused over the past 2 days and that he has been sleeping more than usual. He was started on chemotherapy 4 months ago for chronic lymphocytic leukemia. He is confused and oriented to person only. Neurological examination shows right-sided ptosis and diffuse hyperreflexia. An MRI of the brain shows disseminated, nonenhancing white matter lesions with no mass effect. A polymerase chain reaction assay of the cerebrospinal fluid confirms infection with a virus that has double-stranded, circular DNA. An antineoplastic drug with which of the following mechanisms of action is most likely responsible for this patient's current condition?",
+    "options": {
+      "A": "Tyrosine kinase inhibitor",
+      "B": "Topoisomerase II inhibitor",
+      "C": "Monoclonal antibody against EGFR",
+      "D": "Monoclonal antibody against CD20+"
+    }
+  },
+  {
+    "id": "P1-018",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:3412",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 64-year-old man presents with unilateral severe chest pain which started a day ago. He describes the chest pain as sharp in nature and localized mainly to his right side. He also complains of mild shortness of breath but says that it is tolerable. He denies any recent history of fever, sweating, dizziness, or similar episodes in the past. Past medical history is significant for chronic lymphocytic leukemia a few months ago for which he was started on chemotherapy. He has currently completed 3 cycles with the last one being few days ago. His temperature is 36.5°C (97.7°F), blood pressure is 118/75 mm Hg, pulse is 95/min, and respirations are 20/min. Lung are clear to auscultation bilaterally. There is severe tenderness to palpation over the right chest and a painful stripe of vesicular lesions, but no evidence of lesions, bruising or trauma. An electrocardiogram is normal and a chest radiograph is unremarkable. Cardiac enzymes are pending. Laboratory studies show:\nLaboratory test\nBUN 40 mg/dL\nSerum creatinine  3.0 mg/dL\n    Urinalysis\nProtein +\nGlucose absent\nRBC absent\nWBC 3/HPF\nNitrite absent\nLeukocyte esterase  negative\nSediments negative\nWhich of the following is the best course of treatment for this patient?",
+    "options": {
+      "A": "Cardiac catheterization",
+      "B": "Ganciclovir",
+      "C": "Rest and NSAIDs",
+      "D": "Famciclovir"
+    }
+  },
+  {
+    "id": "P1-019",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:3907",
+    "lang": "en",
+    "disease": "FL",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 58-year-old woman presents to a physician with a painless swelling behind her right ear, which she noticed 1 month ago. She has no other complaint nor does she have any specific medical condition. On physical examination, her vital signs are stable. An examination of the right post-auricular area shows enlarged lymph nodes, which are non-tender and rubbery in consistency, with normal overlying skin. A detailed general examination reveals the presence of one enlarged axillary lymph node on the left side with similar features. Complete blood counts are within normal limits but atypical lymphocytes are present on the peripheral blood smear. The patient’s serum lactate dehydrogenase level is slightly elevated. Excisional biopsy of the lymph node is performed and histopathological examination of the tissue yields a diagnosis of follicular lymphoma. Further cytogenetic studies reveal that the condition is associated with overexpression of the BCL-2 gene. Which of the following cytogenetic abnormalities is most likely to be present?",
+    "options": {
+      "A": "t(3;3)(q27;27)",
+      "B": "t(9;14)(p13;q32)",
+      "C": "t(11;18)(q21;q21)",
+      "D": "t(14;18)(q32;q21)"
+    }
+  },
+  {
+    "id": "P1-020",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:4195",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "复发难治",
+    "n_options": 4,
+    "gold": "A",
+    "include": "Y",
+    "question": "A 26-year-old man is undergoing a bone marrow transplantation for treatment of a non-Hodgkin lymphoma that has been refractory to several rounds of chemotherapy and radiation over the past 2 years. He has been undergoing a regimen of cyclophosphamide and total body irradiation for the past several weeks in anticipation of his future transplant. This morning, he reports developing a productive cough and is concerned because he noted some blood in his sputum this morning. The patient also reports pain with inspiration. His temperature is 101°F (38.3°C), blood pressure is 115/74 mmHg, pulse is 120/min, respirations are 19/min, and oxygen saturation is 98% on room air. A chest radiograph and CT are obtained and shown in Figures A and B respectively. Which of the following is the most likely diagnosis?",
+    "options": {
+      "A": "Aspergillus fumigatus",
+      "B": "Mycoplasma pneumonia",
+      "C": "Staphylococcus aureus",
+      "D": "Streptococcus pneumonia"
+    }
+  },
+  {
+    "id": "P1-021",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:4301",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 5-year-old girl with an aortic stenosis correction comes to the office for a follow-up visit for acute lymphoblastic lymphoma. She initiated chemotherapy a week before through a peripherally inserted central line. She reports being ‘tired all the time’ and has been bruising easily. Her vital signs are within normal limits. Physical examination shows several tenders, non-blanching petechiae on the pads of the fingers and toes; several dark, non-tender petechiae on her palms and soles; and small, linear hemorrhages under her fingernails. Fundoscopic examination shows various small areas of hemorrhage on the retinae bilaterally. Cardiac examination is notable for a II/VI systolic ejection murmur that seems to have worsened in comparison to the last visit. Which of the following is the most likely cause?",
+    "options": {
+      "A": "Bleeding diathesis secondary to thrombocytopenia",
+      "B": "Dilated cardiomyopathy",
+      "C": "Hypertrophic cardiomyopathy",
+      "D": "Infective endocarditis"
+    }
+  },
+  {
+    "id": "P1-022",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:4307",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "An 11-year-old boy with Burkitt lymphoma is brought to the emergency department because of nausea, vomiting, flank pain, and dark urine for 1 day. Two days ago, he began induction chemotherapy with cyclophosphamide, vincristine, prednisolone, and doxorubicin. Urinalysis shows 3+ blood and abundant amber-colored, rhomboid crystals. Which of the following is most likely to have been effective in preventing this patient’s symptoms?",
+    "options": {
+      "A": "Administration of ceftriaxone",
+      "B": "Alkalinization of the urine",
+      "C": "Administration of probenecid",
+      "D": "Administration of hydrochlorothiazide\n\""
+    }
+  },
+  {
+    "id": "P1-023",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:4376",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "A 54-year-old man with lymphoma presents to his oncologist with severe abdominal pain and flank pain. He says that the pain started 2 days ago and has gotten worse over time. He has also not been able to urinate over the same time period. On presentation, his temperature is 99°F (37.2°C), blood pressure is 110/72 mmHg, pulse is 105/min, and respirations are 12/min. Physical exam reveals bilateral flank tenderness. Labs results are shown below:\n\nBlood urea nitrogen: 34 mg/dL\nCreatinine: 3.7 mg/dl\nUrine osmolality: 228 mOsm/kg\n\nRenal ultrasonography shows dilation of the kidneys bilaterally with a normal-sized bladder. Which of the following would most likely be beneficial in treating this patient's condition?",
+    "options": {
+      "A": "Administration of a loop diuretic",
+      "B": "Bilateral stenting of the renal arteries",
+      "C": "Bilateral stenting of the ureters",
+      "D": "Catheterization of the bladder"
+    }
+  },
+  {
+    "id": "P1-024",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:4499",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "After hospitalization for urgent chemotherapy to treat Burkitt’s lymphoma, a 7-year-old boy developed paresthesias of the fingers, toes, and face. Vital signs are taken. When inflating the blood pressure cuff, the patient reports numbness and tingling of the fingers. His blood pressure is 100/65 mm Hg. Respirations are 28/min, pulse is 100/min, and temperature is 36.2℃ (97.2℉). He has excreted 20 mL of urine in the last 6 hours.\nLaboratory studies show the following:\nHemoglobin 15 g/dL\nLeukocyte count 6000/mm3 with a normal differential serum\nK+ 6.5 mEq/L\nCa+ 6.6 mg/dL\nPhosphorus 5.4 mg/dL\nHCO3− 15 mEq/L\nUric acid 12 mg/dL\nUrea nitrogen 54 mg/dL\nCreatinine 3.4 mg/dL\nArterial blood gas analysis on room air:\npH 7.30\nPCO2 30 mm Hg\nO2 saturation 95%\nWhich of the following is the most likely cause of this patient’s renal condition?",
+    "options": {
+      "A": "Deposition of calcium phosphate in the kidney",
+      "B": "Intense renal vasoconstriction and volume depletion",
+      "C": "Pigment-induced nephropathy",
+      "D": "Precipitation of uric acid in renal tubules/tumor lysis syndrome"
+    }
+  },
+  {
+    "id": "P1-025",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:4789",
+    "lang": "en",
+    "disease": "FL",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "A 40-year-old male presents to his primary care physician for a regularly scheduled check-up. Physical examination reveals nontender cervical lymphadenopathy. A biopsy of the lymph node reveals aggregates of follicular architecture, and cytogenic analysis shows a t(14;18) translocation. The protein most likely responsible for the patient’s condition does which of the following:",
+    "options": {
+      "A": "Regulates passage through the cell cycle",
+      "B": "Activates DNA repair proteins",
+      "C": "Inhibits apoptosis",
+      "D": "Regulates cell growth through signal transduction"
+    }
+  },
+  {
+    "id": "P1-026",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:5060",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 2-year-old boy is brought to the emergency department because of fever, cough, and ear pain over the past 2 days. He has had recurrent respiratory tract infections and several episodes of giardiasis and viral gastroenteritis since he was 6 months of age. Examination shows decreased breath sounds over both lung fields and bilateral purulent otorrhea. His palatine tonsils and adenoids are hypoplastic. Quantitative flow cytometry of his blood shows decreased levels of cells that express CD19, CD20, and CD21. Which of the following is the most likely cause of this patient's condition?",
+    "options": {
+      "A": "Mutation in WAS gene",
+      "B": "Mutation in tyrosine kinase gene",
+      "C": "Microdeletion on the long arm of chromosome 22",
+      "D": "Mutation in NADPH oxidase gene"
+    }
+  },
+  {
+    "id": "P1-027",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:5146",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 63-year-old man with non-Hodgkin lymphoma is brought to the emergency department because of fever and confusion that have progressively worsened over the past 3 days. He also has a 3-day history of loose stools. He returned from France 2 weeks ago where he stayed in the countryside and ate typical French cuisine, including frog, snail, and various homemade cheeses. His last chemotherapy cycle was 3 weeks ago. He is oriented to person but not to place or time. His temperature is 39.5°C (103.1°F), pulse is 110/min, and blood pressure is 100/60 mm Hg. Examination shows cervical and axillary lymphadenopathy. The lungs are clear to auscultation. There is involuntary flexion of the bilateral hips and knees with passive flexion of the neck. Neurologic examination shows no focal findings. Laboratory studies show:\nHemoglobin 9.3 g/dL\nLeukocyte count 3600/mm3\nPlatelet count 151,000/mm3\nSerum\nNa+ 134 mEq/L\nCl- 103 mEq/L\nK+ 3.7 mEq/L\nGlucose 102 mg/dL\nCreatinine 1.3 mg/dL\nA lumbar puncture is performed. Cerebrospinal fluid analysis shows a leukocyte count of 1200/mm3 (76% segmented neutrophils, 24% lymphocytes), a protein concentration of 113 mg/dL, and a glucose concentration of 21 mg/dL. The results of blood cultures are pending. Which of the following is the most appropriate initial pharmacotherapy?\"",
+    "options": {
+      "A": "Ampicillin and cefotaxime",
+      "B": "Acyclovir and dexamethasone",
+      "C": "Acyclovir",
+      "D": "Vancomycin, ampicillin, and cefepime"
+    }
+  },
+  {
+    "id": "P1-028",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:5306",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 36-year-old woman comes to the physician for a follow-up visit after she had a PET scan that showed a nodule on the thyroid gland. She has no difficulty or pain while swallowing. She was treated for non-Hodgkin lymphoma at the age of 28 years, which included external beam radiation to the head and neck and 4 cycles of chemotherapy. She appears healthy. Vital signs are within normal limits. Physical examination shows no abnormalities. Serum studies show:\nGlucose 82 mg/dL\nCreatinine 0.7 mg/dL\nThyroid-stimulating hormone 3 μU/mL\nUltrasound of the neck shows a 1.2-cm (0.5-in) nodule on the left lobe of the thyroid with irregular margins and microcalcifications. A fine-needle aspiration biopsy shows Psammoma bodies and cells with clear, ground-glass, empty nuclei. Which of the following is the most appropriate next step in management?\"",
+    "options": {
+      "A": "Radioiodine therapy",
+      "B": "Observation and follow-up in 3 months",
+      "C": "Thyroid scintigraphy",
+      "D": "Total thyroidectomy\n\""
+    }
+  },
+  {
+    "id": "P1-029",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:5472",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "复发难治",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 68-year-old woman with chronic idiopathic thrombocytopenic purpura (ITP) presents to her hematologist for routine follow-up. She has been on chronic corticosteroids for her ITP, in addition to several treatments with intravenous immunoglobulin (IVIG) and rituximab. Her labs today reveal a white blood cell count of 8, hematocrit of 35, and platelet count of 14. Given her refractory ITP with persistent thrombocytopenia, her hematologist recommends that she undergo splenectomy. What is the timeline for vaccination against encapsulated organisms and initiation of penicillin prophylaxis for this patient?",
+    "options": {
+      "A": "Vaccinate: 2 weeks prior to surgery; Penicillin: 2 weeks prior to surgery for an indefinite course",
+      "B": "Vaccinate: 2 weeks prior to surgery; Penicillin: at time of surgery for 5 years",
+      "C": "Vaccinate: at the time of surgery; Penicillin: 2 weeks prior to surgery for an indefinite course",
+      "D": "Vaccinate: at the time of surgery; Penicillin: at time of surgery for 5 years"
+    }
+  },
+  {
+    "id": "P1-030",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:5732",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A researcher is investigating compounds that modulate the cell cycle as possible chemotherapeutic agents against peripheral T-cell lymphoma. The researcher discovers a group of natural compounds with inhibitory activity against histone deacetylases, a class of enzymes that remove acetyl groups from the lysine residues of histones. A histone deacetylase inhibitor most likely causes which of the following?",
+    "options": {
+      "A": "Tighter coiling of DNA",
+      "B": "Relaxation of DNA coiling",
+      "C": "Suppression of gene transcription",
+      "D": "Increased heterochromatin formation"
+    }
+  },
+  {
+    "id": "P1-031",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:6053",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 51-year-old woman with AIDS presents to her primary care physician with fatigue and weakness. She has a history of type 2 diabetes mellitus, hypertension, infectious mononucleosis, and hypercholesterolemia. She currently smokes 1 pack of cigarettes per day, drinks a glass of wine per day, and denies any illicit drug use. Her temperature is 36.7°C (98.0°F), blood pressure is 126/74 mm Hg, pulse is 87/min, and respirations are 17/min. On physical examination, her pulses are bounding. The patent’s complexion is pale. She has an enlarged cervical lymph node, and breath sounds remain clear. Further lab and tissue diagnostic evaluation reveal and confirms Burkitt’s lymphoma with diffuse bulky disease. After receiving more information about her condition and treatment options, the patient agrees to start chemotherapy. Eight days after starting chemotherapy, she presents with decreased urinary output. Laboratory studies show:\nCreatinine 7.9 mg/dL\nBUN 41 mg/dL\nSerum uric acid 28 mg/dL\nPotassium 6.9 mEq/L\nWhich therapy is most likely to reverse the patient’s metabolic abnormalities?",
+    "options": {
+      "A": "Intravenous saline with mannitol with the goal of a daily urinary output above 2.5 L/day",
+      "B": "Hemodialysis",
+      "C": "Allopurinol 300 mg/day",
+      "D": "Intravenous recombinant uricase enzyme rasburicase"
+    }
+  },
+  {
+    "id": "P1-032",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:6086",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "A",
+    "include": "Y",
+    "question": "A 72-year-old man with chronic lymphocytic leukemia (CLL) comes to the physician with a 2-day history of severe fatigue and dyspnea. He regularly visits his primary care physician and has not required any treatment for his underlying disease. His temperature is 36.7°C (98.1°F), pulse is 105/min, respiratory rate is 22/min, and blood pressure is 125/70 mm Hg. The conjunctivae are pale. Examination of the heart and lungs shows no abnormalities. The spleen is palpable 3 cm below the costal margin. No lymphadenopathy is palpated. Laboratory studies show:\nHemoglobin 7 g/dL\nMean corpuscular volume 105 μm3\nLeukocyte count 80,000/mm3\nPlatelet count 350,000/mm3\nSerum  \nBilirubin Total // Direct 6 mg/dL / 0.8 mg/dL\nLactate dehydrogenase 650 U/L (Normal: 45–90 U/L)\nBased on these findings, this patient’s recent condition is most likely attributable to which of the following?",
+    "options": {
+      "A": "Autoimmune hemolytic anemia",
+      "B": "Bone marrow involvement",
+      "C": "Evan’s syndrome",
+      "D": "Splenomegaly"
+    }
+  },
+  {
+    "id": "P1-033",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:6258",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 38-year-old man comes to the physician because of white lesions in his mouth for 4 days. He also has intense pain while chewing food. He was diagnosed with non-Hodgkin lymphoma around 8 months ago. He is undergoing chemotherapy and is currently on his fourth cycle. He was treated for herpes labialis 4 months ago with acyclovir. He has smoked half a pack of cigarettes daily for 15 years. He appears healthy. Vital signs are within normal limits. Cervical and axillary lymphadenopathy is present. Oral examination shows white plaques on his tongue and buccal mucosa that bleed when scraped off. The remainder of the examination shows no abnormalities. Which of the following is the next best step in management?",
+    "options": {
+      "A": "Culture of the lesions",
+      "B": "Topical nystatin",
+      "C": "Biopsy of a lesion",
+      "D": "Topical corticosteroids"
+    }
+  },
+  {
+    "id": "P1-034",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:6268",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "A 6-year-old boy is brought to a primary care provider by his adoptive parents for evaluation of a 3-month history of jaw swelling. He has a travel history of recent immigration from equatorial Africa where his deceased mother was positive for HIV and died from related complications. On physical exam, extensive lymph node swelling on the left side of his jaw is noted. There is also an ulceration that appears to be infected. Fine needle biopsy of the lymph node yields a diagnosis of Burkitt’s lymphoma by the pathologist. Which of the following is most likely associated with the involvement of lymph nodes around his jaw?",
+    "options": {
+      "A": "Infected ulcer",
+      "B": "Close family member with HIV",
+      "C": "Recent immigration from equatorial Africa",
+      "D": "Gender of the patient"
+    }
+  },
+  {
+    "id": "P1-035",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:6469",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A medical research study is beginning to evaluate the positive predictive value of a novel blood test for non-Hodgkin’s lymphoma. The diagnostic arm contains 700 patients with NHL, of which 400 tested positive for the novel blood test. In the control arm, 700 age-matched control patients are enrolled and 0 are found positive for the novel test. What is the PPV of this test?",
+    "options": {
+      "A": "700 / (700 + 0)",
+      "B": "700 / (400 + 400)",
+      "C": "400 / (400 + 300)",
+      "D": "400 / (400 + 0)"
+    }
+  },
+  {
+    "id": "P1-036",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:6495",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "A",
+    "include": "Y",
+    "question": "A 68-year-old man, with a recent ischemic stroke due to a right middle cerebral artery thromboembolism, presents for evaluation. In addition to the abnormal neurologic findings, there are significant hepatosplenomegaly and multiple lymphadenopathies. Laboratory findings are significant for the following:\nHemoglobin  9.5 g/dL\nErythrocyte count 13,600/mm³\nPlatelet count 95,000/mm³\nUrinalysis reveals the presence of Bence-Jones proteins. Bone marrow biopsy shows numerous small lymphocytes mixed with plasmacytoid dendritic cells and plasma cells, increased numbers of mast cells, and the presence of Russell bodies and Dutcher bodies in plasma cells. A diagnosis of lymphoplasmacytic lymphoma is confirmed after further laboratory evaluation. Which of the following infectious agents would most likely be found in this patient, as well?",
+    "options": {
+      "A": "Hepatitis C virus",
+      "B": "Human herpesvirus 8",
+      "C": "Human immunodeficiency virus (HIV)",
+      "D": "Epstein-Barr virus"
+    }
+  },
+  {
+    "id": "P1-037",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:6552",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A previously healthy 16-year-old boy is brought to the physician by his parents for evaluation because of extreme irritability, fatigue, and loss of appetite for 3 weeks. Five months ago, his grandfather, whom he was very close to, passed away from chronic lymphocytic leukemia. He used to enjoy playing soccer but quit his soccer team last week. When he comes home from school he goes straight to bed and sleeps for 11–12 hours each night. He previously had good grades, but his teachers report that he has been disrespectful and distracted in class and failed an exam last week. He tried alcohol twice at a party last year and he has never smoked cigarettes. Vital signs are within normal limits. On mental status examination, he avoids making eye contact but cooperates with the exam. His affect is limited and he describes an irritable mood. He is easily distracted and has a difficult time focusing for an extended conversation. Which of the following is the most likely diagnosis?",
+    "options": {
+      "A": "Substance abuse",
+      "B": "Major depressive disorder",
+      "C": "Adjustment disorder with depressed mood",
+      "D": "Persistent depressive disorder"
+    }
+  },
+  {
+    "id": "P1-038",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:6558",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "Two separate investigators have conducted cohort studies to calculate the risk of lymphoma in rheumatoid arthritis patients taking anti-TNF alpha medications. They each followed patients with rheumatoid arthritis for a number of years and tracked the number of patients who were diagnosed with lymphoma. The results of the two studies are summarized in the table.\nNumber of patients Follow-up period Number of new cases of lymphoma\nStudy 1 3000 10 years 30\nStudy 2 300 30 years 9\nBased on these results, which of the following statements about the risk of lymphoma is most accurate?\"",
+    "options": {
+      "A": "The risk is higher in study 1, with an incidence rate of 30 cases per 10 person-years",
+      "B": "The risks are equivalent, with an incidence rate of 1 case per 1000 person-years",
+      "C": "The risk is higher in study 1, with a prevalence of 30 cases per 3000 patients",
+      "D": "The risk is higher in study 2, with a cumulative incidence of 9 cases per 300 patients"
+    }
+  },
+  {
+    "id": "P1-039",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:6735",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 61-year-old man presents to the emergency department with new-onset dizziness. He reports associated symptoms of confusion, headaches, and loss of coordination. The patient’s wife also mentions he has had recent frequent nosebleeds. Physical examination demonstrates a double vision. Routine blood work is significant for a slightly reduced platelet count. A noncontrast CT of the head is normal. A serum protein electrophoresis is performed and shows an elevated IgM spike. The consulting hematologist strongly suspects Waldenström’s macroglobulinemia. Which of the following is the best course of treatment for this patient?",
+    "options": {
+      "A": "Vincristine",
+      "B": "Plasmapheresis",
+      "C": "Rituximab",
+      "D": "Prednisone"
+    }
+  },
+  {
+    "id": "P1-040",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:7026",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "A 71-year-old man comes to the physician for routine health maintenance examination. He feels well. He has hypertension and gastroesophageal reflux disease. Current medications include metoprolol and pantoprazole. He does not smoke or drink alcohol. Temperature is 37.3°C (99.1°F), pulse is 75/min, and blood pressure 135/87 mm Hg. Examination shows no abnormalities. Laboratory studies show:\nHematocrit 43%\nLeukocyte count 32,000/mm3\nSegmented neutrophils 22%\nBasophils 1%\nEosinophils 2%\nLymphocytes 74%\nMonocytes 1%\nPlatelet count 190,000/mm3\nBlood smear shows small, mature lymphocytes and several smudge cells. Immunophenotypic analysis with flow cytometry shows B-cells that express CD19, CD20 and CD23. Which of the following is the most appropriate next step in management?\"",
+    "options": {
+      "A": "Stem cell transplantation",
+      "B": "All-trans retinoic acid",
+      "C": "Observation and follow-up",
+      "D": "Fludarabine, cyclophosphamide, and rituximab"
+    }
+  },
+  {
+    "id": "P1-041",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:7666",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A researcher is investigating the behavior of two novel chemotherapeutic drugs that he believes will be effective against certain forms of lymphoma. In order to evaluate the safety of these drugs, this researcher measures the concentration and rate of elimination of each drug over time. A partial set of the results is provided below.\n\nTime 1:\nConcentration of Drug A: 4 mg/dl\nConcentration of Drug B: 3 mg/dl\nElimination of Drug A: 1 mg/minute\nElimination of Drug B: 4 mg/minute\n\nTime 2:\nConcentration of Drug A: 2 mg/dl\nConcentration of Drug B: 15 mg/dl\nElimination of Drug A: 0.5 mg/minute\nElimination of Drug B: 4 mg/minute\n\nWhich of the following statements correctly identifies the most likely relationship between the half-life of these two drugs?",
+    "options": {
+      "A": "The half-life of both drug A and drug B are constant",
+      "B": "The half-life of drug A is constant but that of drug B is variable",
+      "C": "The half-life of drug A is variable but that of drug B is constant",
+      "D": "The half-life of both drug A and drug B are variable"
+    }
+  },
+  {
+    "id": "P1-042",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:7717",
+    "lang": "en",
+    "disease": "DLBCL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 37-year old man is being evaluated due to a recent history of fatigue that started 3 weeks ago. The patient presents with a history of HIV, which was first diagnosed 7 years ago. He has been on an antiretroviral regimen and takes it regularly. His CD4+ count is 350 cells/mm3. According to the patient, his partner passed away from a \"blood cancer\", and he is worried that his fatigue might be connected to a similar pathology. The physician clarifies that there is an increased risk for HIV patients to develop certain kinds of lymphomas. Which one of the conditions below is the patient more likely to develop based on his medical history?",
+    "options": {
+      "A": "Burkitt’s lymphoma",
+      "B": "Diffuse large B cell lymphoma",
+      "C": "Follicular lymphoma",
+      "D": "Small lymphocytic lymphoma"
+    }
+  },
+  {
+    "id": "P1-043",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:8386",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 72-year-old man presents to the primary care clinic for evaluation of progressive fatigue and weight loss. His past medical history is significant for hypercholesterolemia, type 2 diabetes mellitus, aortic stenosis, and chronic renal insufficiency. He endorses being well-rested after waking from sleep but fatiguing rapidly during the day. In addition, he states that he has lost 15lbs over the previous month. His temperature is 98.3°F (36.8°C), pulse is 100/min, blood pressure is 110/85 mmHg, respirations are 16/min, and oxygen saturation is 96% on room air. Physical exam is notable for conjunctival pallor and scattered areas of ecchymoses. His laboratory results are shown below:\n\nSerum:\nNa+: 140 mEq/L\nK+: 4.0 mEq/L\nCl-: 101 mEq/L\nHCO3-: 22 mEq/L\nBUN: 30 mg/dL\nGlucose: 160 mg/dL\nCreatinine: 1.9 mg/dL\n\n\nLeukocyte count: 1,100/mm^3\nAbsolute neutrophil count 920/mm^3\nHemoglobin 8.4 g/dL\nPlatelet count: 45,000/mm^3\nMean corpuscular hemoglobin concentration: 34%\nRed blood cell distribution width: 12.0%\nMean corpuscular volume: 92 µm^3\nLactate dehydrogenase: 456 IU/L\nHaptoglobin 120 mg/dL\nFibrinogen 214 mg/dL\n\nA bone marrow biopsy is performed which shows cells that are CD19+, CD20+, CD11c+, and stain with acid phosphatase 5 and tartrate-resistant. Which of the following is the next best step in the treatment of his disorder?",
+    "options": {
+      "A": "Hydroxyurea",
+      "B": "Cladribine",
+      "C": "Filgrastim",
+      "D": "Doxorubicin"
+    }
+  },
+  {
+    "id": "P1-044",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:9055",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "A",
+    "include": "Y",
+    "question": "A 68-year-old man comes to the physician in July for a routine health maintenance examination. He is a retired teacher and lives in a retirement community. He has hypercholesterolemia, hypertension, and osteoarthritis of the left knee. Last year, he was diagnosed with chronic lymphocytic leukemia. A colonoscopy 8 years ago was normal. The patient had a normal digital examination and a normal prostate specific antigen level 8 months ago. The patient has never smoked and does not drink alcohol. Current medications include aspirin, lisinopril, simvastatin, chlorambucil, rituximab, and a multivitamin. His last immunizations were at a health maintenance examination 7 years ago. His temperature is 37°C (98.6°F), pulse is 82/min, respirations are 14/min, and blood pressure is 133/85 mm Hg. Examination shows a grade 2/6 systolic ejection murmur along the upper right sternal border and painless cervical lymphadenopathy. Which of the following health maintenance recommendations is most appropriate at this visit?",
+    "options": {
+      "A": "Pneumococcal conjugate vaccine 13",
+      "B": "Meningococcal conjugate vaccine",
+      "C": "Varicella vaccine",
+      "D": "Influenza vaccine"
+    }
+  },
+  {
+    "id": "P1-045",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:9077",
+    "lang": "en",
+    "disease": "DLBCL",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 67-year-old woman comes to the physician because of a 3-week history of fatigue and worsening back and abdominal pain. During this period, she has also had excessive night sweats and a 4.6-kg (10-lb) weight loss. She has had swelling of the neck for 3 days. She does not smoke or drink alcohol. Vital signs are within normal limits. Physical examination shows a 4-cm, supraclavicular, nontender, enlarged and fixed lymph node. The spleen is palpated 2 cm below the left costal margin. Laboratory studies show:\nHemoglobin 10.4 g/dL\nMean corpuscular volume 87 μm3\nLeukocyte count 5,200/mm3\nPlatelet count 190,000/mm3\nSerum\nLactate dehydrogenase 310 U/L\nA CT scan of the thorax and abdomen shows massively enlarged paraaortic, axillary, mediastinal, and cervical lymph nodes. Histopathologic examination of an excised cervical lymph node shows lymphocytes with a high proliferative index that stain positive for CD20. Which of the following is the most likely diagnosis?\"",
+    "options": {
+      "A": "Marginal zone lymphoma",
+      "B": "Diffuse large B-cell lymphoma",
+      "C": "Hairy cell leukemia",
+      "D": "Follicular lymphoma"
+    }
+  },
+  {
+    "id": "P1-046",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step1:train:9225",
+    "lang": "en",
+    "disease": "FL",
+    "topic": "诊断",
+    "n_options": 4,
+    "gold": "B",
+    "include": "Y",
+    "question": "A 68-year-old man comes to the physician for evaluation of a lump in his left axilla that he first noticed 1 year ago. He reports that the size of the mass has varied over time and that there have been similar masses in his neck and groin. He has not had fever, weight loss, or night sweats. Physical examination shows a nontender, rubbery mass in the left axilla and a similar, smaller mass in the right groin. His spleen is palpable 3 cm below the left costal margin. Laboratory studies, including complete blood count, are within reference ranges. Genetic analysis obtained on resection of the axillary mass shows a t(14;18) translocation. Which of the following is the most likely diagnosis?",
+    "options": {
+      "A": "Hodgkin lymphoma",
+      "B": "Follicular lymphoma",
+      "C": "Burkitt lymphoma",
+      "D": "Marginal zone lymphoma"
+    }
+  },
+  {
+    "id": "P1-047",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:9254",
+    "lang": "en",
+    "disease": "DLBCL",
+    "topic": "复发难治",
+    "n_options": 4,
+    "gold": "C",
+    "include": "Y",
+    "question": "Please refer to the summary above to answer this question\nA 63-year-old HIV-positive man comes to the physician for a routine health maintenance examination. Four years ago, he was diagnosed with HIV and was started on cART therapy. He tells the physician that he has been having difficulty adhering to his medication regimen. He has been unemployed for the past couple of years and relies on unemployment benefits to cover the costs of daily living. His father died of lymphoma at the age of 60 years. He had recently heard about the results of the study featured in the abstract and wants more information about his risk of developing DLBCL. Based on the study, which of the following is the greatest risk factor for the development of DLBCL in HIV-positive patients?\"",
+    "options": {
+      "A": "Positive family history of cancer",
+      "B": "Male sex",
+      "C": "Poor adherence to cART",
+      "D": "Income below $30,000 per year"
+    }
+  },
+  {
+    "id": "P1-048",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:9368",
+    "lang": "en",
+    "disease": "其他 B-NHL",
+    "topic": "特殊部位",
+    "n_options": 4,
+    "gold": "A",
+    "include": "Y",
+    "question": "A 47–year-old man presents to the emergency department with worsening weakness in the setting of persistent abdominal pain. The man arrived to the United States 6 months ago and has been working in a restaurant as a cook. His abdominal pain started 4 months ago, but he could not find time away from work to see a doctor. He reports nausea but denies any vomiting. His temperature is 98.6°F (37°C), blood pressure is 98/61 mmHg, pulse is 110/min, and respirations are 18/min. He has no cardiac murmurs but does have tenderness in his epigastric region. His heme-occult test is positive. His laboratory workup notes the following:\n\nHemoglobin: 7.2 g/dL\nHematocrit: 23%\nLeukocyte count: 11,000/mm^3 with normal differential\nPlatelet count: 470,000/mm^3\n\nSerum:\nNa+: 137 mEq/L\nCl-: 109 mEq/L\nK+: 3.1 mEq/L\nHCO3-: 23 mEq/L\nBUN: 52 mg/dL\nGlucose: 89 mg/dL\nCreatinine: 0.9 mg/dL\n\nAn esophagogastroduodenoscopy reveals the presence of a mass surrounded by bleeding ulcers. On initial shave biopsy, the preliminary diagnosis is mucosa-associated lymphatic tissue lymphoma (MALToma). What is the best next step in management?",
+    "options": {
+      "A": "Amoxicillin, clarithromycin, and pantoprazole",
+      "B": "Full thickness biopsy",
+      "C": "Hospice care",
+      "D": "Partial gastrectomy"
+    }
+  },
+  {
+    "id": "P1-049",
+    "source": "MedQA-USMLE-4-options",
+    "split": "train",
+    "original_id": "step2&3:train:9867",
+    "lang": "en",
+    "disease": "跨病种",
+    "topic": "一线",
+    "n_options": 4,
+    "gold": "D",
+    "include": "Y",
+    "question": "A 53-year-old man presents to the urgent care clinic with a persistent cough and progressively worsening shortness of breath. He has had these symptoms for several weeks and used to only become breathless during exercise but now has breathing difficulty while at rest. The patient says that he has mild-to-moderate respiratory distress and fatigue for months. Past medical history is significant for lymphoma, treated with several rounds of chemotherapy, now in remission. Additionally, he takes a baby aspirin every day and a multivitamin. He smokes cigarettes and cigars and has smoked at least a half of a pack of cigarettes every day for the past 30 years. Family history is significant for 1 uncle with a lung problem but he does not know what it was. On physical exam, the vital signs include: heart rate 101/min, respiratory rate 23/min, blood pressure 125/85 mm Hg, and temperature 37.0°C (98.6°F). On cardiopulmonary examination, diffuse crackles are auscultated over all lung fields during inspiration. Mild digit clubbing is observed. A preliminary diagnosis of idiopathic pulmonary fibrosis is established. Which additional finding is also expected in this patient?",
+    "options": {
+      "A": "Cushing’s syndrome",
+      "B": "Acute exposure to asbestos",
+      "C": "Reversal of symptoms with smoking cessation",
+      "D": "Cystic airspaces in the lung interstitium on CT scan"
+    }
+  }
+]

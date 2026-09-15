@@ -71,9 +71,9 @@ class PubmedClient:
     def __init__(
         self,
         *,
-        email: str = "guideflow@example.com",
+        email: str = "dlbcl-evidence@example.com",
         api_key: Optional[str] = None,
-        tool: str = "guideflow",
+        tool: str = "dlbcl-evidence",
         cache_dir: Optional[Path] = None,
         query_cache_ttl_s: int = 86400,
         article_cache_ttl_s: int = 86400 * 30,

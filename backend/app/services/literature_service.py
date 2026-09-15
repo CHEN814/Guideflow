@@ -153,9 +153,9 @@ def build_literature_service(
     if not cache_dir.parts:
         cache_dir = Path(settings.root_dir) / "data" / "cache" / "pubmed"
     client = PubmedClient(
-        email=str(getattr(settings, "ncbi_email", None) or "guideflow@example.com"),
+        email=str(getattr(settings, "ncbi_email", None) or "dlbcl-evidence@example.com"),
         api_key=getattr(settings, "ncbi_api_key", None),
-        tool=str(getattr(settings, "ncbi_tool", None) or "guideflow"),
+        tool=str(getattr(settings, "ncbi_tool", None) or "dlbcl-evidence"),
         cache_dir=cache_dir,
         esearch_timeout_s=float(getattr(settings, "literature_esearch_timeout_s", 2.0)),
         efetch_timeout_s=float(getattr(settings, "literature_efetch_timeout_s", 3.0)),

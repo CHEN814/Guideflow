@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Guideflow · 分子证据内容</title>
+  <title>DLBCL-Evidence · 分子证据内容</title>
   <link rel="stylesheet" href="./styles.css?v=20260831-me-rewrite" />
   <style>
     :root {
@@ -786,12 +786,12 @@
     (function () {
       'use strict';
 
-      function guideflowDefaultApiBase() {
+      function defaultApiBase() {
         var path = location.pathname || '';
         if (path.indexOf('/app') === 0 || location.port === '8001') return '';
         return 'http://127.0.0.1:8001';
       }
-      const API_BASE = window.API_BASE ?? guideflowDefaultApiBase();
+      const API_BASE = window.API_BASE ?? defaultApiBase();
       const $ = (id) => document.getElementById(id);
       const els = {
         providerStatusGrid: $('providerStatusGrid'),

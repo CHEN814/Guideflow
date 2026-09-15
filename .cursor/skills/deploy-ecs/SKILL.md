@@ -1,13 +1,13 @@
 ---
 name: deploy-ecs
 description: >-
-  Sync Guideflow code to Huawei Cloud ECS via ecs-deploy/deploy.ps1.
+  Sync DLBCL-Evidence code to Huawei Cloud ECS via ecs-deploy/deploy.ps1.
   Use when the user asks to deploy, sync to ECS, 部署到云服务器, DryRun,
   or run ecs-deploy. Always DryRun first, show change list and risks,
   and wait for explicit user approval before real sync.
 ---
 
-# Deploy Guideflow to Huawei Cloud ECS
+# Deploy DLBCL-Evidence to Huawei Cloud ECS
 
 Use the local-only tool under `ecs-deploy/` (gitignored; do not commit).
 

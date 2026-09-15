@@ -265,7 +265,7 @@ def create_app() -> FastAPI:
     # Eager-load default NCCN so /health and first ask stay fast / fail early.
     qa_service = get_qa_service("nccn")
 
-    app = FastAPI(title="Guideflow QA API", version="0.2.0")
+    app = FastAPI(title="DLBCL-Evidence QA API", version="0.2.0")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=web_cfg.cors_origins,

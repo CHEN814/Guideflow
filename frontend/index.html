@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Guideflow · DLBCL问答系统</title>
-  <link rel="stylesheet" href="./styles.css?v=20260818-composer-ui" />
+  <title>DLBCL-Evidence · 问答系统</title>
+  <link rel="stylesheet" href="./styles.css?v=20260914-rename" />
 </head>
 <body>
   <div class="app" id="appRoot">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-top">
         <div class="brand">
-          <div class="brand-badge">G</div>
+          <div class="brand-badge">DE</div>
           <div class="brand-text">
-            <div class="brand-title">Guideflow</div>
-            <div class="muted small">DLBCL问答系统</div>
+            <div class="brand-title">DLBCL-Evidence</div>
+            <div class="muted small">DLBCL 问答系统</div>
           </div>
         </div>
         <button class="icon-btn" id="collapseSidebarBtn" title="收起侧栏" aria-label="收起侧栏">‹</button>
@@ -298,12 +298,12 @@
   <script>
     // /app/ (uvicorn 挂载或云上方案 A)：同源，勿写死 127.0.0.1（那是「本机」）。
     // 本地 5173 静态页：仍默认连本机 8001。
-    function guideflowDefaultApiBase() {
+    function defaultApiBase() {
       var path = location.pathname || '';
       if (path.indexOf('/app') === 0 || location.port === '8001') return '';
       return 'http://127.0.0.1:8001';
     }
-    window.API_BASE = window.API_BASE ?? guideflowDefaultApiBase();
+    window.API_BASE = window.API_BASE ?? defaultApiBase();
   </script>
   <script src="./vendor/marked.min.js?v=20260725"></script>
   <script src="./vendor/purify.min.js?v=20260725"></script>

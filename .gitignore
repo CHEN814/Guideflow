@@ -31,12 +31,21 @@ tests/*.db
 tests/_test_*.db
 
 # Large binary source materials (obtain NCCN PDF separately; do not commit)
-# *.pdf
+*.pdf
 
 # Frontend
 node_modules/
 frontend/dist/
 frontend/.vite/
+
+# Eval downloads / run artifacts (keep on D:, do not commit)
+eval/raw/
+eval/results/
+eval/catalogs/
+
+# Part 3 case-derived items (public repo; keep local / intranet only)
+eval/part3_questions.json
+docs/评估记录-Part3-病历试跑.md
 
 # Local notes (do not publish)
 周报.md
