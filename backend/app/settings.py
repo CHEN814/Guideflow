@@ -86,9 +86,9 @@ class Settings:
     literature_esearch_timeout_s: float = 2.0
     literature_efetch_timeout_s: float = 3.0
     literature_cache_dir: Path = Path("data/cache/pubmed")
-    ncbi_email: str = "guideflow@example.com"
+    ncbi_email: str = "dlbcl-evidence@example.com"
     ncbi_api_key: Optional[str] = None
-    ncbi_tool: str = "guideflow"
+    ncbi_tool: str = "dlbcl-evidence"
 
 
 def _first_pdf(root_dir: Path) -> Path:
@@ -427,10 +427,10 @@ def load_settings() -> Settings:
             ROOT_DIR,
         ),
         ncbi_email=str(
-            _cfg_or_env(cfg, "NCBI_EMAIL", "guideflow@example.com", "literature", "ncbi_email")
+            _cfg_or_env(cfg, "NCBI_EMAIL", "dlbcl-evidence@example.com", "literature", "ncbi_email")
         ),
         ncbi_api_key=os.getenv("NCBI_API_KEY") or None,
-        ncbi_tool=str(_cfg_or_env(cfg, "NCBI_TOOL", "guideflow", "literature", "ncbi_tool")),
+        ncbi_tool=str(_cfg_or_env(cfg, "NCBI_TOOL", "dlbcl-evidence", "literature", "ncbi_tool")),
     )
 
 

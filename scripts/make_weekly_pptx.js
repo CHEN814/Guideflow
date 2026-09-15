@@ -32,7 +32,7 @@ const C = {
 const pres = new pptxgen();
 pres.defineLayout({ name: "WIDE16x9", width: 10, height: 5.625 });
 pres.layout = "WIDE16x9";
-pres.author = "Guideflow";
+pres.author = "DLBCL-Evidence";
 pres.title = "本周进展：多源指南与临床工作流";
 
 function shadowSoft() {
@@ -129,7 +129,7 @@ function addFeatureDemoSlide({
     fill: { color: C.seafoam }, transparency: 78,
   });
 
-  s.addText("GUIDEFLOW · 本周进展", {
+  s.addText("DLBCL-EVIDENCE · 本周进展", {
     x: 0.7, y: 1.2, w: 8.5, h: 0.35,
     fontFace: "Arial", fontSize: 13, color: C.mint,
     margin: 0, charSpacing: 3,

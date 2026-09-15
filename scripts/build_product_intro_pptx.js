@@ -1,12 +1,12 @@
 /**
- * Build a single-slide Guideflow product intro deck.
+ * Build a single-slide DLBCL-Evidence product intro deck.
  * Run: node scripts/build_product_intro_pptx.js
  */
 const path = require("path");
 const pptxgen = require("pptxgenjs");
 
 const ROOT = path.resolve(__dirname, "..");
-const OUT = path.join(ROOT, "docs", "Guideflow产品介绍.pptx");
+const OUT = path.join(ROOT, "docs", "DLBCL-Evidence产品介绍.pptx");
 const SCREENSHOT = path.join(ROOT, "docs", "assets", "main.png");
 
 const C = {
@@ -22,8 +22,8 @@ const C = {
 async function main() {
   const pres = new pptxgen();
   pres.layout = "LAYOUT_16x9";
-  pres.author = "Guideflow";
-  pres.title = "Guideflow 产品介绍";
+  pres.author = "DLBCL-Evidence";
+  pres.title = "DLBCL-Evidence 产品介绍";
 
   const s = pres.addSlide();
   s.addShape(pres.shapes.RECTANGLE, {
@@ -46,7 +46,7 @@ async function main() {
     line: { color: C.soft },
   });
 
-  s.addText("Guideflow", {
+  s.addText("DLBCL-Evidence", {
     x: 0.55,
     y: 0.3,
     w: 3.2,

@@ -1,11 +1,11 @@
-# Guideflow
+# DLBCL-Evidence
 
 > 基于 NCCN B 细胞淋巴瘤指南的证据约束问答 — CLI 与 Web 双入口，支持流程图多模态与引用溯源。
 
 数据源：[NCCN B-Cell Lymphomas V3.2026](https://www.nccn.org/) PDF，默认聚焦 DLBCL（`BCEL` 模块），可扩展至 MCL、FL 等。
 
 <p align="center">
-  <img src="docs/assets/screenshot-main.png" alt="Guideflow 主界面：对话、历史、流程图内联" width="720" />
+  <img src="docs/assets/screenshot-main.png" alt="DLBCL-Evidence 主界面：对话、历史、流程图内联" width="720" />
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 
 ```bash
 # 1. 克隆并进入项目
-git clone <repo-url> guideflow && cd guideflow
+git clone <repo-url> dlbcl-evidence && cd dlbcl-evidence
 
 # 2. 创建虚拟环境并安装依赖
 python -m venv .venv
@@ -122,7 +122,7 @@ flowchart LR
 ## Project Layout
 
 ```text
-guideflow/
+dlbcl-evidence/
 ├── backend/          # FastAPI、问答流水线、鉴权、会话存储
 ├── frontend/         # 静态 Web UI（HTML / CSS / JS）
 ├── scripts/          # 知识库构建、索引、CLI 问答、检索调试

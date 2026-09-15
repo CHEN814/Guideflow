@@ -67,8 +67,8 @@ literature:
   esearch_timeout_s: 2
   efetch_timeout_s: 3
   cache_dir: data/cache/pubmed
-  ncbi_email: guideflow@example.com
-  ncbi_tool: guideflow
+  ncbi_email: dlbcl-evidence@example.com
+  ncbi_tool: dlbcl-evidence
 
 # 疾病范围：auto=按问题自动识别（未命中则全库）；也可指定 dlbcl/fl/mcl/.../all
 # 注册表见 backend/app/services/disease_scope.py

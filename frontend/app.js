@@ -1,4 +1,4 @@
-/* Guideflow frontend (two-column + auth + true SSE). */
+/* DLBCL-Evidence frontend (two-column + auth + true SSE). */
 // Use ?? so API_BASE '' (same-origin under /app/) is not replaced by 127.0.0.1.
 const API_BASE = window.API_BASE ?? 'http://127.0.0.1:8001';
 
@@ -2493,7 +2493,7 @@ function downloadFeedbackCsv(items) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `guideflow-feedback-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `dlbcl-evidence-feedback-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();

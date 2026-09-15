@@ -30,7 +30,7 @@ def main() -> None:
 
     root = Path(__file__).resolve().parents[1]
     client = PubmedClient(
-        email="guideflow-smoke@example.com",
+        email="dlbcl-evidence-smoke@example.com",
         cache_dir=root / "data" / "cache" / "pubmed",
         esearch_timeout_s=8,
         efetch_timeout_s=12,

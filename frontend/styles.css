@@ -47,7 +47,7 @@ body{
 }
 .sidebar-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-shrink:0}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 8px}
-.brand-badge{width:34px;height:34px;border-radius:var(--r-md);display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--brand),#ff9b6a);box-shadow:0 10px 25px rgba(229,111,61,.35);font-weight:700}
+.brand-badge{width:34px;height:34px;border-radius:var(--r-md);display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--brand),#ff9b6a);box-shadow:0 10px 25px rgba(229,111,61,.35);font-weight:700;font-size:12px;letter-spacing:0}
 .brand-title{font-weight:700;font-size:16px}
 .icon-btn{border:1px solid var(--line);background:#fff;border-radius:var(--r-md);width:36px;height:36px;cursor:pointer;color:var(--text)}
 .new-chat-btn{width:100%;border-radius:var(--r-full);padding:12px 14px;font-weight:700;flex-shrink:0}

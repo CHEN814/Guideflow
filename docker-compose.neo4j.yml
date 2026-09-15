@@ -1,4 +1,4 @@
-# Optional Neo4j for Guideflow knowledge-graph neighborhood API.
+# Optional Neo4j for DLBCL-Evidence knowledge-graph neighborhood API.
 # Requires APOC (used by neo4j_graph_service.import_triples via apoc.create.relationship).
 #
 # Usage (on ECS or local):
