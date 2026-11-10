@@ -349,6 +349,12 @@ class AgentOrchestrator:
                 return json.dumps({"ok": False, "error": "view_pages_disabled_for_source"}, ensure_ascii=False)
             return self._tool_view_pages(args, state=state, standalone=standalone, trace=trace)
         if name == "respond_directly":
+            hybrid = str(getattr(self.settings, "answer_policy", "guideline_only") or "").lower() == "hybrid"
+            if hybrid and "最终答案" in (standalone or ""):
+                return json.dumps(
+                    {"ok": False, "error": "mcq_requires_search_guidelines"},
+                    ensure_ascii=False,
+                )
             return self._tool_respond_directly(args, state=state, question=standalone)
         return json.dumps({"error": f"unknown_tool:{name}"}, ensure_ascii=False)
 
@@ -382,6 +388,12 @@ class AgentOrchestrator:
         hits, diagnostics = self.qa.retriever.retrieve(
             normalized, trace, disease_scope=disease_scope
         )
+        if getattr(self.settings, "penalize_reference_pages", False) and hits:
+            from backend.app.services.evidence_policy import penalize_reference_pages
+
+            hits = penalize_reference_pages(hits)
+            if trace:
+                trace.log("reference_pages_penalized", {"kept_count": len(hits)})
         route = str(diagnostics.get("route") or state.route)
         if kind == "flowchart":
             route = "flowchart"
@@ -400,6 +412,11 @@ class AgentOrchestrator:
             # Always reinject intent seed decision page if present in raw retrieval.
             hits = self._ensure_seed_hit(standalone, hits, diagnostics, disease_scope, trace)
             hits, disease_guard = self.qa._reinject_disease_hits(pre_gate_hits, hits, disease_scope)
+            min_keep = int(getattr(self.settings, "gate_min_keep", 0) or 0)
+            if min_keep:
+                from backend.app.services.evidence_policy import apply_gate_min_keep
+
+                hits = apply_gate_min_keep(pre_gate_hits, hits, min_keep)
             trace.log(
                 "evidence_gated",
                 {
@@ -409,6 +426,7 @@ class AgentOrchestrator:
                     "degraded": gate_degraded,
                     "protect_decision_pages": protect,
                     "disease_guard": disease_guard,
+                    "gate_min_keep": min_keep,
                 },
             )
         state.gate_degraded = gate_degraded

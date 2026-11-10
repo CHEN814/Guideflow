@@ -15,6 +15,8 @@ from backend.app.prompts import (
     GENERAL_MEDICAL_SYSTEM,
     INTENT_CLASSIFY_SYSTEM,
     SYSTEM_PROMPT,
+    LABELED_PARAMETRIC_BANNER,
+    LABELED_PARAMETRIC_SYSTEM,
     agent_system_prompt_for_source,
     build_evidence_prompt,
     format_history_for_prompt,
@@ -137,11 +139,17 @@ class QwenClient:
         base_url: str,
         model: str,
         source_key: str = "nccn",
+        generate_temperature: float = 0.1,
+        allow_labeled_parametric: bool = False,
+        answer_policy: str = "guideline_only",
     ):
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.source_key = (source_key or "nccn").strip().lower()
+        self.generate_temperature = generate_temperature
+        self.allow_labeled_parametric = allow_labeled_parametric
+        self.answer_policy = (answer_policy or "guideline_only").strip().lower()
 
     def _chat(
         self,
@@ -355,6 +363,38 @@ class QwenClient:
                 f"general_medical_failed:{type(exc).__name__}",
             )
 
+    def generate_labeled_parametric(
+        self,
+        question: str,
+        *,
+        reason: str = "",
+    ) -> Tuple[str, Optional[str]]:
+        if not self.api_key:
+            return (
+                f"{LABELED_PARAMETRIC_BANNER}\n\n当前未配置大模型 API，无法用自身知识作答。",
+                "qwen_api_unavailable",
+            )
+        user = question
+        if reason:
+            user = f"（回退原因：{reason}）\n{question}"
+        try:
+            answer = self._chat_text(
+                [
+                    {"role": "system", "content": LABELED_PARAMETRIC_SYSTEM},
+                    {"role": "user", "content": user},
+                ],
+                temperature=self.generate_temperature,
+                timeout=90,
+            ).strip()
+            if "非指南证据" not in answer:
+                answer = f"{LABELED_PARAMETRIC_BANNER}\n\n{answer}"
+            return answer, None
+        except (requests.RequestException, KeyError, ValueError, RuntimeError) as exc:
+            return (
+                f"{LABELED_PARAMETRIC_BANNER}\n\n暂时无法生成标注式自身知识回答。",
+                f"labeled_parametric_failed:{type(exc).__name__}",
+            )
+
     def gate_evidence(
         self,
         question: str,
@@ -426,8 +466,14 @@ class QwenClient:
         question: str,
         history: Sequence[dict] | None = None,
     ) -> List[Dict[str, object]]:
+        agent_prompt = agent_system_prompt_for_source(self.source_key)
+        if self.answer_policy == "hybrid":
+            agent_prompt += (
+                "\n混合作答已开启：单选题（含「最终答案」）或淋巴瘤诊疗题必须调用 "
+                "search_guidelines，禁止 respond_directly。生成阶段再融合指南与通用知识。\n"
+            )
         messages: List[Dict[str, object]] = [
-            {"role": "system", "content": agent_system_prompt_for_source(self.source_key)},
+            {"role": "system", "content": agent_prompt},
         ]
         hist = format_history_for_prompt(history or [])
         ready_hint = (
@@ -458,7 +504,14 @@ class QwenClient:
             return self._fallback_answer(question, bundle, reason="no_key"), "qwen_api_unavailable"
 
         messages: List[Dict[str, object]] = [
-            {"role": "system", "content": system_prompt_for_source(self.source_key)}
+            {
+                "role": "system",
+                "content": system_prompt_for_source(
+                    self.source_key,
+                    allow_labeled_parametric=self.allow_labeled_parametric,
+                    answer_policy=self.answer_policy,
+                ),
+            }
         ]
         messages.extend(_history_messages(history))
         messages.append(
@@ -470,7 +523,9 @@ class QwenClient:
             }
         )
         try:
-            answer = self._chat_text(messages, temperature=0.1, timeout=90)
+            answer = self._chat_text(
+                messages, temperature=self.generate_temperature, timeout=90
+            )
             return answer, None
         except (requests.RequestException, KeyError, ValueError, RuntimeError) as exc:
             return (
@@ -491,7 +546,14 @@ class QwenClient:
             return
 
         messages: List[Dict[str, str]] = [
-            {"role": "system", "content": system_prompt_for_source(self.source_key)}
+            {
+                "role": "system",
+                "content": system_prompt_for_source(
+                    self.source_key,
+                    allow_labeled_parametric=self.allow_labeled_parametric,
+                    answer_policy=self.answer_policy,
+                ),
+            }
         ]
         messages.extend(_history_messages(history))
         messages.append(

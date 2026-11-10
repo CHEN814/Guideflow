@@ -43,6 +43,14 @@ eval/raw/
 eval/results/
 eval/catalogs/
 
+# Experiments: downloads, runs, case-derived items
+experiments/datasets/sources/
+experiments/datasets/part3/
+experiments/runs/
+experiments/datasets/part2/_v3_nccn_cache/
+experiments/reports/v1_Part3*.md
+experiments/reports/v2_*part3*
+
 # Part 3 case-derived items (public repo; keep local / intranet only)
 eval/part3_questions.json
 docs/评估记录-Part3-病历试跑.md
@@ -70,3 +78,4 @@ Thumbs.db
 .vscode/
 *.swp
 *~
+~$*

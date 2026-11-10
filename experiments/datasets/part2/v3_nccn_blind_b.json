@@ -1,0 +1,218 @@
+[
+  {
+    "id": "P2-N3-040",
+    "question": "滤泡性淋巴瘤复发或难治患者，NCCN指南推荐的双特异性抗体治疗适用于哪些情况？",
+    "source_sentence": "Bispecific Antibody Therapy",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-073",
+    "question": "对于一线治疗的边缘区淋巴瘤（MZL）患者，NCCN指南推荐的联合方案是什么？",
+    "source_sentence": "Lenalidomide + rituximab",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-084",
+    "question": "原发纵隔大B细胞淋巴瘤（PMBL）的诊断需满足哪些临床和病理特征？",
+    "source_sentence": "PMBL can be defined as a clinical entity presenting with primary site of disease in the anterior mediastinum with or without other sites and has histology of DLBCL. Clinical pathologic correlation is required to establish diagnosis.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-124",
+    "question": "HIV感染者中最常见的B细胞淋巴瘤亚型有哪些？",
+    "source_sentence": "DLBCL, Burkitt lymphoma (BL), and primary central nervous system lymphoma (PCNSL) are the most common subtypes of B-cell lymphomas in people with HIV (PWH).",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-064",
+    "question": "脾切除术前应何时接种肺炎球菌、脑膜炎球菌、流感嗜血杆菌及乙型肝炎疫苗？",
+    "source_sentence": "Pneumococcal, meningococcal, haemophilus influenza, and hepatitis B vaccinations should be given at least 2 weeks before splenectomy.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-107",
+    "question": "PTLD患者怀疑中枢神经系统受累时，应选择何种影像学检查？",
+    "source_sentence": "Brain MRI may be useful in selected circumstances, especially when CNS involvement is suspected.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-011",
+    "question": "DLBCL/LBCL患者进行细胞遗传学/FISH检测时，最常检出的异常核型是什么？",
+    "source_sentence": "Cytogenetic/FISH analysis most commonly demonstrates the t(2;17)(p23;q23), denoting the CLTC (clathrin heavy chain):ALK fusion.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-055",
+    "question": "MCL患者一线治疗中，LyMA方案的具体组成和后续治疗策略是什么？",
+    "source_sentence": "LyMA regimen: RDHA (rituximab, dexamethasone, cytarabine) + platinum (cisplatin, oxaliplatin or carboplatin) x 4 cycles followed by RCHOP for non- PET CR",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-125",
+    "question": "肿瘤溶解综合征（TLS）通常在化疗免疫治疗开始后多长时间内出现？",
+    "source_sentence": "Tumor lysis syndrome (TLS) is a potentially serious complication of anticancer therapy characterized by metabolic and electrolyte abnormalities caused by the disintegration of malignant cells by anticancer therapy and rapid release of intracellular contents into peripheral blood. It is usually observed within 12 to 72 hours after start of chemoimmunotherapy.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-115",
+    "question": "Burkitt淋巴瘤患者一线治疗前是否必须进行肿瘤溶解综合征预防？",
+    "source_sentence": "Prophylaxis for tumor lysis syndrome is mandatory for BL",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-038",
+    "question": "滤泡性淋巴瘤复发或难治患者，是否可考虑使用来那度胺联合利妥昔单抗及epcoritamab-bysp方案？",
+    "source_sentence": "Lenalidomide + Rituximab + Epcoritamab-bysp",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-094",
+    "question": "Burkitt淋巴瘤患者在规范一线治疗后6～18个月复发，应如何选择治疗方案？",
+    "source_sentence": "Patients with disease relapse >6 to 18 months after appropriate first-line therapy should be treated with alternate regimens. While no definitive second-line therapies exist, there are limited data for the following regimens:",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-063",
+    "question": "对于cyclin D1阴性的套细胞淋巴瘤（MCL）患者，哪些辅助检查有助于确诊？",
+    "source_sentence": "Currently available reagents for the evaluation of cyclin D1 by IHC are robust and yield good staining. In the rare instances of MCL that is cyclin D1 and t(11;14) negative, overexpression of cyclin D2 or cyclin D3 may be observed.7,21 However, IHC for cyclin D2 or cyclin D3 is not helpful in establishing the diagnosis of cyclin D1-negative MCL, as these proteins are also expressed in other B-cell malignancies. SOX11 is positive in most patients with MCL, with the exception of the aforementioned indolent subtype, regardless of cyclin D1 expression level. IHC for SOX11 or IGHV gene sequencing potentially aid in differentiating cyclin D1-negative MCL from other B-cell lymphomas.22-24",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-119",
+    "question": "接受抗CD20单抗治疗的患者是否需筛查乙型肝炎病毒（HBV）感染？",
+    "source_sentence": "Hepatitis B virus (HBV): • Anti-CD20 mAb-based chemoimmunotherapy is associated with risk of HBV reactivation. Hepatitis B surface antigen (HBsAg) and hepatitis B core antibody (HBcAb) testing for all patients receiving anti-CD20 mAb therapy",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-045",
+    "question": "对于I–II期滤泡性淋巴瘤患者，放疗作为一线治疗的长期疾病控制效果如何？",
+    "source_sentence": "Stage I–II RT is an effective treatment option for patients with stage I–II disease resulting in long-term disease control rates of >90% with the 10-year PFS and OS rates ranging from 40% to 59% and 58% to 86%, respectively.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-112",
+    "question": "HIV感染者接受一线抗肿瘤治疗时，应避免使用哪些抗病毒药物？",
+    "source_sentence": "In general, avoidance of zidovudine, cobicistat, and ritonavir is strongly recommended.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-101",
+    "question": "PTLD一线治疗中，对于病情危重的患者，应如何调整免疫抑制剂？",
+    "source_sentence": "RIS: Reduction in calcineurin inhibition (cyclosporin and tacrolimus), discontinuation of antimetabolic agents (azathioprine and mycophenolate mofetil), and for patients who are critically ill all non-glucocorticoid immunosuppression should be discontinued.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-106",
+    "question": "PTLD患者若出现新病灶或明确疾病进展，应如何处理？",
+    "source_sentence": "If 5-PS: 5 because of new sites of disease or clear progression, treat as refractory disease.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-061",
+    "question": "套细胞淋巴瘤患者一线治疗后中位无进展生存期和总生存期分别是多少？",
+    "source_sentence": "After a median follow-up of 15 years, the median PFS and OS were 9 years and 13 years, respectively, for all the intent-to-treat patient population.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-116",
+    "question": "HIV相关淋巴瘤诊断中，如何准确区分不同亚型？",
+    "source_sentence": "The major factor in the diagnostic evaluation of HIV-associated lymphoma is to distinguish between different subtypes. Adequate immunophenotyping using immunohistochemistry (IHC) with or without flow cytometry analysis is essential to establish the diagnosis of the subtype of HIV-associated lymphomas.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-062",
+    "question": "胃黏膜相关淋巴组织边缘区淋巴瘤（EMZL）的分期应采用哪种系统？",
+    "source_sentence": "Staging of EMZL of the Stomach: Comparison of Different Systems (EMZLG-A).",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-012",
+    "question": "对于复发或难治性DLBCL/LBCL患者，异基因造血干细胞移植（allo-HCT）的适用情况如何？",
+    "source_sentence": "Allogeneic HCT in selected casesii ± ISRTt,hh",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-091",
+    "question": "Burkitt淋巴瘤疗效评估应采用哪种标准？",
+    "source_sentence": "Lugano Response Criteria for Non-Hodgkin Lymphoma (NHODG-C).",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-085",
+    "question": "国际预后指数（IPI）和年龄调整IPI对原发性纵隔大B细胞淋巴瘤（PMBL）初诊时的预后判断价值如何？",
+    "source_sentence": "International prognostic index (IPI) and age-adjusted IPI are of limited value in determining the prognosis of PMBL at diagnosis.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-088",
+    "question": "达到完全缓解的HGBL/PMBL/转化型淋巴瘤患者，巩固治疗有哪些选择？",
+    "source_sentence": "Consolidation therapy with HDT/ASCR with or without ISRT (if not previously given) or active surveillance are included as treatment options for patients achieving CR.",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-018",
+    "question": "纵隔灰区淋巴瘤（MGZL）的病理学特征是什么？",
+    "source_sentence": "MEDIASTINAL GRAY ZONE LYMPHOMA (MGZL)a\n(overlapping features between PMBL and CHL)",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-095",
+    "question": "Burkitt淋巴瘤疗效评估应采用哪种标准？",
+    "source_sentence": "Lugano Response Criteria for Non-Hodgkin Lymphoma (NHODG-C).",
+    "annotator": "",
+    "G": [],
+    "notes": ""
+  }
+]

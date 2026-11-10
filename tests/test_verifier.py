@@ -62,6 +62,24 @@ def test_verifier_deduplicates_citation_count() -> None:
     assert result["raw_citation_count"] == 2
 
 
+def test_verifier_excludes_system_literature_appendix_only() -> None:
+    appendix = "\n## 指南外最新文献（供参考）\n[L1] 一项研究\n来源：PubMed · 仅摘要\n"
+    result = verify_answer(
+        "DLBCL", ("指南证据 [S1]。\n\n" + appendix).strip(),
+        [_hit("DLBCL")], literature_appendix=appendix,
+    )
+    assert result["ok"] is True
+    # The appendix must not hide a source section in the model's own answer.
+    result = verify_answer(
+        "DLBCL", "指南证据 [S1]。\n来源：模型自行列举\n\n" + appendix,
+        [_hit("DLBCL")], literature_appendix=appendix,
+    )
+    assert "answer_contains_inline_sources" in result["issues"]
+    # A heading alone does not grant an exemption.
+    result = verify_answer("DLBCL", "指南证据 [S1]。\n\n" + appendix, [_hit("DLBCL")])
+    assert "answer_contains_inline_sources" in result["issues"]
+
+
 def test_format_answer_strips_inline_sources_and_internal_ids() -> None:
     answer = (
         "## 结论\n指南未直接提及 R248Q [S1]。\n\n"

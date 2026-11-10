@@ -1,0 +1,6 @@
+{
+  "working_model": "qwen3.7-text-rerank",
+  "endpoint": "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank",
+  "probed": "2026-10-13",
+  "note": "账号实测可用；无需其他平台"
+}

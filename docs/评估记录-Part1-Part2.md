@@ -2,6 +2,7 @@
 
 > 批次 `EVAL-20260914`。原始 JSON 在 `code/eval/results/`（D 盘）。方案见 [评估方案.md](./评估方案.md)。
 > MedQA 题干版权属原题库；本表保留题号与得分，全文在本地 `eval/part1_questions.json`。
+> v2 起请改用 `experiments/`：本题集在 `experiments/datasets/`，本记录副本在 `experiments/reports/v1_Part1-Part2.md`。
 
 ## 结果要点
 

@@ -1,0 +1,7 @@
+{
+  "include": "题干或选项匹配淋巴瘤/B细胞相关关键词",
+  "exclude_hodgkin_only": true,
+  "disease_tag": "规则标注，跨病种=0或>1个病名",
+  "kb_coverage": "unlabeled；需两人盲标后再冻结覆盖子集",
+  "split": "按病种分层 40% dev / 60% test, seed=13"
+}

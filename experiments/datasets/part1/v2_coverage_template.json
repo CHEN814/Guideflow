@@ -1,0 +1,732 @@
+[
+  {
+    "id": "P1V2-MedQA--0032-788f89b92b",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0057-2e4e075121",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0067-8a4d9fbe7e",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0192-c9c8edf472",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0220-be8d5cafd2",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0231-facc23add6",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0236-0675053152",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0250-82ec925019",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0253-86b009b2ce",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0275-301c58a43f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0298-2737a7bc57",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0385-c5f8f7966e",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0425-028125c442",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0494-c97cbb042a",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0549-8a7afe819e",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0580-924725ccd8",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0724-b2dcfa5324",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0770-effe9a9b38",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0951-f1ffa68bd5",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0962-ea0461f906",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0991-a1f8329b84",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1106-31e3d4aecb",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1153-da2795cf8c",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1279-b0944407db",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1340-a18a3b2223",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1373-ad7558ef6f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1410-82a2832f15",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1417-5391f5b581",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1465-fb0bae0cfa",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1552-d013a522fd",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1561-84f24886fe",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1627-b744159c4f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1632-6d09a21321",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1892-780b72f8cc",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1949-04ef7fcffc",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1989-f16d3f6ed1",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2007-2a78ed771b",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2024-851cfba6b0",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2170-2d47e7c905",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2331-0a71f29aba",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2388-7158de44bc",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2431-8130cea04f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2516-4c1df1474f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2707-f506ac516c",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2712-93d24e5014",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2806-c3538367d2",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2834-ba6ae4ffbf",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--2972-83036be481",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3000-35670e67da",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3143-5960e995e3",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3173-c8f8d001a5",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3254-68fac583af",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3412-fce491fdfa",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3617-19f13e007c",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3637-34d9790b3d",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3698-ff96173285",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3739-c16350111a",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3810-9eefdc9ffa",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--3958-3b32c11751",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4036-39d45f5317",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4041-affaa45ed5",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4195-a39c47cb3f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4267-c7487a4caa",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4292-71fea75519",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4301-d95b85ad9b",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4307-4379d56d9e",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4359-e767f1e59c",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4363-b60868b2ec",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4376-1fba812f73",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4448-507d811595",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4462-ad8d81f9ef",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4492-9c48f3b5f7",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4499-edf844109d",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4567-c09c9b93c9",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4816-1032f3a0c7",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--4977-6243a556a0",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--5146-730674e0d1",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--5306-a4ba47227f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--5390-121411d91d",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--5472-18f8107133",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--5544-0e97f4c71c",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--5646-a8e3eb1f2d",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--5732-b4efee684e",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--5818-132039e4dd",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--5991-ebc2eea59b",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6053-9957afb46f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6086-59d9521e07",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6223-80bd73f7ee",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6258-7e0bb976fc",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6268-2d42417135",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6320-ce351c7893",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6381-6b5e4daa83",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6491-f91708cde7",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6495-1a9c6b1cc8",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6552-f527422b10",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6558-7955d39c67",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6735-ff489765d0",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6816-0c015486ed",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6931-07d9ad07ab",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6964-fb281ee2ea",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--6990-9db6934f00",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7004-fa57549865",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7026-0d2432ab17",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7038-1c25982b7f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7142-0ecb6276c7",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7520-d2030994f6",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7644-054fae8935",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7666-6a4bcbde5b",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7717-7f19108810",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7748-cd56f2166c",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7911-fd4e99a5fa",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7916-4a1ef4018b",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--7988-b678a3512d",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--8207-e885d0426f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--8233-d07bedd6ab",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--8315-4b351491e3",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--8453-a802bb501f",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--8569-af960f80d8",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--8704-a80b211629",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--8728-59004d7ad9",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--8859-cb058c18eb",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9043-95f0eb77bb",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9055-b7065c4277",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9077-4ffd21662e",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9225-23816483cf",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9254-6b427265a7",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9368-13081cea9d",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9452-9a5b2552ce",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9538-d8e38c089b",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9651-4a78e19f12",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9657-39b4bed508",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9661-556b00ee90",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9703-9ad0e099e5",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--9867-5fe37605ea",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0020-44fe51b88c",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0142-16bcbeac04",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0161-fd4531b1f3",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0192-48361369a1",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0513-772f891023",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0514-ebc2360718",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0525-748cdbe826",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0565-801886dc59",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0820-c24c466700",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0979-51a2c7a4a8",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--0985-3239eb5677",
+    "kb_coverage": "",
+    "annotator": ""
+  },
+  {
+    "id": "P1V2-MedQA--1238-c00be5844c",
+    "kb_coverage": "",
+    "annotator": ""
+  }
+]

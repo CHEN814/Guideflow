@@ -89,6 +89,13 @@ class Settings:
     ncbi_email: str = "dlbcl-evidence@example.com"
     ncbi_api_key: Optional[str] = None
     ncbi_tool: str = "dlbcl-evidence"
+    # Experiment / policy knobs (production defaults keep current behavior)
+    allow_labeled_parametric: bool = False
+    relevance_gate_threshold: float = 0.0
+    gate_min_keep: int = 0
+    penalize_reference_pages: bool = False
+    generate_temperature: float = 0.1
+    answer_policy: str = "guideline_only"  # guideline_only | hybrid
 
 
 def _first_pdf(root_dir: Path) -> Path:
@@ -431,6 +438,25 @@ def load_settings() -> Settings:
         ),
         ncbi_api_key=os.getenv("NCBI_API_KEY") or None,
         ncbi_tool=str(_cfg_or_env(cfg, "NCBI_TOOL", "dlbcl-evidence", "literature", "ncbi_tool")),
+        allow_labeled_parametric=_as_bool(
+            _cfg_or_env(cfg, "ALLOW_LABELED_PARAMETRIC", "false", "allow_labeled_parametric"),
+            default=False,
+        ),
+        relevance_gate_threshold=float(
+            _cfg_or_env(cfg, "RELEVANCE_GATE_THRESHOLD", "0", "relevance_gate_threshold")
+        ),
+        gate_min_keep=int(_cfg_or_env(cfg, "GATE_MIN_KEEP", "0", "gate_min_keep")),
+        penalize_reference_pages=_as_bool(
+            _cfg_or_env(cfg, "PENALIZE_REFERENCE_PAGES", "false", "penalize_reference_pages"),
+            default=False,
+        ),
+        generate_temperature=float(
+            _cfg_or_env(cfg, "GENERATE_TEMPERATURE", "0.1", "generate_temperature")
+        ),
+        answer_policy=str(
+            _cfg_or_env(cfg, "ANSWER_POLICY", "guideline_only", "answer_policy")
+        ).strip().lower()
+        or "guideline_only",
     )
 
 

@@ -1,0 +1,15 @@
+{
+  "n": 82,
+  "nccn_by_disease": {
+    "通用": 2,
+    "DLBCL/LBCL": 8,
+    "FL": 6,
+    "MCL": 6,
+    "Burkitt": 6,
+    "MZL": 6,
+    "HGBL": 6,
+    "PTLD": 6,
+    "HIV": 6
+  },
+  "n_neg_moved": 3
+}

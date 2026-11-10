@@ -1,0 +1,18 @@
+{
+  "n_pos": 141,
+  "n_new": 126,
+  "n_old": 15,
+  "by_disease": {
+    "Burkitt": 9,
+    "DLBCL/LBCL": 39,
+    "FL": 19,
+    "HGBL/PMBL/转化": 12,
+    "HIV": 8,
+    "MCL": 16,
+    "MZL": 16,
+    "PTLD": 10,
+    "通用": 12
+  },
+  "blind_n": 27,
+  "annotation_status": "draft_v3_needs_blind_review"
+}

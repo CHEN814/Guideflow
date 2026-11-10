@@ -14,6 +14,7 @@ class DiseaseScope:
     label: str
     article_ids: List[str]
     module_codes: List[str]
+    kb_covered: bool = True
 
 
 # Shared supportive-care / overview modules that apply across diseases (NCCN).
@@ -197,12 +198,21 @@ _DISEASE_PATTERNS: List[Tuple[int, re.Pattern[str], str]] = [
     (90, re.compile(rf"{_L}PMBL{_R}|{_L}PMBCL{_R}|原发纵隔|primary\s+mediastinal", re.I), "pmbl"),
     (90, re.compile(rf"{_L}HGBL{_R}|高级别\s*B\s*细胞|high[- ]?grade\s+b[- ]?cell|双打击|triple[- ]?hit", re.I), "hgbl"),
     (85, re.compile(rf"{_L}CLL{_R}|{_L}SLL{_R}|慢性淋巴|小淋巴细胞|chronic\s+lymphocytic", re.I), "cll"),
+    (85, re.compile(
+        rf"Waldenstr|华氏巨球蛋白|淋巴浆细胞|{_L}LPL{_R}|{_L}WM{_R}|macroglobulin",
+        re.I,
+    ), "wm"),
+    (85, re.compile(rf"hairy\s+cell|毛细胞白血病|{_L}HCL{_R}", re.I), "hcl"),
     (85, re.compile(rf"外周\s*T|{_L}PTCL{_R}|peripheral\s+t[- ]?cell", re.I), "ptcl"),
     (85, re.compile(rf"NK/?T|结外\s*NK|{_L}NKTCL{_R}|extranodal\s+nk", re.I), "nktcl"),
-    (85, re.compile(rf"霍奇金|{_L}HL{_R}|Hodgkin", re.I), "hl"),
+    (85, re.compile(rf"(?<!非)霍奇金淋巴瘤|(?<![Nn]on-)(?<![Nn]on\s)Hodgkin\s+lymphoma|{_L}HL{_R}", re.I), "hl"),
     (80, re.compile(rf"{_L}FL{_R}|滤泡淋巴瘤|滤泡性淋巴瘤|follicular\s+lymphoma", re.I), "fl"),
     (80, re.compile(rf"{_L}MCL{_R}|套细胞|mantle\s+cell", re.I), "mcl"),
-    (80, re.compile(rf"{_L}MZL{_R}|{_L}NMZL{_R}|{_L}SMZL{_R}|{_L}EMZL{_R}|边缘区|marginal\s+zone", re.I), "mzl"),
+    (80, re.compile(
+        rf"{_L}MZL{_R}|{_L}NMZL{_R}|{_L}SMZL{_R}|{_L}EMZL{_R}|边缘区|marginal\s+zone|"
+        rf"{_L}MALT{_R}|MALToma|mucosa[- ]associated\s+lymphoid",
+        re.I,
+    ), "mzl"),
     (80, re.compile(rf"{_L}BL{_R}|伯基特|burkitt", re.I), "burkitt"),
     (70, re.compile(rf"{_L}PTLD{_R}|移植后淋巴|post[- ]?transplant\s+lymphoproliferative", re.I), "ptld"),
     (70, re.compile(r"Castleman|巨大淋巴结增生", re.I), "castleman"),
@@ -210,6 +220,40 @@ _DISEASE_PATTERNS: List[Tuple[int, re.Pattern[str], str]] = [
     (70, re.compile(rf"{_L}HIV{_R}|艾滋病相关", re.I), "hiv"),
     (60, re.compile(r"组织学转化|histologic\s+transformation|转化型", re.I), "transform"),
 ]
+
+
+# Pattern keys that a given guideline PDF does not cover as a disease chapter.
+# detect_disease_scope returns kb_covered=False instead of silently falling back to "all".
+_UNCOVERED_LABELS: Dict[str, str] = {
+    "cll": "Chronic Lymphocytic Leukemia / SLL",
+    "wm": "Waldenström Macroglobulinemia / LPL",
+    "hcl": "Hairy Cell Leukemia",
+    "ptcl": "Peripheral T-Cell Lymphoma",
+    "nktcl": "Extranodal NK/T-Cell Lymphoma",
+    "hl": "Hodgkin Lymphoma",
+    "castleman": "Castleman Disease",
+    "cutaneous": "Primary Cutaneous Lymphoma",
+    "pcnsl": "Primary CNS Lymphoma",
+}
+
+_UNCOVERED_BY_SOURCE: Dict[str, set[str]] = {
+    "nccn": {
+        "cll", "wm", "hcl", "ptcl", "nktcl", "hl", "castleman", "cutaneous", "pcnsl",
+    },
+    "eha": {
+        "fl", "mcl", "mzl", "burkitt", "cll", "wm", "hcl", "ptcl", "nktcl", "hl",
+        "castleman", "cutaneous", "ptld", "hiv",
+    },
+    "csco": set(),
+}
+
+
+def uncovered_keys_for_source(source: str) -> set[str]:
+    return set(_UNCOVERED_BY_SOURCE.get((source or "nccn").strip().lower(), set()))
+
+
+def is_kb_uncovered(scope: DiseaseScope) -> bool:
+    return not bool(getattr(scope, "kb_covered", True))
 
 
 def get_active_disease_scope() -> DiseaseScope:
@@ -336,6 +380,14 @@ def detect_disease_scope(
         scope_key = "dlbcl"
     scope = registry.get(scope_key)
     if scope is None:
+        if scope_key in uncovered_keys_for_source(src):
+            return DiseaseScope(
+                key=scope_key,
+                label=_UNCOVERED_LABELS.get(scope_key, scope_key),
+                article_ids=[],
+                module_codes=[],
+                kb_covered=False,
+            )
         return registry["all"]
     return with_common_modules(scope, source=src)
 

@@ -1,0 +1,162 @@
+[
+  {
+    "id": "P2-N16",
+    "topic": "负向",
+    "question": "请根据 NCCN B 细胞淋巴瘤指南，给出 TP53 R248Q 位点特异性的一线化疗剂量（各药 mg/m²）。若指南没有该位点剂量，请明确拒绝编造。",
+    "G": [],
+    "G_opt": [
+      "nccn:BCEL-A 1 OF 3"
+    ],
+    "expected_conclusion": "指南未覆盖位点特异性剂量，应拒绝编造",
+    "data_source": "nccn",
+    "disease": "DLBCL/LBCL",
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v1",
+    "annotation_status": "v1_carried"
+  },
+  {
+    "id": "P2-N101",
+    "topic": "负向",
+    "disease": "DLBCL/LBCL",
+    "question": "请根据 NCCN B 细胞淋巴瘤指南，给出 TP53 R175H 位点特异性的一线各药毫克剂量。若指南没有该位点剂量，请明确拒绝编造。",
+    "expected_conclusion": "指南未覆盖位点特异性剂量，应拒绝编造",
+    "G_opt": [
+      "nccn:BCEL-A 1 OF 3"
+    ],
+    "data_source": "nccn",
+    "G": [],
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v3_new",
+    "annotation_status": "draft_v3_needs_blind_review"
+  },
+  {
+    "id": "P2-N102",
+    "topic": "负向",
+    "disease": "DLBCL/LBCL",
+    "question": "NCCN 是否强制规定初治 DLBCL 必须使用原研利妥昔单抗、禁止任何生物类似药？请给出必须采用的商品名和规格。若未覆盖请拒绝编造。",
+    "expected_conclusion": "指南未强制原研商品名与规格，应拒绝编造",
+    "G_opt": [
+      "nccn:BCEL-C 1 OF 7"
+    ],
+    "data_source": "nccn",
+    "G": [],
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v3_new",
+    "annotation_status": "draft_v3_needs_blind_review"
+  },
+  {
+    "id": "P2-N103",
+    "topic": "负向",
+    "disease": "FL",
+    "question": "请根据 NCCN，给出滤泡淋巴瘤 EZH2 Y646N 突变时必须选用的一线靶向药商品名、剂量和疗程天数。若未覆盖请拒绝编造。",
+    "expected_conclusion": "指南未给出该突变的强制商品名与剂量，应拒绝编造",
+    "G_opt": [
+      "nccn:FOLL-B 1 OF 6"
+    ],
+    "data_source": "nccn",
+    "G": [],
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v3_new",
+    "annotation_status": "draft_v3_needs_blind_review"
+  },
+  {
+    "id": "P2-N104",
+    "topic": "负向",
+    "disease": "MCL",
+    "question": "NCCN 套细胞淋巴瘤是否规定必须在 BR 与 VR-CAP 之间按医院招标结果二选一，并给出中标方案各药 mg/m²？若未覆盖请拒绝编造。",
+    "expected_conclusion": "指南未按招标强制二选一及具体中标剂量，应拒绝编造",
+    "G_opt": [
+      "nccn:MANT-A 1 OF 5"
+    ],
+    "data_source": "nccn",
+    "G": [],
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v3_new",
+    "annotation_status": "draft_v3_needs_blind_review"
+  },
+  {
+    "id": "P2-N105",
+    "topic": "负向",
+    "disease": "Burkitt",
+    "question": "请根据 NCCN 给出月龄 4 个月婴儿伯基特淋巴瘤的强制一线方案及各药每公斤剂量。若指南未覆盖该年龄请拒绝编造。",
+    "expected_conclusion": "本指南不覆盖 4 月龄婴儿剂量，应拒绝编造",
+    "G_opt": [
+      "nccn:BURK-2"
+    ],
+    "data_source": "nccn",
+    "G": [],
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v3_new",
+    "annotation_status": "draft_v3_needs_blind_review"
+  },
+  {
+    "id": "P2-N106",
+    "topic": "负向",
+    "disease": "DLBCL/LBCL",
+    "question": "NCCN 是否规定 LymphoGEN 与 LymphPlex 必须二选一，并给出必须采用的试剂盒货号？若未覆盖请拒绝编造。",
+    "expected_conclusion": "指南未覆盖这两种平台的强制选择与货号，应拒绝编造",
+    "G_opt": [
+      "nccn:BCEL-A 1 OF 3"
+    ],
+    "data_source": "nccn",
+    "G": [],
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v3_new",
+    "annotation_status": "draft_v3_needs_blind_review"
+  },
+  {
+    "id": "P2-N107",
+    "topic": "负向",
+    "disease": "HIV",
+    "question": "请根据 NCCN HIV 相关淋巴瘤章节，给出必须联用的中药复方名称、每味克数和煎煮时间。若未覆盖请拒绝编造。",
+    "expected_conclusion": "指南未覆盖中药复方与克数，应拒绝编造",
+    "G_opt": [
+      "nccn:HIVLYM-1"
+    ],
+    "data_source": "nccn",
+    "G": [],
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v3_new",
+    "annotation_status": "draft_v3_needs_blind_review"
+  },
+  {
+    "id": "P2-N108",
+    "topic": "负向",
+    "disease": "PTLD",
+    "question": "NCCN 是否规定移植后淋巴增殖性疾病必须使用某一家医院定制的 CAR-T 批次号，并给出该批次的转导滴度？若未覆盖请拒绝编造。",
+    "expected_conclusion": "指南未覆盖定制批次号与转导滴度，应拒绝编造",
+    "G_opt": [
+      "nccn:PTLD-1"
+    ],
+    "data_source": "nccn",
+    "G": [],
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v3_new",
+    "annotation_status": "draft_v3_needs_blind_review"
+  },
+  {
+    "id": "P2-N109",
+    "topic": "负向",
+    "disease": "MZL",
+    "question": "请根据 NCCN 给出胃 MALT 必须采用的某一进口抗生素商品名、胶囊规格和强制疗程小时数。若指南未写到该粒度请拒绝编造。",
+    "expected_conclusion": "指南未覆盖进口商品名、胶囊规格与小时级疗程，应拒绝编造",
+    "G_opt": [
+      "nccn:EMZLG-1"
+    ],
+    "data_source": "nccn",
+    "G": [],
+    "negative": true,
+    "task": "refuse_or_say_uncovered",
+    "item_set": "v3_new",
+    "annotation_status": "draft_v3_needs_blind_review"
+  }
+]

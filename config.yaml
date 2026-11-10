@@ -47,9 +47,10 @@ qwen:
 
 vlm:
   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
-  model: qwen-vl-max
+  model: qwen3-vl-plus
 
 reranker:
+  # lexical | qwen3.7-text-rerank | qwen3-rerank
   model: lexical
 
 retrieval:
@@ -64,8 +65,8 @@ literature:
   candidate_k: 30
   final_top_k: 5
   recent_years: 5
-  esearch_timeout_s: 2
-  efetch_timeout_s: 3
+  esearch_timeout_s: 10
+  efetch_timeout_s: 15
   cache_dir: data/cache/pubmed
   ncbi_email: dlbcl-evidence@example.com
   ncbi_tool: dlbcl-evidence
@@ -90,6 +91,18 @@ max_images: 4
 display_max_figures: 4
 page_image_dpi: 150
 enable_evidence_gating: true
+
+# 实验策略（线上默认关闭；experiments/configs 通过 Settings.replace 覆盖）
+# allow_labeled_parametric: 证据无关或知识库未覆盖时允许标注式自身知识
+# relevance_gate_threshold: >0 时若最高重排分低于阈值则丢弃全部证据
+# gate_min_keep: >0 时 LLM 门控后至少保留重排前 N 条
+# penalize_reference_pages: 参考文献列表页降权
+# answer_policy: guideline_only（仅指南）| hybrid（指南 + 通用知识）
+allow_labeled_parametric: false
+relevance_gate_threshold: 0.0
+gate_min_keep: 0
+penalize_reference_pages: false
+answer_policy: guideline_only
 
 crop:
   enabled: true

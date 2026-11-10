@@ -1,0 +1,13 @@
+name: hybrid_qwen_plus
+description: 混合系统（指南证据 + 通用知识，单次融合）；qwen-plus
+qwen_model: qwen-plus
+reranker_model: lexical
+enable_vlm: false
+routing_mode: agentic
+answer_policy: hybrid
+allow_labeled_parametric: false
+relevance_gate_threshold: 0.0
+gate_min_keep: 0
+penalize_reference_pages: true
+generate_temperature: 0.0
+enable_evidence_gating: true

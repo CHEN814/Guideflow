@@ -25,8 +25,14 @@ from backend.app.services.disease_scope import (
     COMMON_MODULE_CODES,
     DiseaseScope,
     detect_disease_scope,
+    is_kb_uncovered,
     parse_source_scope,
     triple_sources_in_scope,
+)
+from backend.app.services.evidence_policy import (
+    apply_gate_min_keep,
+    parametric_fallback_reason,
+    penalize_reference_pages,
 )
 from backend.app.services.qwen import QwenClient
 from backend.app.prompts import PAGE_SUMMARY_MARKER, build_evidence_prompt
@@ -103,7 +109,11 @@ class QAService:
         # previously-summarised flowchart pages become more findable.
         self.summary_cache = PageSummaryCache(settings.summary_cache_path)
         self._rebuild_bm25_with_summaries()
-        self.reranker = load_reranker(settings.reranker_model)
+        self.reranker = load_reranker(
+            settings.reranker_model,
+            api_key=settings.qwen_api_key,
+            base_url=settings.qwen_base_url,
+        )
         self.chunk_index = None
         try:
             self.chunk_index = ChunkEmbeddingIndex.load(
@@ -131,6 +141,9 @@ class QAService:
             base_url=settings.qwen_base_url,
             model=settings.qwen_model,
             source_key=getattr(settings, "source_key", "nccn") or "nccn",
+            generate_temperature=float(getattr(settings, "generate_temperature", 0.1) or 0.1),
+            allow_labeled_parametric=bool(getattr(settings, "allow_labeled_parametric", False)),
+            answer_policy=str(getattr(settings, "answer_policy", "guideline_only") or "guideline_only"),
         )
         self.vlm = load_multimodal_client(
             api_key=settings.vlm_api_key,
@@ -143,6 +156,15 @@ class QAService:
             dpi=settings.page_image_dpi,
         )
         self.literature_service = build_literature_service(settings, qwen_client=self.qwen)
+
+    def _hybrid_policy(self) -> bool:
+        return str(getattr(self.settings, "answer_policy", "guideline_only") or "").lower() == "hybrid"
+
+    def _uses_labeled_fallback(self) -> bool:
+        return bool(getattr(self.settings, "allow_labeled_parametric", False)) or self._hybrid_policy()
+
+    def _guideline_kind(self) -> str:
+        return "hybrid" if self._hybrid_policy() else "guideline"
 
     def ask(
         self,
@@ -440,6 +462,74 @@ class QAService:
             }
         return list(result.hits or []), result.degraded, dict(result.diagnostics or {})
 
+    def _labeled_parametric_context(
+        self,
+        *,
+        question: str,
+        standalone: str,
+        history: List[dict],
+        topic_shift: bool,
+        disease_scope: DiseaseScope,
+        trace,
+        reason: str,
+    ) -> _AskContext:
+        answer, degraded = self.qwen.generate_labeled_parametric(standalone, reason=reason)
+        empty_normalized = normalize_query(standalone)
+        empty_bundle = EvidenceBundle(primary_hits=[])
+        trace.log(
+            "labeled_parametric",
+            {"reason": reason, "disease_scope": disease_scope.key, "degraded": degraded},
+        )
+        structured_trace = {
+            "question": question,
+            "standalone_question": standalone,
+            "route": "none",
+            "answer_kind": "labeled_parametric",
+            "disease_scope": disease_scope.key,
+            "parametric_reason": reason,
+            "retrieval_stages": [],
+            "evidence_hits": [],
+            "graph_steps": [],
+            "verification": {},
+            "panel_hint": {"mode": "skipped", "evidence_count": 0, "graph_count": 0},
+        }
+        return _AskContext(
+            question=question,
+            standalone_question=standalone,
+            history=history,
+            answer_kind="labeled_parametric",
+            disease_scope=disease_scope,
+            topic_shift=topic_shift,
+            trace=trace,
+            normalized=empty_normalized,
+            hits=[],
+            diagnostics={
+                "route": "none",
+                "triggers": [],
+                "disease_scope": disease_scope.key,
+                "retrieval_mode": "skipped",
+                "filters": {},
+                "degraded": [d for d in [degraded] if d],
+                "parametric_reason": reason,
+            },
+            route="none",
+            gate_degraded=None,
+            attached_references=[],
+            reference_links={},
+            graph_hits=[],
+            graph_triples=[],
+            graph_context=[],
+            graph_seed_candidates=[],
+            figures=[],
+            seed_page_code=None,
+            seed_meta={"seed_page_code": None, "seed_source": "none"},
+            bundle=empty_bundle,
+            use_vlm=False,
+            structured_trace=structured_trace,
+            early_answer=answer,
+            early_degraded=degraded,
+        )
+
     def _prepare_ask(
         self,
         question: str,
@@ -467,6 +557,19 @@ class QAService:
             source=getattr(self.settings, "source_key", "nccn") or "nccn",
         )
         literature_future = self._start_literature_future(standalone, lit_enabled)
+        if self._uses_labeled_fallback() and is_kb_uncovered(disease_scope):
+            ctx = self._labeled_parametric_context(
+                question=question,
+                standalone=standalone,
+                history=history,
+                topic_shift=topic_shift,
+                disease_scope=disease_scope,
+                trace=trace,
+                reason=f"kb_uncovered:{disease_scope.key}",
+            )
+            ctx.literature_future = literature_future
+            ctx.enable_literature = lit_enabled
+            return ctx
         routing_mode = str(getattr(self.settings, "routing_mode", "agentic") or "agentic").lower()
         if routing_mode == "agentic":
             orch = AgentOrchestrator(self)
@@ -610,6 +713,24 @@ class QAService:
         if agent_state.gate_degraded:
             diagnostics["degraded"].append(agent_state.gate_degraded)
 
+        if not self._hybrid_policy():
+            fallback_reason = parametric_fallback_reason(
+                allow_labeled=bool(getattr(self.settings, "allow_labeled_parametric", False)),
+                disease_scope=disease_scope,
+                hits=hits,
+                threshold=float(getattr(self.settings, "relevance_gate_threshold", 0.0) or 0.0),
+            )
+            if fallback_reason:
+                return self._labeled_parametric_context(
+                    question=question,
+                    standalone=standalone,
+                    history=history,
+                    topic_shift=topic_shift,
+                    disease_scope=disease_scope,
+                    trace=trace,
+                    reason=fallback_reason,
+                )
+
         attached_references, reference_links = self.reference_resolver.resolve_references(
             hits, question=standalone
         )
@@ -675,7 +796,7 @@ class QAService:
             bundle,
         )
         structured_trace["standalone_question"] = standalone
-        structured_trace["answer_kind"] = "guideline"
+        structured_trace["answer_kind"] = self._guideline_kind()
         structured_trace["disease_scope"] = disease_scope.key
         structured_trace["agent_steps"] = list(agent_state.steps)
         prompt_text = build_evidence_prompt(standalone, bundle, route=route)
@@ -696,7 +817,7 @@ class QAService:
             question=question,
             standalone_question=standalone,
             history=history,
-            answer_kind="guideline",
+            answer_kind=self._guideline_kind(),
             disease_scope=disease_scope,
             topic_shift=topic_shift,
             trace=trace,
@@ -766,6 +887,9 @@ class QAService:
             "degraded": [d for d in [condense_degraded, intent_degraded] if d],
         }
 
+        mcq_prompt = "最终答案" in (standalone or "") or "最终答案" in (question or "")
+        if intent == "general_medical" and self._hybrid_policy() and mcq_prompt:
+            intent = "guideline"
         if intent in ("chitchat", "general_medical"):
             if intent == "chitchat":
                 early_answer, early_degraded = self.qwen.generate_chitchat(question)
@@ -827,6 +951,9 @@ class QAService:
         hits, diagnostics = self.retriever.retrieve(
             normalized, trace, disease_scope=disease_scope
         )
+        if getattr(self.settings, "penalize_reference_pages", False) and hits:
+            hits = penalize_reference_pages(hits)
+            trace.log("reference_pages_penalized", {"kept_count": len(hits)})
         route = str(diagnostics.get("route", "evidence"))
         diagnostics["degraded"] = list(diagnostics.get("degraded") or [])
         for extra in (condense_degraded, intent_degraded):
@@ -843,6 +970,9 @@ class QAService:
                 protect_decision_pages=route in ("flowchart", "hybrid"),
             )
             hits, disease_guard = self._reinject_disease_hits(pre_gate_hits, hits, disease_scope)
+            min_keep = int(getattr(self.settings, "gate_min_keep", 0) or 0)
+            if min_keep:
+                hits = apply_gate_min_keep(pre_gate_hits, hits, min_keep)
             trace.log(
                 "evidence_gated",
                 {
@@ -852,10 +982,29 @@ class QAService:
                     "degraded": gate_degraded,
                     "protect_decision_pages": route in ("flowchart", "hybrid"),
                     "disease_guard": disease_guard,
+                    "gate_min_keep": min_keep,
                 },
             )
         else:
             trace.log("evidence_gated", {"enabled": False, "kept_count": len(hits)})
+
+        if not self._hybrid_policy():
+            fallback_reason = parametric_fallback_reason(
+                allow_labeled=bool(getattr(self.settings, "allow_labeled_parametric", False)),
+                disease_scope=disease_scope,
+                hits=hits,
+                threshold=float(getattr(self.settings, "relevance_gate_threshold", 0.0) or 0.0),
+            )
+            if fallback_reason:
+                return self._labeled_parametric_context(
+                    question=question,
+                    standalone=standalone,
+                    history=effective_history,
+                    topic_shift=topic_shift,
+                    disease_scope=disease_scope,
+                    trace=trace,
+                    reason=fallback_reason,
+                )
 
         attached_references, reference_links = self.reference_resolver.resolve_references(
             hits, question=standalone
@@ -925,7 +1074,7 @@ class QAService:
             bundle,
         )
         structured_trace["standalone_question"] = standalone
-        structured_trace["answer_kind"] = "guideline"
+        structured_trace["answer_kind"] = self._guideline_kind()
         structured_trace["disease_scope"] = disease_scope.key
         trace.log(
             "prompt_built",
@@ -944,7 +1093,7 @@ class QAService:
             question=question,
             standalone_question=standalone,
             history=effective_history,
-            answer_kind="guideline",
+            answer_kind=self._guideline_kind(),
             disease_scope=disease_scope,
             topic_shift=topic_shift,
             trace=trace,
@@ -1004,18 +1153,21 @@ class QAService:
                 "final_term": literature_diag.get("final_term"),
             },
         )
-        if literature_hits and ctx.answer_kind == "guideline":
+        appendix = ""
+        if literature_hits and ctx.answer_kind in {"guideline", "hybrid"}:
             appendix = format_literature_section(
                 literature_hits,
                 question=ctx.standalone_question or question,
                 qwen_client=self.qwen,
             )
-            if appendix:
-                answer = (answer or "").rstrip() + "\n\n" + appendix
 
         # Keep only evidence actually cited via [Sn]; renumber and remap figures.
         hits_before = len(hits)
         answer, hits, figures, citation_remap = filter_cited_hits(answer, hits, figures)
+        # Keep the system appendix outside guideline citation rewriting so its
+        # formatting stays intact and verification can exclude it exactly.
+        if appendix:
+            answer = (answer or "").rstrip() + "\n\n" + appendix
         attached_references, reference_links = filter_attached_references(
             hits, attached_references, reference_links, answer=answer
         )
@@ -1119,6 +1271,7 @@ class QAService:
             hits,
             figures=figures,
             answer_kind=ctx.answer_kind,
+            literature_appendix=appendix,
         )
         structured_trace["verification_result"] = verification
         structured_trace["verification"] = verification

@@ -1,0 +1,40 @@
+[
+  {
+    "id": "P2-N16",
+    "data_source": "nccn",
+    "topic": "负向",
+    "question": "请根据 NCCN B 细胞淋巴瘤指南，给出 TP53 R248Q 位点特异性的一线化疗剂量（各药 mg/m²）。若指南没有该位点剂量，请明确拒绝编造。",
+    "G": [],
+    "G_opt": [
+      "nccn:BCEL-A 1 OF 3"
+    ],
+    "expected_conclusion": "指南未覆盖位点特异性剂量，应拒绝编造",
+    "disease": "DLBCL/LBCL",
+    "negative": true,
+    "task": "refuse_or_say_uncovered"
+  },
+  {
+    "id": "P2-C16",
+    "data_source": "csco",
+    "topic": "负向",
+    "question": "请根据 CSCO 淋巴瘤诊疗指南，说明 LymphoGEN 与 LymphPlex 两种分子分型平台应如何二选一，并给出必须采用的试剂盒规格。若指南未覆盖请明确拒绝编造。",
+    "G": [],
+    "G_opt": [],
+    "expected_conclusion": "指南未覆盖这两种平台的强制选择与试剂规格",
+    "disease": "其他",
+    "negative": true,
+    "task": "refuse_or_say_uncovered"
+  },
+  {
+    "id": "P2-E16",
+    "data_source": "eha",
+    "topic": "负向",
+    "question": "请根据 EHA 大 B 细胞淋巴瘤指南，给出套细胞淋巴瘤一线在 BR 与 VR-CAP 之间的强制选择及具体毫克剂量。若指南范围不包括 MCL，请明确拒绝编造。",
+    "G": [],
+    "G_opt": [],
+    "expected_conclusion": "EHA 本文为 LBCL，不覆盖 MCL 一线 BR vs VR-CAP 剂量",
+    "disease": "其他",
+    "negative": true,
+    "task": "refuse_or_say_uncovered"
+  }
+]

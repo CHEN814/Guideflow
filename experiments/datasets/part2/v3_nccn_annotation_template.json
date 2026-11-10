@@ -1,0 +1,2082 @@
+[
+  {
+    "id": "P2-N3-001",
+    "annotator": "",
+    "question": "DLBCL/LBCL诊断时是否需要进行BCL2和MYC基因重排的FISH检测？",
+    "source_sentence": "Perform FISH for BCL2 rearrangement [t(14;18)], and MYC rearrangements [t(8;14) or variants, t(8;22), t(2;8)].",
+    "source_unit": "nccn:HTBCEL-1",
+    "G": [
+      "nccn:HTBCEL-1"
+    ],
+    "G_opt": [
+      "nccn:BCEL-A 1 OF 3"
+    ],
+    "expected_conclusion": "需行FISH检测BCL2重排[t(14;18)]及MYC重排[t(8;14)或其变异型t(8;22)、t(2;8)]。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-002",
+    "annotator": "",
+    "question": "对于复发难治性DLBCL/LBCL患者，造血干细胞移植前后是否可对既往受累部位加用放疗？",
+    "source_sentence": "hh Additional RT can be given before or after transplant to sites of previous positive disease.",
+    "source_unit": "nccn:BCEL-8",
+    "G": [
+      [
+        "nccn:BCEL-8",
+        "nccn:disc-dlbcl-p265-c17"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "可以，在移植前或移植后对既往阳性病灶部位加用放疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-003",
+    "annotator": "",
+    "question": "复发或难治性DLBCL/LBCL患者，NCCN指南推荐的首选挽救治疗方案有哪些？",
+    "source_sentence": "Preferred (in alphabetical order)\n• DHA + platinum (Carboplatin, Cisplatin, or Oxaliplatin) ± Rituximab\n• GDP ± Rituximab\n• ICE ± Rituximab",
+    "source_unit": "nccn:BCEL-C 3 OF 7",
+    "G": [
+      [
+        "nccn:BCEL-C 3 OF 7",
+        "nccn:BCEL-C 7 OF 7"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "首选方案包括DHA联合铂类（卡铂、顺铂或奥沙利铂）±利妥昔单抗、GDP方案±利妥昔单抗、ICE方案±利妥昔单抗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-004",
+    "annotator": "",
+    "question": "DLBCL/LBCL患者初诊体格检查应重点关注哪些部位？",
+    "source_sentence": "Physical exam: attention to node-bearing areas, including Waldeyer’s ring, and to size of liver and spleen",
+    "source_unit": "nccn:BCEL-2",
+    "G": [
+      "nccn:BCEL-2"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "重点检查淋巴结区域（包括Waldeyer环）以及肝脾大小。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-005",
+    "annotator": "",
+    "question": "对于复发时间＜12个月或原发性难治的DLBCL/LBCL患者，NCCN指南推荐的二线治疗策略是什么？",
+    "source_sentence": "SECOND-LINE THERAPYe,j,k (relapsed disease <12 mo or primary refractory disease)",
+    "source_unit": "nccn:BCEL-C 2 OF 7",
+    "G": [
+      [
+        "nccn:BCEL-C 2 OF 7",
+        "nccn:disc-dlbcl-p264-c16"
+      ]
+    ],
+    "G_opt": [
+      "nccn:BCEL-C 3 OF 7"
+    ],
+    "expected_conclusion": "推荐二线治疗（SECOND-LINE THERAPY）",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-006",
+    "annotator": "",
+    "question": "对于无症状的DLBCL/LBCL患者，何时应选择PET/CT而非其他影像学方法进行疗效监测？",
+    "source_sentence": "Surveillance imaging is used for monitoring asymptomatic patients. When a site of disease can only be visualized on PET/CT scan (eg, bone), it is appropriate to proceed with PET/CT scans for surveillance.",
+    "source_unit": "nccn:BCEL-9",
+    "G": [
+      "nccn:BCEL-9"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "当病灶仅能在PET/CT上显影（如骨病变）时，应采用PET/CT进行随访监测。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-007",
+    "annotator": "",
+    "question": "复发或难治性DLBCL/LBCL患者可考虑哪些挽救化疗方案？",
+    "source_sentence": "ESHAP (etoposide, methylprednisolone, cytarabine, cisplatin) ± rituximab",
+    "source_unit": "nccn:BCEL-C 7 OF 7",
+    "G": [
+      "nccn:BCEL-C 7 OF 7"
+    ],
+    "G_opt": [
+      "nccn:BCEL-C 3 OF 7"
+    ],
+    "expected_conclusion": "ESHAP（依托泊苷、甲泼尼龙、阿糖胞苷、顺铂）±利妥昔单抗是可选的挽救化疗方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-008",
+    "annotator": "",
+    "question": "DLBCL患者一线治疗中，R-CHOP方案推荐的总疗程数是多少？",
+    "source_sentence": "RCHOP x 2–3 cycles (total of\n6 cycles)k ± ISRTi,t",
+    "source_unit": "nccn:BCEL-5",
+    "G": [
+      [
+        "nccn:BCEL-5",
+        "nccn:BCEL-C 6 OF 7"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "R-CHOP共6个周期。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-009",
+    "annotator": "",
+    "question": "对于计划接受CAR-T细胞治疗或CD3×CD20双特异性抗体治疗的复发难治性DLBCL/LBCL患者，使用苯达莫司汀需注意什么？",
+    "source_sentence": "In patients intended to receive CAR T-cell therapy or CD3 x CD20 bispecific antibody therapy, bendamustine should be used with caution. Delay bendamustine until after CAR-T leukapheresis.",
+    "source_unit": "nccn:HTBCEL-A 2 OF 2",
+    "G": [
+      "nccn:HTBCEL-A 2 OF 2"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "应谨慎使用苯达莫司汀，并延迟至CAR-T白细胞分离术后再给药。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-010",
+    "annotator": "",
+    "question": "DLBCL患者初诊时应如何计算国际预后指数（IPI）？",
+    "source_sentence": "Calculation of International Prognostic Index (IPI) (BCEL-A 2 of 3)",
+    "source_unit": "nccn:BCEL-2",
+    "G": [
+      [
+        "nccn:BCEL-2",
+        "nccn:BCEL-A 2 OF 3"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "需评估年龄＞60岁、ECOG体能状态≥2分、LDH升高、结外受累部位≥2个、Ann Arbor分期Ⅲ或Ⅳ期这5项因素，每项1分，总分0–5分。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-011",
+    "annotator": "",
+    "question": "DLBCL/LBCL患者进行细胞遗传学/FISH检测时，最常检出的异常核型是什么？",
+    "source_sentence": "Cytogenetic/FISH analysis most commonly demonstrates the t(2;17)(p23;q23), denoting the CLTC (clathrin heavy chain):ALK fusion.",
+    "source_unit": "nccn:BCEL-B 1 OF 2",
+    "G": [
+      "nccn:BCEL-B 1 OF 2"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "最常检出t(2;17)(p23;q23)，提示CLTC-ALK融合。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-012",
+    "annotator": "",
+    "question": "对于复发或难治性DLBCL/LBCL患者，异基因造血干细胞移植（allo-HCT）的适用情况如何？",
+    "source_sentence": "Allogeneic HCT in selected casesii ± ISRTt,hh",
+    "source_unit": "nccn:BCEL-8",
+    "G": [
+      "nccn:BCEL-8"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "在经选择的复发或难治性DLBCL/LBCL患者中可考虑异基因造血干细胞移植，可联合局部放疗（ISRT）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-013",
+    "annotator": "",
+    "question": "复发或难治性弥漫大B细胞淋巴瘤（DLBCL）患者，NCCN指南推荐的首选细胞治疗方案是什么？",
+    "source_sentence": "CAR T-cell therapy (BCEL-C 2 of 7)",
+    "source_unit": "nccn:BCEL-8",
+    "G": [
+      [
+        "nccn:BCEL-8",
+        "nccn:BCEL-C 2 OF 7"
+      ]
+    ],
+    "G_opt": [
+      "nccn:BCEL-7",
+      "nccn:HTBCEL-A 1 OF 2"
+    ],
+    "expected_conclusion": "CAR T细胞治疗是复发或难治性DLBCL的推荐治疗方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-014",
+    "annotator": "",
+    "question": "DLBCL/LBCL患者在追加治疗前PET显像阳性，是否需要重复活检？",
+    "source_sentence": "Repeat biopsy should be strongly considered if PET-positive prior to additional therapy because PET positivity may represent post-treatment inflammation. If biopsy negative, follow CR pathway.",
+    "source_unit": "nccn:HTBCEL-3",
+    "G": [
+      "nccn:HTBCEL-3"
+    ],
+    "G_opt": [
+      "nccn:BCEL-6",
+      "nccn:BCEL-9"
+    ],
+    "expected_conclusion": "应强烈考虑重复活检，因PET阳性可能为治疗后炎症反应；若活检阴性，则按完全缓解路径随访。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-015",
+    "annotator": "",
+    "question": "对于复发时间超过12个月的弥漫性大B细胞淋巴瘤（DLBCL）或大B细胞淋巴瘤（LBCL）患者，NCCN指南推荐的二线治疗策略是什么？",
+    "source_sentence": "SECOND-LINE THERAPYe,j,k\n(relapsed disease >12 mo)",
+    "source_unit": "nccn:BCEL-C 3 OF 7",
+    "G": [
+      "nccn:BCEL-C 3 OF 7"
+    ],
+    "G_opt": [
+      "nccn:BCEL-C 2 OF 7"
+    ],
+    "expected_conclusion": "推荐二线治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-016",
+    "annotator": "",
+    "question": "哪些基因突变与非GCB型弥漫性大B细胞淋巴瘤相关？",
+    "source_sentence": "BTK, CARD11, CD79B, MYD88 Associated with non-GCB DLBCL",
+    "source_unit": "nccn:BCEL-A 1 OF 3",
+    "G": [
+      "nccn:BCEL-A 1 OF 3"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "BTK、CARD11、CD79B和MYD88基因突变与非GCB型DLBCL相关。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-017",
+    "annotator": "",
+    "question": "DLBCL/LBCL患者完成治疗后，影像学随访的频率应如何安排？",
+    "source_sentence": "C/A/P CT scan with contrast no more often than every 6 mo for 2 y after completion of treatment, then only as clinically indicated",
+    "source_unit": "nccn:BCEL-9",
+    "G": [
+      "nccn:BCEL-9"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "完成治疗后2年内，增强CT扫描（C/A/P）每6个月一次；2年后仅根据临床需要进行。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-018",
+    "annotator": "",
+    "question": "纵隔灰区淋巴瘤（MGZL）的病理学特征是什么？",
+    "source_sentence": "MEDIASTINAL GRAY ZONE LYMPHOMA (MGZL)a\n(overlapping features between PMBL and CHL)",
+    "source_unit": "nccn:BCEL-B 2 OF 2",
+    "G": [
+      [
+        "nccn:BCEL-B 2 OF 2",
+        "nccn:disc-dlbcl-p270-c22"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "具有原发性纵隔大B细胞淋巴瘤（PMBL）和经典霍奇金淋巴瘤（CHL）的重叠特征。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-019",
+    "annotator": "",
+    "question": "弥漫大B细胞淋巴瘤（DLBCL）中，哪些分期属于晚期？",
+    "source_sentence": "Stage II with extensive mesenteric diseaseh or Stage III, IVi,k,m,n,o",
+    "source_unit": "nccn:BCEL-3",
+    "G": [
+      [
+        "nccn:BCEL-3",
+        "nccn:BCEL-6"
+      ]
+    ],
+    "G_opt": [
+      "nccn:BCEL-C 1 OF 7",
+      "nccn:BCEL-5"
+    ],
+    "expected_conclusion": "III期和IV期属于晚期；II期伴广泛肠系膜受累也视为晚期。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-020",
+    "annotator": "",
+    "question": "对于复发或难治性DLBCL/LBCL患者，NCCN指南推荐的巩固治疗方案是什么？",
+    "source_sentence": "HDT/ASCR (category 1) ± ISRTt,hh",
+    "source_unit": "nccn:BCEL-8",
+    "G": [
+      [
+        "nccn:BCEL-8",
+        "nccn:disc-dlbcl-p258-c10"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-dlbcl-p259-c11"
+    ],
+    "expected_conclusion": "高剂量化疗联合自体干细胞回输（HDT/ASCR）为1类推荐，可联合受累部位放疗（ISRT）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-021",
+    "annotator": "",
+    "question": "DLBCL/LBCL患者疗效评估应采用哪种国际标准？",
+    "source_sentence": "r Lugano Response Criteria for Non-Hodgkin Lymphoma (NHODG-C).",
+    "source_unit": "nccn:BCEL-8",
+    "G": [
+      [
+        "nccn:BCEL-8",
+        "nccn:HTBCEL-2"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "应采用Lugano非霍奇金淋巴瘤疗效评估标准。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-022",
+    "annotator": "",
+    "question": "对于出生时性别为男性且年龄大于60岁的DLBCL患者，R-CHOP-21方案中利妥昔单抗的剂量是否可考虑增加至500 mg/m²？",
+    "source_sentence": "c In RCHOP-21, may consider increasing dose of rituximab to 500 mg/m2 in patients assigned male at birth >60 y.",
+    "source_unit": "nccn:BCEL-C 5 OF 7",
+    "G": [
+      "nccn:BCEL-C 5 OF 7"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "在R-CHOP-21方案中，可考虑将利妥昔单抗剂量增加至500 mg/m²用于出生时性别为男性且年龄＞60岁的患者。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-023",
+    "annotator": "",
+    "question": "对于复发时间＜12个月或原发难治的DLBCL/LBCL患者，二线治疗应考虑什么？",
+    "source_sentence": "Second-Line Therapy for Relapsed Disease <12 Months or Primary Refractory Disease: Candidates for CAR T-Cell Therapy",
+    "source_unit": "nccn:disc-dlbcl-p263-c15",
+    "G": [
+      [
+        "nccn:disc-dlbcl-p263-c15",
+        "nccn:BCEL-C 2 OF 7",
+        "nccn:disc-dlbcl-p264-c16"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-dlbcl-p265-c17",
+      "nccn:disc-dlbcl-p259-c11",
+      "nccn:disc-dlbcl-p258-c10"
+    ],
+    "expected_conclusion": "应考虑CAR T细胞治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-024",
+    "annotator": "",
+    "question": "ZUMA-7和TRANSFORM试验结果证实了什么？",
+    "source_sentence": "The results of the ZUMA-7 and TRANSFORM trials (discussed above) have confirmed ",
+    "source_unit": "nccn:disc-dlbcl-p264-c16",
+    "G": [
+      "nccn:disc-dlbcl-p264-c16"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "ZUMA-7和TRANSFORM试验证实了CAR-T细胞疗法在复发或难治性大B细胞淋巴瘤（LBCL）患者中较标准挽救治疗具有显著临床获益。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-025",
+    "annotator": "",
+    "question": "LYSA/GOELAMS开展的前瞻性随机对照试验结果如何？",
+    "source_sentence": "The results of the prospective randomized trial conducted by LYSA/GOELAMS showed",
+    "source_unit": "nccn:disc-dlbcl-p251-c3",
+    "G": [
+      [
+        "nccn:disc-dlbcl-p251-c3",
+        "nccn:disc-dlbcl-p253-c5"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "该试验结果表明某种治疗方案在DLBCL一线治疗中具有优效性或非劣效性（具体结论需结合试验终点，但原句未提供细节）",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-026",
+    "annotator": "",
+    "question": "对于达到完全缓解的复发或难治性DLBCL患者，NCCN指南是否推荐高剂量治疗联合自体干细胞回输（HDT/ASCT）作为巩固治疗？",
+    "source_sentence": "Consolidation therapy with HDT/ASCR (category 1 for patients with CR) with or wi",
+    "source_unit": "nccn:disc-dlbcl-p265-c17",
+    "G": [
+      [
+        "nccn:disc-dlbcl-p265-c17",
+        "nccn:disc-dlbcl-p258-c10"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-dlbcl-p264-c16"
+    ],
+    "expected_conclusion": "推荐高剂量治疗联合自体干细胞回输（HDT/ASCT）作为巩固治疗，属1类推荐。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-027",
+    "annotator": "",
+    "question": "复发难治性DLBCL患者在启动CD19靶向CAR-T细胞治疗前，是否需要重新活检确认CD19阳性？",
+    "source_sentence": "Rebiopsy to confirm CD19 positivity is recommended prior to the initiation of CD19-directed CAR T-cell therapy.",
+    "source_unit": "nccn:disc-dlbcl-p262-c14",
+    "G": [
+      "nccn:disc-dlbcl-p262-c14"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "推荐在启动CD19靶向CAR-T细胞治疗前进行再活检以确认CD19阳性。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-028",
+    "annotator": "",
+    "question": "对于接受二线治疗后达到部分缓解（PR）的复发或难治性DLBCL/LBCL患者，是否可考虑CAR-T细胞治疗？",
+    "source_sentence": "CAR T-cell therapy (axicabtagene ciloleucel or tisagenlecleucel or lisocabtagene maraleucel) is also an appropriate option for patients achieving a PR following second-line therapy.",
+    "source_unit": "nccn:disc-dlbcl-p265-c17",
+    "G": [
+      "nccn:disc-dlbcl-p265-c17"
+    ],
+    "G_opt": [
+      "nccn:disc-dlbcl-p259-c11"
+    ],
+    "expected_conclusion": "是，CAR-T细胞治疗（axicabtagene ciloleucel、tisagenlecleucel或lisocabtagene maraleucel）是合适的选择。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-029",
+    "annotator": "",
+    "question": "对于一线治疗后12个月内复发或原发难治的DLBCL/LBCL患者，传统二线治疗的预后如何？",
+    "source_sentence": "Retrospective studies reported extremely poor outcomes (to conventional second-line therapies) for primary refractory disease or relapsed disease <12 months after completion of first-line therapy.",
+    "source_unit": "nccn:disc-dlbcl-p264-c16",
+    "G": [
+      "nccn:disc-dlbcl-p264-c16"
+    ],
+    "G_opt": [
+      "nccn:disc-dlbcl-p261-c13",
+      "nccn:disc-dlbcl-p263-c15"
+    ],
+    "expected_conclusion": "预后极差。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-030",
+    "annotator": "",
+    "question": "对于smIPI＞1的DLBCL/LBCL患者，一线治疗推荐方案是什么？",
+    "source_sentence": "Pola-R-CHP is recommended for patients with smIPI >1 based on the results of the POLARIX trial.60",
+    "source_unit": "nccn:disc-dlbcl-p253-c5",
+    "G": [
+      "nccn:disc-dlbcl-p253-c5"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "Pola-R-CHP方案被推荐用于smIPI＞1的患者。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-031",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤（FL）I期或II期非播散型患者，首选的治疗方式是什么？",
+    "source_sentence": "Stage I, IIu Excision (preferred) or ISRTk or RCHOP for patients with extensive local disease who are not candidates for excision or ISRT",
+    "source_unit": "nccn:FOLL-6",
+    "G": [
+      [
+        "nccn:FOLL-6",
+        "nccn:disc-fl-p167-c6"
+      ]
+    ],
+    "G_opt": [
+      "nccn:FOLL-3"
+    ],
+    "expected_conclusion": "I期或II期非播散型FL患者首选手术切除。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-032",
+    "annotator": "",
+    "question": "DLBCL/LBCL诊断时，实验室检查应包括哪些基本项目？",
+    "source_sentence": "Laboratory assessments should include standard blood work including complete blo",
+    "source_unit": "nccn:disc-dlbcl-p250-c2",
+    "G": [
+      "nccn:disc-dlbcl-p250-c2"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "应包括标准血液学检查，如全血细胞计数。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-033",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤患者出现进行性疾病时，哪些临床表现提示可能发生组织学转化？",
+    "source_sentence": "Consider possibility of histologic transformation in patients with progressive disease, especially if LDH levels are rising, single site is growing disproportionately, extranodal disease develops, or there are new B symptoms. If clinical suspicion of transformation, FDG-PET may help identify areas suspicious for transformation. FDG-PET scan demonstrating marked heterogeneity or sites of intense FDG avidity may indicate transformation, and biopsy should be directed biopsy at the most FDG-avid area. Functional imaging does not replace biopsy to diagnose transformation.",
+    "source_unit": "nccn:FOLL-3",
+    "G": [
+      "nccn:FOLL-3"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "进行性疾病伴LDH升高、单病灶不成比例增大、新发结外病变或新发B症状时需考虑组织学转化；FDG-PET显示明显异质性或局灶性高摄取区域可提示转化，但确诊仍需对最摄取活跃部位行活检。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-034",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤一线治疗后，哪些患者适合接受利妥昔单抗或奥比妥珠单抗维持治疗？",
+    "source_sentence": "FIRST-LINE EXTENDED THERAPY (optional) Preferred following chemoimmunotherapy • Rituximab maintenance 375 mg/m2 one dose every 8–12 weeks for 2 years for patients initially presenting with high tumor burden (category 1)h • Obinutuzumab maintenance (1 g every 8 weeks for 12 doses)",
+    "source_unit": "nccn:FOLL-B 1 OF 6",
+    "G": [
+      "nccn:FOLL-B 1 OF 6"
+    ],
+    "G_opt": [
+      "nccn:disc-fl-p173-c12",
+      "nccn:disc-fl-p177-c16"
+    ],
+    "expected_conclusion": "高肿瘤负荷患者在化疗免疫治疗后可选择利妥昔单抗（375 mg/m²，每8–12周1次，持续2年）或奥比妥珠单抗（1 g，每8周1次，共12剂）维持治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-035",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤（FL）无症状患者随访时，若病灶仅在PET/CT上可见（如骨病变），应选择何种影像学检查进行疗效评估？",
+    "source_sentence": "Surveillance imaging is used for monitoring asymptomatic patients. When a site of disease can only be visualized on PET/CT scan (eg, bone), it is appropriate to proceed with PET/CT scans for surveillance.",
+    "source_unit": "nccn:FOLL-3",
+    "G": [
+      "nccn:FOLL-3"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "应采用PET/CT扫描进行随访监测。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-036",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤一线治疗后，哪些患者适合利妥昔单抗维持治疗？",
+    "source_sentence": "h This is based on the PRIMA study for patients with high tumor burden following treatment with RCVP and RCHOP. There are no data for rituximab maintenance following other regimens.",
+    "source_unit": "nccn:FOLL-B 4 OF 6",
+    "G": [
+      [
+        "nccn:FOLL-B 4 OF 6",
+        "nccn:FOLL-B 1 OF 6"
+      ]
+    ],
+    "G_opt": [
+      "nccn:FOLL-B 5 OF 6"
+    ],
+    "expected_conclusion": "仅限于PRIMA研究中接受RCVP或RCHOP方案治疗且肿瘤负荷高的患者；其他方案后无数据支持。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-037",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤复发难治患者，二线延长治疗中利妥昔单抗维持治疗的推荐方案是什么？",
+    "source_sentence": "SECOND-LINE EXTENDED THERAPY (optional)\nPreferred\n• Rituximab maintenance 375 mg/m2 one dose every 12 weeks for 2 years (category 1)\n• Obinutuzumab maintenance for rituximab-refractory disease (1 g every 8 weeks for total of 12 doses)",
+    "source_unit": "nccn:FOLL-B 2 OF 6",
+    "G": [
+      "nccn:FOLL-B 2 OF 6"
+    ],
+    "G_opt": [
+      "nccn:disc-fl-p177-c16",
+      "nccn:disc-fl-p173-c12"
+    ],
+    "expected_conclusion": "利妥昔单抗375 mg/m²，每12周一次，持续2年（1类证据）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-038",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤复发或难治患者，是否可考虑使用来那度胺联合利妥昔单抗及epcoritamab-bysp方案？",
+    "source_sentence": "Lenalidomide + Rituximab + Epcoritamab-bysp",
+    "source_unit": "nccn:FOLL-B 6 OF 6",
+    "G": [
+      [
+        "nccn:FOLL-B 6 OF 6",
+        "nccn:FOLL-B 3 OF 6"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-fl-p175-c14"
+    ],
+    "expected_conclusion": "对于复发或难治滤泡性淋巴瘤患者，可考虑来那度胺联合利妥昔单抗及epcoritamab-bysp方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-039",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤复发或难治患者，NCCN指南推荐的联合治疗方案是什么？",
+    "source_sentence": "Lenalidomide + obinutuzumab",
+    "source_unit": "nccn:FOLL-B 6 OF 6",
+    "G": [
+      [
+        "nccn:FOLL-B 6 OF 6",
+        "nccn:disc-fl-p176-c15"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "来那度胺联合奥比妥珠单抗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-040",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤复发或难治患者，NCCN指南推荐的双特异性抗体治疗适用于哪些情况？",
+    "source_sentence": "Bispecific Antibody Therapy",
+    "source_unit": "nccn:FOLL-B 6 OF 6",
+    "G": [
+      [
+        "nccn:FOLL-B 6 OF 6",
+        "nccn:FOLL-B 3 OF 6"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "双特异性抗体疗法是复发或难治滤泡性淋巴瘤患者的推荐治疗选择之一。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-041",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤（FL）一线治疗中，苯达莫司汀联合利妥昔单抗是否为推荐方案？",
+    "source_sentence": "Bendamustine + rituximab",
+    "source_unit": "nccn:FOLL-B 5 OF 6",
+    "G": [
+      "nccn:FOLL-B 5 OF 6"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "苯达莫司汀联合利妥昔单抗是滤泡性淋巴瘤一线治疗的推荐方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-042",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤患者在计划治疗前应选择何种影像学检查进行分期？",
+    "source_sentence": "PET/CT scan (preferred) or chest/abdomen/pelvis (C/A/P) CT with contrast of diagnostic quality if therapy is planned",
+    "source_unit": "nccn:FOLL-2",
+    "G": [
+      "nccn:FOLL-2"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "首选PET/CT扫描；若不可行，可选用诊断质量的增强型胸部/腹部/盆腔（C/A/P）CT。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-043",
+    "annotator": "",
+    "question": "对于既往接受过治疗的滤泡性淋巴瘤患者，来那度胺联合利妥昔单抗相比利妥昔单抗单药在无进展生存期方面是否更具优势？",
+    "source_sentence": "In the multicenter, double-blind, randomized phase III study (AUGMENT; n = 358; 295 patients had FL), lenalidomide + rituximab was superior to rituximab monotherapy in terms of PFS in all histologic subtypes of previously treated indolent lymphomas except MZL.107",
+    "source_unit": "nccn:disc-fl-p175-c14",
+    "G": [
+      "nccn:disc-fl-p175-c14"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "来那度胺联合利妥昔单抗在无进展生存期方面优于利妥昔单抗单药。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-044",
+    "annotator": "",
+    "question": "原发性睾丸滤泡性淋巴瘤（PTFL）若无BCL2重排，其预后及首选治疗方式是什么？",
+    "source_sentence": "PTFL without BCL2 rearrangements is generally associated with favorable prognosis with only rare instances of disease progression or relapse and is primarily managed with excision (preferred) or ISRT.",
+    "source_unit": "nccn:disc-fl-p181-c20",
+    "G": [
+      [
+        "nccn:disc-fl-p181-c20",
+        "nccn:FOLL-6"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "预后良好，疾病进展或复发罕见；首选治疗为手术切除。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-045",
+    "annotator": "",
+    "question": "对于I–II期滤泡性淋巴瘤患者，放疗作为一线治疗的长期疾病控制效果如何？",
+    "source_sentence": "Stage I–II RT is an effective treatment option for patients with stage I–II disease resulting in long-term disease control rates of >90% with the 10-year PFS and OS rates ranging from 40% to 59% and 58% to 86%, respectively.",
+    "source_unit": "nccn:disc-fl-p166-c5",
+    "G": [
+      "nccn:disc-fl-p166-c5"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "I–II期患者接受放疗可获得>90%的长期疾病控制率，10年无进展生存率40%–59%，总生存率58%–86%。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-046",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤（FL）一线治疗中，放疗与系统性治疗的优选策略及对生存的影响如何？",
+    "source_sentence": "ISRT (24–30 Gy) is the preferred treatment option. Initiation of systemic therapy can improve FFS, but has not been shown to improve OS.",
+    "source_unit": "nccn:disc-fl-p167-c6",
+    "G": [
+      "nccn:disc-fl-p167-c6"
+    ],
+    "G_opt": [
+      "nccn:FOLL-3"
+    ],
+    "expected_conclusion": "受累部位放疗（ISRT，24–30 Gy）是首选治疗；系统性治疗可改善无失败生存（FFS），但未显示可改善总生存（OS）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-047",
+    "annotator": "",
+    "question": "对于年龄较大或体弱、无法耐受推荐一线化疗免疫治疗方案的滤泡性淋巴瘤患者，首选的一线单药治疗是什么？",
+    "source_sentence": "Rituximab monotherapy is the preferred first-line therapy for older or infirm patients who are not able to tolerate any of the chemoimmunotherapy regimens recommended for first-line therapy.",
+    "source_unit": "nccn:disc-fl-p181-c20",
+    "G": [
+      [
+        "nccn:disc-fl-p181-c20",
+        "nccn:FOLL-B 1 OF 6"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-fl-p169-c8"
+    ],
+    "expected_conclusion": "利妥昔单抗单药是首选一线治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-048",
+    "annotator": "",
+    "question": "对于初治套细胞淋巴瘤患者，伊布替尼联合BR方案诱导后序贯伊布替尼维持治疗相比单纯BR方案，在无进展生存期和总生存期方面有何影响？",
+    "source_sentence": "Addition of ibrutinib to BR followed by continuous ibrutinib maintenance was shown in the SHINE study to have a superior PFS but overall survival was compromised by excess non-lymphoma deaths (Wang ML, et al. N Engl J Med 2022;386:2482-2494).",
+    "source_unit": "nccn:MANT-A 3 OF 5",
+    "G": [
+      "nccn:MANT-A 3 OF 5"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "该联合方案可显著改善无进展生存期，但因非淋巴瘤相关死亡增加导致总生存期未获改善。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-049",
+    "annotator": "",
+    "question": "滤泡性淋巴瘤一线治疗中，对于高肿瘤负荷患者，利妥昔单抗维持治疗的推荐方案和证据等级是什么？",
+    "source_sentence": "Rituximab maintenance (one dose every 8 weeks up to 2 years) is included as an option with a category 1 recommendation for patients with high tumor burden treated with RCVP and RCHOP based on the PRIMA study.97,98",
+    "source_unit": "nccn:disc-fl-p173-c12",
+    "G": [
+      [
+        "nccn:disc-fl-p173-c12",
+        "nccn:disc-fl-p177-c16"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "利妥昔单抗维持治疗（每8周1次，持续至2年）是高肿瘤负荷患者在RCVP或RCHOP方案后的一种1类推荐选择，依据为PRIMA研究。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-050",
+    "annotator": "",
+    "question": "套细胞淋巴瘤（MCL）复发难治患者，达到CR或PR后是否可考虑异基因造血干细胞移植？",
+    "source_sentence": "CAR T-cell therapy (MANT-A) or Non-covalent BTKi (MANT-A) or Clinical trial or Alternative second-line therapy (MANT-A) followed by allogeneic HCT in selected cases if CR or PR is achieveds ± ISRTi",
+    "source_unit": "nccn:MANT-6A",
+    "G": [
+      [
+        "nccn:MANT-6A",
+        "nccn:MANT-6B"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-mcl-p236-c17"
+    ],
+    "expected_conclusion": "在选定的复发难治MCL患者中，若经CAR-T细胞治疗、非共价BTK抑制剂、临床试验或替代二线治疗后获得CR或PR，可考虑后续行异基因造血干细胞移植，±局部放疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-051",
+    "annotator": "",
+    "question": "套细胞淋巴瘤（MCL）患者为I期或II期、非大肿块且病灶连续时，一线治疗推荐方案是什么？",
+    "source_sentence": "Stage I or Stage II, nonbulky contiguous ISRTi,j or Less aggressive induction therapy (MANT-A) ± ISRTj",
+    "source_unit": "nccn:MANT-2",
+    "G": [
+      [
+        "nccn:MANT-2",
+        "nccn:MANT-A 1 OF 5"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "推荐局部受累野放疗（ISRT）；或采用较温和的诱导治疗（MANT-A）联合或不联合ISRT。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-052",
+    "annotator": "",
+    "question": "套细胞淋巴瘤复发或难治患者，NCCN指南推荐的靶向治疗方案有哪些？",
+    "source_sentence": "Ibrutinib ± rituximab",
+    "source_unit": "nccn:MANT-A 5 OF 5",
+    "G": [
+      [
+        "nccn:MANT-A 5 OF 5",
+        "nccn:MANT-A 1 OF 5",
+        "nccn:MANT-A 3 OF 5"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "伊布替尼单药或联合利妥昔单抗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-053",
+    "annotator": "",
+    "question": "套细胞淋巴瘤（MCL）典型的免疫表型是什么？当CD5或CD23表达不典型时，应如何进一步确诊？",
+    "source_sentence": "Typical immunophenotype: CD5+, CD20+, CD43+, CD23-/+, cyclin D1+, CD10-/+. Note: Some cases of MCL may be CD5- or CD23+. If the diagnosis is suspected, cyclin D1 staining or FISH for t(11;14) should be done. There are rare cases of CCND1- MCL (<5%) with an otherwise typical immunophenotype.",
+    "source_unit": "nccn:MANT-1",
+    "G": [
+      [
+        "nccn:MANT-1",
+        "nccn:disc-mcl-p220-c1"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "典型免疫表型为CD5+、CD20+、CD43+、CD23-/+、cyclin D1+、CD10-/；若CD5阴性或CD23阳性但临床怀疑MCL，应行cyclin D1染色或t(11;14) FISH检测；极少数CCND1阴性MCL（<5%）可具典型免疫表型。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-054",
+    "annotator": "",
+    "question": "套细胞淋巴瘤（MCL）复发时，是否可采用初治晚期MCL的诱导治疗方案？",
+    "source_sentence": "In selected cases, relapsed disease may be managed with induction therapy recommended for newly diagnosed advanced stage MCL.",
+    "source_unit": "nccn:MANT-A 3 OF 5",
+    "G": [
+      "nccn:MANT-A 3 OF 5"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "在特定情况下，复发MCL可采用初治晚期MCL推荐的诱导治疗方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-055",
+    "annotator": "",
+    "question": "MCL患者一线治疗中，LyMA方案的具体组成和后续治疗策略是什么？",
+    "source_sentence": "LyMA regimen: RDHA (rituximab, dexamethasone, cytarabine) + platinum (cisplatin, oxaliplatin or carboplatin) x 4 cycles followed by RCHOP for non- PET CR",
+    "source_unit": "nccn:MANT-A 4 OF 5",
+    "G": [
+      [
+        "nccn:MANT-A 4 OF 5",
+        "nccn:disc-mcl-p224-c5"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-mcl-p225-c6"
+    ],
+    "expected_conclusion": "LyMA方案为RDHA（利妥昔单抗、地塞米松、阿糖胞苷）联合铂类（顺铂、奥沙利铂或卡铂）共4个周期，未达PET完全缓解者后续予RCHOP治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-056",
+    "annotator": "",
+    "question": "套细胞淋巴瘤（MCL）II期、非大肿块、非连续性病变患者的一线治疗推荐是什么？",
+    "source_sentence": "Stage II, nonbulky noncontiguous Less aggressive induction therapy (MANT-A) or Active surveillance in highly selected cases MANT-3",
+    "source_unit": "nccn:MANT-2",
+    "G": [
+      [
+        "nccn:MANT-2",
+        "nccn:MANT-3"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-mcl-p222-c3",
+      "nccn:MANT-A 1 OF 5"
+    ],
+    "expected_conclusion": "可选择较不积极的诱导治疗（MANT-A）或在高度筛选的病例中采取主动监测。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-057",
+    "annotator": "",
+    "question": "套细胞淋巴瘤患者无症状且无其他治疗指征时，NCCN推荐的初始处理策略是什么？",
+    "source_sentence": "Asymptomatic, no other indication for treatment",
+    "source_unit": "nccn:MANT-3",
+    "G": [
+      [
+        "nccn:MANT-3",
+        "nccn:disc-mcl-p222-c3"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "观察等待（watch and wait）",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-058",
+    "annotator": "",
+    "question": "套细胞淋巴瘤（MCL）患者接受主动监测时，随访应如何安排影像学及诊断检查？",
+    "source_sentence": "Active surveillance l Follow-up includes diagnostic tests and imaging using the same modalities performed during workup as clinically indicated.",
+    "source_unit": "nccn:MANT-3",
+    "G": [
+      [
+        "nccn:MANT-3",
+        "nccn:MANT-5"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "随访应采用与初始评估相同的影像学和诊断检查方法，并根据临床需要决定是否实施。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-059",
+    "annotator": "",
+    "question": "套细胞淋巴瘤（MCL）初诊时应进行哪些影像学和辅助检查？",
+    "source_sentence": "MCL is a systemic disease with frequent involvement of the bone marrow, and evaluation with bone marrow biopsy with or without aspirate will be useful in certain circumstances. PET/CT scan (preferred) or chest/abdomen/pelvis CT with contrast of diagnostic quality are recommended as part of initial diagnostic workup, if systemic therapy is planned. CT scan of the neck with contrast may be useful in selected circumstances. In patients with the blastic variant or for patients presenting with central nervous system (CNS) symptoms, a lumbar puncture should be performed to evaluate the cerebral spinal fluid for potential disease involvement. Multigated acquisition (MUGA) scan or echocardiogram is recommended for patients being considered for treatment regimens containing anthracyclines or anthracenediones.",
+    "source_unit": "nccn:disc-mcl-p221-c2",
+    "G": [
+      "nccn:disc-mcl-p221-c2"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "初诊推荐行PET/CT（首选）或增强胸腹盆CT；颈CT增强可用于特定情况；骨髓活检±穿刺有助于评估骨髓受累；有母细胞样变型或中枢神经系统症状者需行腰穿查脑脊液；拟用蒽环类或蒽醌类方案者应行MUGA或超声心动图评估心功能。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-060",
+    "annotator": "",
+    "question": "对于复发或难治性套细胞淋巴瘤（MCL）且具有高危特征（如Ki-67＞30%、母细胞样/多形性组织学、复杂核型或TP53异常）的患者，维奈托克单药或联合BTK抑制剂或抗CD20单抗是否具有治疗活性？",
+    "source_sentence": "Second-Line and Subsequent Therapy: Useful in Certain Circumstances Venetoclax-based regimens (single agent or in combination with a BTKi or an anti-CD20 monoclonal antibody [mAb]) has demonstrated activity in patients with relapsed or refractory MCL with high-risk features including Ki-67 >30%, blastoid/pleomorphic histology, complex karyotype, and TP53 aberrations.53,114-117",
+    "source_unit": "nccn:disc-mcl-p233-c14",
+    "G": [
+      [
+        "nccn:disc-mcl-p233-c14",
+        "nccn:disc-mcl-p234-c15"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "维奈托克单药或联合BTK抑制剂或抗CD20单抗在复发或难治性伴高危特征的MCL患者中已显示出治疗活性。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-061",
+    "annotator": "",
+    "question": "套细胞淋巴瘤患者一线治疗后中位无进展生存期和总生存期分别是多少？",
+    "source_sentence": "After a median follow-up of 15 years, the median PFS and OS were 9 years and 13 years, respectively, for all the intent-to-treat patient population.",
+    "source_unit": "nccn:disc-mcl-p225-c6",
+    "G": [
+      [
+        "nccn:disc-mcl-p225-c6",
+        "nccn:disc-mcl-p229-c10"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "中位无进展生存期为9年，中位总生存期为13年。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-062",
+    "annotator": "",
+    "question": "胃黏膜相关淋巴组织边缘区淋巴瘤（EMZL）的分期应采用哪种系统？",
+    "source_sentence": "Staging of EMZL of the Stomach: Comparison of Different Systems (EMZLG-A).",
+    "source_unit": "nccn:EMZLG-2",
+    "G": [
+      [
+        "nccn:EMZLG-2",
+        "nccn:EMZLG-A"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "采用EMZLG-A分期系统。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-063",
+    "annotator": "",
+    "question": "对于cyclin D1阴性的套细胞淋巴瘤（MCL）患者，哪些辅助检查有助于确诊？",
+    "source_sentence": "Currently available reagents for the evaluation of cyclin D1 by IHC are robust and yield good staining. In the rare instances of MCL that is cyclin D1 and t(11;14) negative, overexpression of cyclin D2 or cyclin D3 may be observed.7,21 However, IHC for cyclin D2 or cyclin D3 is not helpful in establishing the diagnosis of cyclin D1-negative MCL, as these proteins are also expressed in other B-cell malignancies. SOX11 is positive in most patients with MCL, with the exception of the aforementioned indolent subtype, regardless of cyclin D1 expression level. IHC for SOX11 or IGHV gene sequencing potentially aid in differentiating cyclin D1-negative MCL from other B-cell lymphomas.22-24",
+    "source_unit": "nccn:disc-mcl-p220-c1",
+    "G": [
+      [
+        "nccn:disc-mcl-p220-c1",
+        "nccn:MANT-1"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "IHC检测SOX11阳性或IGHV基因测序有助于鉴别cyclin D1阴性MCL与其他B细胞淋巴瘤。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-064",
+    "annotator": "",
+    "question": "脾切除术前应何时接种肺炎球菌、脑膜炎球菌、流感嗜血杆菌及乙型肝炎疫苗？",
+    "source_sentence": "Pneumococcal, meningococcal, haemophilus influenza, and hepatitis B vaccinations should be given at least 2 weeks before splenectomy.",
+    "source_unit": "nccn:SMZL-2",
+    "G": [
+      [
+        "nccn:SMZL-2",
+        "nccn:SMZL-3"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-mzl-p204-c11"
+    ],
+    "expected_conclusion": "应在脾切除术前至少2周接种上述疫苗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-065",
+    "annotator": "",
+    "question": "MZL局限于胃肠道的I期如何根据浸润深度进行T分期？",
+    "source_sentence": "Stage I Confined to GI tracta I1 = mucosa, submucosa IE T1 N0 M0 Mucosa, submucosa I2 = muscularis propria, serosa IE T2 N0 M0 Muscularis propria IE T3 N0 M0 Serosa",
+    "source_unit": "nccn:EMZLG-A",
+    "G": [
+      [
+        "nccn:EMZLG-A",
+        "nccn:EMZLG-2"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-mzl-p197-c4"
+    ],
+    "expected_conclusion": "I1期（T1）指累及黏膜和黏膜下层；I2期（T2）指累及肌层；T3期指累及浆膜。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-066",
+    "annotator": "",
+    "question": "MZL患者处于I期或II期时，NCCN推荐的初始管理策略是什么？",
+    "source_sentence": "Stage I, II Active surveillanceg or If indications for treatment present, anti-CD20 mAbi ± chemotherapy (MZL-A) ± ISRT for local palliationh",
+    "source_unit": "nccn:NMZL-2",
+    "G": [
+      [
+        "nccn:NMZL-2",
+        "nccn:disc-mzl-p201-c8"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-mzl-p199-c6",
+      "nccn:NMZL-4"
+    ],
+    "expected_conclusion": "I期或II期MZL患者首选主动监测；若存在治疗指征，则可选用抗CD20单抗±化疗（MZL-A方案）±受累部位放疗（ISRT）进行局部姑息治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-067",
+    "annotator": "",
+    "question": "extranodal marginal zone lymphoma（EMZL）属于哪种类型的淋巴瘤？",
+    "source_sentence": "Extranodal marginal zone lymphoma (EMZL)",
+    "source_unit": "nccn:MZL-1",
+    "G": [
+      [
+        "nccn:MZL-1",
+        "nccn:EMZLG-A",
+        "nccn:EMZLNG-2",
+        "nccn:EMZLG-2",
+        "nccn:EMZLG-1"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-mzl-p193-c0",
+      "nccn:disc-mzl-p199-c6"
+    ],
+    "expected_conclusion": "EMZL 是黏膜相关淋巴组织（MALT）淋巴瘤，属于结外边缘区淋巴瘤。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-068",
+    "annotator": "",
+    "question": "对于拟接受受累部位放疗（ISRT）的黏膜相关淋巴组织边缘区淋巴瘤（MZL）患者，为明确是否为临床Ⅰ–Ⅱ期疾病，应进行何种检查？",
+    "source_sentence": "Bone marrow biopsy + aspirate (to document clinical stage I–II disease if ISRT planned, or to evaluate unexplained cytopenias)d",
+    "source_unit": "nccn:NMZL-1",
+    "G": [
+      [
+        "nccn:NMZL-1",
+        "nccn:disc-mzl-p200-c7"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "骨髓活检联合骨髓穿刺检查。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-069",
+    "annotator": "",
+    "question": "对于一线治疗的MZL患者，若病灶可被单野放疗覆盖，NCCN推荐的放疗方式是什么？",
+    "source_sentence": "ISRT preferred if disease can be encompassed in a single field",
+    "source_unit": "nccn:EMZLG-3",
+    "G": [
+      [
+        "nccn:EMZLG-3",
+        "nccn:EMZLG-2"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "首选受累部位放疗（ISRT）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-070",
+    "annotator": "",
+    "question": "MZL患者随访时应如何选择诊断性检查和影像学检查？",
+    "source_sentence": "Follow-up includes diagnostic tests and imaging previously used as clinically indicated.",
+    "source_unit": "nccn:EMZLNG-3",
+    "G": [
+      [
+        "nccn:EMZLNG-3",
+        "nccn:SMZL-3"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "随访时应根据临床需要，选择既往曾使用的诊断性检查和影像学检查。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-071",
+    "annotator": "",
+    "question": "对于复发性边缘区淋巴瘤患者，若既往接受苯达莫司汀联合奥妥珠单抗治疗后达到完全缓解或部分缓解，是否可考虑奥妥珠单抗维持治疗？",
+    "source_sentence": "Optional second-line extended therapy (obinutuzumab maintenance for rituximab-refractory disease) following CR or PR if treated with bendamustine + obinutuzumab for recurrent disease (MZL-A 2 of 4).",
+    "source_unit": "nccn:EMZLNG-3",
+    "G": [
+      [
+        "nccn:EMZLNG-3",
+        "nccn:MZL-A 2 OF 4"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "可考虑奥妥珠单抗维持治疗（用于利妥昔单抗难治性疾病）",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-072",
+    "annotator": "",
+    "question": "对于复发性边缘区淋巴瘤患者，若既往接受过苯达莫司汀联合奥比妥珠单抗治疗且对利妥昔单抗耐药，是否推荐奥比妥珠单抗维持治疗？",
+    "source_sentence": "SECOND-LINE EXTENDED THERAPY (optional) Preferred • If treated with Bendamustine + Obinutuzumab for recurrent disease, then Obinutuzumab maintenance for Rituximab-refractory disease (1 g every 8 weeks for total of 12 doses)",
+    "source_unit": "nccn:MZL-A 2 OF 4",
+    "G": [
+      [
+        "nccn:MZL-A 2 OF 4",
+        "nccn:disc-mzl-p202-c9"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "推荐奥比妥珠单抗维持治疗（1 g每8周一次，共12剂）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-073",
+    "annotator": "",
+    "question": "对于一线治疗的边缘区淋巴瘤（MZL）患者，NCCN指南推荐的联合方案是什么？",
+    "source_sentence": "Lenalidomide + rituximab",
+    "source_unit": "nccn:MZL-A 4 OF 4",
+    "G": [
+      [
+        "nccn:MZL-A 4 OF 4",
+        "nccn:disc-mzl-p206-c13"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "来那度胺联合利妥昔单抗（lenalidomide + rituximab）",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-074",
+    "annotator": "",
+    "question": "MZL患者计划接受治疗时，推荐的分期影像学检查方法是什么？",
+    "source_sentence": "PET/CT scan (preferred)c or C/A/P CT with contrast of diagnostic quality if therapy is planned",
+    "source_unit": "nccn:NMZL-1",
+    "G": [
+      "nccn:NMZL-1"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "首选PET/CT扫描；若不可行，可选用增强的颈/胸/腹/盆CT。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-075",
+    "annotator": "",
+    "question": "对于复发或难治性边缘区淋巴瘤（MZL）患者，NCCN指南推荐的二线及后续治疗中，哪些非交叉耐药化疗方案联合抗CD20单抗（如奥比妥珠单抗或利妥昔单抗）属于优选方案？",
+    "source_sentence": "Alternate non-cross resistant chemotherapy regimens (bendamustine, CHOP or CVP) with obinutuzumab or rituximab are included as options for preferred regimens in second-line and beyond.",
+    "source_unit": "nccn:disc-mzl-p206-c13",
+    "G": [
+      [
+        "nccn:disc-mzl-p206-c13",
+        "nccn:MZL-A 2 OF 4"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "苯达莫司汀、CHOP或CVP方案联合奥比妥珠单抗或利妥昔单抗是二线及后续治疗的优选方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-076",
+    "annotator": "",
+    "question": "对于黏膜相关淋巴组织边缘区淋巴瘤（MZL）的诊断，推荐进行哪些分子和细胞遗传学检测？",
+    "source_sentence": "Molecular analysis by polymerase chain reaction (PCR) or fluorescence in situ hybridization (FISH) for the evaluation of t(11;18) is recommended. In certain circumstances, molecular analysis for the detection of IGHV gene rearrangements, MYD88 mutation analysis and cytogenetic or FISH evaluation for t(3;14), t(1;14) and t(14;18) may also be useful.",
+    "source_unit": "nccn:disc-mzl-p195-c2",
+    "G": [
+      [
+        "nccn:disc-mzl-p195-c2",
+        "nccn:disc-mzl-p198-c5"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-mzl-p200-c7",
+      "nccn:EMZLG-1",
+      "nccn:EMZLNG-1",
+      "nccn:NMZL-1"
+    ],
+    "expected_conclusion": "推荐行PCR或FISH检测t(11;18)；在特定情况下，IGHV基因重排、MYD88突变、以及t(3;14)、t(1;14)和t(14;18)的细胞遗传学或FISH检测也可能有用。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-077",
+    "annotator": "",
+    "question": "对于初治的IV期边缘区淋巴瘤（MZL）患者，NCCN是否推荐受累部位放疗（ISRT）？",
+    "source_sentence": "Stage IV ISRT is also recommended for patients presenting with stage IV disease.",
+    "source_unit": "nccn:disc-mzl-p199-c6",
+    "G": [
+      "nccn:disc-mzl-p199-c6"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "推荐对初治IV期MZL患者行受累部位放疗（ISRT）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-078",
+    "annotator": "",
+    "question": "MZL一线治疗的优选方案有哪些？",
+    "source_sentence": "First-line Therapy: Preferred Regimens Chemoimmunotherapy with anti-CD20 Monoclonal Antibody Bendamustine + rituximab (BR), RCHOP (cyclophosphamide, doxorubicin, vincristine, prednisone), or RCVP (cyclophosphamide, vincristine, prednisone) are included as preferred regimens.",
+    "source_unit": "nccn:disc-mzl-p204-c11",
+    "G": [
+      [
+        "nccn:disc-mzl-p204-c11",
+        "nccn:disc-mzl-p205-c12"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "优选方案包括苯达莫司汀联合利妥昔单抗（BR）、RCHOP（环磷酰胺、多柔比星、长春新碱、泼尼松）或RCVP（环磷酰胺、长春新碱、泼尼松）联合抗CD20单克隆抗体。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-079",
+    "annotator": "",
+    "question": "HGBL/PMBL/转化型淋巴瘤的一线诱导治疗方案有哪些推荐？",
+    "source_sentence": "While the optimal treatment approach is not established, the following induction",
+    "source_unit": "nccn:HGBL-1",
+    "G": [
+      [
+        "nccn:HGBL-1",
+        "nccn:disc-hgbl-p305-c2"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-hgbl-p304-c1"
+    ],
+    "expected_conclusion": "目前尚无确立的最优治疗方案，但有若干诱导治疗方案被推荐。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-080",
+    "annotator": "",
+    "question": "对于低危（IPI＜2）的HGBL/PMBL/转化型淋巴瘤患者，CHOP联合利妥昔单抗方案是否可作为一线治疗选择？",
+    "source_sentence": "CHOP + Rituximab may be associated with a suboptimal outcome. Could be considered for patients with low risk disease (IPI <2).",
+    "source_unit": "nccn:HGBL-1",
+    "G": [
+      "nccn:HGBL-1"
+    ],
+    "G_opt": [
+      "nccn:disc-pmbl-p288-c2"
+    ],
+    "expected_conclusion": "CHOP联合利妥昔单抗可能与疗效欠佳相关，但可考虑用于低危（IPI＜2）患者。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-081",
+    "annotator": "",
+    "question": "对于局限期HGBL/PMBL/转化型淋巴瘤，巩固性ISRT是否为首选治疗？",
+    "source_sentence": "Consolidative ISRT is preferred for localized disease.",
+    "source_unit": "nccn:HGBL-1",
+    "G": [
+      "nccn:HGBL-1"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "巩固性ISRT是局限期疾病的首选治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-082",
+    "annotator": "",
+    "question": "HGBL或PMBL患者一线治疗可选择R-CHOP-14联合ICE方案吗？",
+    "source_sentence": "RCHOP-14 followed by ICE",
+    "source_unit": "nccn:PMBL-A",
+    "G": [
+      "nccn:PMBL-A"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "推荐R-CHOP-14后序贯ICE方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-083",
+    "annotator": "",
+    "question": "HGBL/PMBL/转化型淋巴瘤一线治疗可选哪些方案？",
+    "source_sentence": "Dose-adjusted EPOCH + rituximab (DA-EPOCH-R) x 6 cycles or RCHOP-14 x 4–6 cycles or RCHOP-21 x 6 cycles",
+    "source_unit": "nccn:PMBL-1",
+    "G": [
+      [
+        "nccn:PMBL-1",
+        "nccn:PMBL-A"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-pmbl-p288-c2"
+    ],
+    "expected_conclusion": "可选剂量调整的EPOCH联合利妥昔单抗（DA-EPOCH-R）6个周期，或RCHOP-14 4–6个周期，或RCHOP-21 6个周期。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-084",
+    "annotator": "",
+    "question": "原发纵隔大B细胞淋巴瘤（PMBL）的诊断需满足哪些临床和病理特征？",
+    "source_sentence": "PMBL can be defined as a clinical entity presenting with primary site of disease in the anterior mediastinum with or without other sites and has histology of DLBCL. Clinical pathologic correlation is required to establish diagnosis.",
+    "source_unit": "nccn:PMBL-1",
+    "G": [
+      [
+        "nccn:PMBL-1",
+        "nccn:disc-pmbl-p286-c0"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "PMBL是一种以纵隔前部为原发部位（可伴其他部位受累）、组织学表现为弥漫性大B细胞淋巴瘤（DLBCL）的临床实体，确诊需结合临床与病理特征综合判断。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-085",
+    "annotator": "",
+    "question": "国际预后指数（IPI）和年龄调整IPI对原发性纵隔大B细胞淋巴瘤（PMBL）初诊时的预后判断价值如何？",
+    "source_sentence": "International prognostic index (IPI) and age-adjusted IPI are of limited value in determining the prognosis of PMBL at diagnosis.",
+    "source_unit": "nccn:disc-pmbl-p286-c0",
+    "G": [
+      "nccn:disc-pmbl-p286-c0"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "IPI和年龄调整IPI在PMBL初诊时判断预后的价值有限。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-086",
+    "annotator": "",
+    "question": "纵隔残留肿块患者治疗后应如何评估？",
+    "source_sentence": "Residual mediastinal masses are common. PET/CT scan is essential post-treatment. Biopsy of PET/CT scan positive mass is recommended if additional systemic treatment is contemplated.",
+    "source_unit": "nccn:PMBL-1",
+    "G": [
+      "nccn:PMBL-1"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "治疗后必须行PET/CT检查；若PET/CT显示阳性病灶且拟行进一步全身治疗，推荐对该病灶进行活检。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-087",
+    "annotator": "",
+    "question": "Epcoritamab 和 glofitamab 分别获批用于哪些复发难治性淋巴瘤？",
+    "source_sentence": "Epcoritamab is FDA-approved for TFL and MZL (after ≥2 systemic therapy regimens), whereas glofitamab is FDA-approved for TFL (after ≥2 systemic therapy regimens).",
+    "source_unit": "nccn:disc-histologic-transformation-of-indolent-lymphomas-to-p297-c3",
+    "G": [
+      "nccn:disc-histologic-transformation-of-indolent-lymphomas-to-p297-c3"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "Epcoritamab 获 FDA 批准用于转化型滤泡性淋巴瘤（TFL）和边缘区淋巴瘤（MZL），均需经 ≥2 线系统治疗；glofitamab 获 FDA 批准用于 TFL，同样需经 ≥2 线系统治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-088",
+    "annotator": "",
+    "question": "达到完全缓解的HGBL/PMBL/转化型淋巴瘤患者，巩固治疗有哪些选择？",
+    "source_sentence": "Consolidation therapy with HDT/ASCR with or without ISRT (if not previously given) or active surveillance are included as treatment options for patients achieving CR.",
+    "source_unit": "nccn:disc-histologic-transformation-of-indolent-lymphomas-to-p298-c4",
+    "G": [
+      "nccn:disc-histologic-transformation-of-indolent-lymphomas-to-p298-c4"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "可选高剂量治疗联合自体干细胞回输（HDT/ASCR），联合或不联合受累部位放疗（ISRT，如既往未接受过）；或选择主动监测。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-089",
+    "annotator": "",
+    "question": "对于转化型滤泡性淋巴瘤（TFL）患者，塞利尼索适用于哪类复发难治情况？",
+    "source_sentence": "Selinexor is included as a treatment option for TFL only after at least two lines of systemic therapy, including patients with disease progression after transplant or CAR T-cell therapy.",
+    "source_unit": "nccn:disc-histologic-transformation-of-indolent-lymphomas-to-p298-c4",
+    "G": [
+      "nccn:disc-histologic-transformation-of-indolent-lymphomas-to-p298-c4"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "塞利尼索仅在至少接受过两线系统治疗后使用，包括移植或CAR-T细胞治疗后疾病进展的患者。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-090",
+    "annotator": "",
+    "question": "原发纵隔大B细胞淋巴瘤（PMBL）一线治疗中，DA-EPOCH-R方案是否被研究评估过？",
+    "source_sentence": "Dose-adjusted (DA)-EPOCH-R (etoposide, prednisone, vincristine, cyclophosphamide, doxorubicin and rituximab) has been evaluated in small cohorts of patients with PMBL.",
+    "source_unit": "nccn:disc-pmbl-p287-c1",
+    "G": [
+      "nccn:disc-pmbl-p287-c1"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "DA-EPOCH-R方案已在小样本PMBL患者中被评估。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-091",
+    "annotator": "",
+    "question": "Burkitt淋巴瘤疗效评估应采用哪种标准？",
+    "source_sentence": "Lugano Response Criteria for Non-Hodgkin Lymphoma (NHODG-C).",
+    "source_unit": "nccn:BURK-3",
+    "G": [
+      "nccn:BURK-3"
+    ],
+    "G_opt": [
+      "nccn:BURK-2"
+    ],
+    "expected_conclusion": "采用Lugano非霍奇金淋巴瘤疗效评估标准（NHODG-C）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-092",
+    "annotator": "",
+    "question": "Burkitt淋巴瘤一线治疗中，CHOP方案是否适用？",
+    "source_sentence": "CHOP is not an adequate therapy.",
+    "source_unit": "nccn:BURK-A 1 OF 3",
+    "G": [
+      "nccn:BURK-A 1 OF 3"
+    ],
+    "G_opt": [
+      "nccn:BURK-A 3 OF 3",
+      "nccn:disc-burkitt-p315-c4"
+    ],
+    "expected_conclusion": "CHOP方案不是合适的治疗方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-093",
+    "annotator": "",
+    "question": "Burkitt淋巴瘤一线治疗是否需要包含中枢神经系统预防或治疗？",
+    "source_sentence": "All regimens for BL include CNS prophylaxis/therapy.",
+    "source_unit": "nccn:BURK-A 1 OF 3",
+    "G": [
+      [
+        "nccn:BURK-A 1 OF 3",
+        "nccn:BURK-3",
+        "nccn:BURK-2"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-burkitt-p316-c5",
+      "nccn:BURK-A 3 OF 3"
+    ],
+    "expected_conclusion": "所有Burkitt淋巴瘤治疗方案均需包含中枢神经系统预防或治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-094",
+    "annotator": "",
+    "question": "Burkitt淋巴瘤患者在规范一线治疗后6～18个月复发，应如何选择治疗方案？",
+    "source_sentence": "Patients with disease relapse >6 to 18 months after appropriate first-line therapy should be treated with alternate regimens. While no definitive second-line therapies exist, there are limited data for the following regimens:",
+    "source_unit": "nccn:BURK-A 2 OF 3",
+    "G": [
+      [
+        "nccn:BURK-A 2 OF 3",
+        "nccn:BURK-3"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "应采用替代方案治疗；目前尚无明确的二线治疗方案，仅有有限数据支持若干方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-095",
+    "annotator": "",
+    "question": "Burkitt淋巴瘤疗效评估应采用哪种标准？",
+    "source_sentence": "Lugano Response Criteria for Non-Hodgkin Lymphoma (NHODG-C).",
+    "source_unit": "nccn:BURK-2",
+    "G": [
+      "nccn:BURK-2"
+    ],
+    "G_opt": [
+      "nccn:BURK-3"
+    ],
+    "expected_conclusion": "采用Lugano非霍奇金淋巴瘤疗效评估标准（NHODG-C）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-096",
+    "annotator": "",
+    "question": "成人Burkitt淋巴瘤一线治疗方案的主要特点是什么？",
+    "source_sentence": "Most contemporary regimens used in adult patients have been developed from the pediatric protocols and include intensive multiagent chemoimmunotherapy along with CNS prophylaxis with systemic and/or intrathecal chemotherapy.",
+    "source_unit": "nccn:disc-burkitt-p313-c2",
+    "G": [
+      [
+        "nccn:disc-burkitt-p313-c2",
+        "nccn:disc-burkitt-p316-c5"
+      ]
+    ],
+    "G_opt": [
+      "nccn:BURK-A 3 OF 3",
+      "nccn:BURK-A 1 OF 3"
+    ],
+    "expected_conclusion": "采用源自儿童方案的强化多药化疗免疫治疗，并联合全身和/或鞘内化疗进行CNS预防。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-097",
+    "annotator": "",
+    "question": "Burkitt淋巴瘤的典型细胞遗传学特征是什么？",
+    "source_sentence": "BL is characterized by MYC gene rearrangement (t(8;14) in 80% of patients, or its variants, t(2;8) and t(8:22) in the remaining 20% of patients), which results in the juxtaposition of MYC gene on chromosome 8 with the immunoglobulin heavy chain variable (IGHV) region on chromosome 14 or the immunoglobulin light chain genes.",
+    "source_unit": "nccn:disc-burkitt-p311-c0",
+    "G": [
+      "nccn:disc-burkitt-p311-c0"
+    ],
+    "G_opt": [
+      "nccn:BURK-1"
+    ],
+    "expected_conclusion": "Burkitt淋巴瘤以MYC基因重排为特征，80%患者为t(8;14)，其余20%为t(2;8)或t(8;22)变体，导致8号染色体MYC基因与14号染色体IGHV区或轻链基因并列。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-098",
+    "annotator": "",
+    "question": "对于Burkitt淋巴瘤患者，若疾病在规范一线治疗后6个月内复发，或对二线治疗无反应、或出现进展，NCCN推荐的后续处理策略是什么？",
+    "source_sentence": "Clinical trial or best supportive care including palliative ISRT are recommended for patients with disease not responding to second-line therapy or those with progressive disease as well as for patients with disease relapse <6 months after appropriate first-line therapy.",
+    "source_unit": "nccn:disc-burkitt-p317-c6",
+    "G": [
+      "nccn:disc-burkitt-p317-c6"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "推荐参加临床试验或最佳支持治疗（包括姑息性局部放疗ISRT）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-099",
+    "annotator": "",
+    "question": "PTLD患者PET/CT扫描阴性（5分制评分为1–3分）时，一线治疗方案是什么？",
+    "source_sentence": "If PET/CT scan negative (5-PS: 1–3), Rituximab 375 mg/m2 every 3 weeks x 4 cycles",
+    "source_unit": "nccn:PTLD-A",
+    "G": [
+      "nccn:PTLD-A"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "利妥昔单抗375 mg/m²，每3周1次，共4个周期。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-100",
+    "annotator": "",
+    "question": "PTLD患者在完成首次静脉输注利妥昔单抗后，后续剂量是否可改用皮下注射剂型？",
+    "source_sentence": "human injection for subcutaneous use may be substituted for rituximab after patients have received the first full dose of rituximab by intravenous infusion.",
+    "source_unit": "nccn:PTLD-A",
+    "G": [
+      "nccn:PTLD-A"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "在完成首次静脉输注利妥昔单抗后，后续剂量可用皮下注射剂型替代。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-101",
+    "annotator": "",
+    "question": "PTLD一线治疗中，对于病情危重的患者，应如何调整免疫抑制剂？",
+    "source_sentence": "RIS: Reduction in calcineurin inhibition (cyclosporin and tacrolimus), discontinuation of antimetabolic agents (azathioprine and mycophenolate mofetil), and for patients who are critically ill all non-glucocorticoid immunosuppression should be discontinued.",
+    "source_unit": "nccn:PTLD-2",
+    "G": [
+      "nccn:PTLD-2"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "对病情危重的PTLD患者，应停用所有非糖皮质激素类免疫抑制剂。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-102",
+    "annotator": "",
+    "question": "PTLD患者PET/CT显示5分量表评分为4–5分（阳性）时，一线治疗方案是什么？",
+    "source_sentence": "If PET/CT scan positive (5-PS: 4–5), CHOP + Rituximab every 3 weeks + G-CSF x 4 cycles",
+    "source_unit": "nccn:PTLD-A",
+    "G": [
+      "nccn:PTLD-A"
+    ],
+    "G_opt": [
+      "nccn:disc-ptld-p341-c4"
+    ],
+    "expected_conclusion": "一线治疗为CHOP联合利妥昔单抗每3周1次，共4个周期，并加用G-CSF。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-103",
+    "annotator": "",
+    "question": "PTLD一线治疗中，免疫抑制剂减量（RIS）的作用是什么？",
+    "source_sentence": "Reduction of immunosuppression (RIS)i",
+    "source_unit": "nccn:PTLD-2",
+    "G": [
+      [
+        "nccn:PTLD-2",
+        "nccn:PTLD-3",
+        "nccn:disc-ptld-p341-c4",
+        "nccn:disc-ptld-p344-c7"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "一线治疗首选减少免疫抑制剂（RIS）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-104",
+    "annotator": "",
+    "question": "PTLD患者治疗后应在多长时间内进行PET/CT再分期评估？",
+    "source_sentence": "Restage with PET/CT scan (in 2–4 weeks)",
+    "source_unit": "nccn:PTLD-A",
+    "G": [
+      [
+        "nccn:PTLD-A",
+        "nccn:PTLD-2"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-ptld-p340-c3"
+    ],
+    "expected_conclusion": "治疗后2–4周内行PET/CT扫描再分期。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-105",
+    "annotator": "",
+    "question": "PTLD患者初始诊断评估应选择哪些影像学检查？",
+    "source_sentence": "Chest/abdomen/pelvis CT with contrast of diagnostic quality and/or whole-body PET/CT scan are recommended as part of initial diagnostic workup.",
+    "source_unit": "nccn:disc-ptld-p340-c3",
+    "G": [
+      "nccn:disc-ptld-p340-c3"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "推荐胸部/腹部/盆腔增强CT和/或全身PET/CT扫描作为初始诊断评估的一部分。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-106",
+    "annotator": "",
+    "question": "PTLD患者若出现新病灶或明确疾病进展，应如何处理？",
+    "source_sentence": "If 5-PS: 5 because of new sites of disease or clear progression, treat as refractory disease.",
+    "source_unit": "nccn:PTLD-A",
+    "G": [
+      "nccn:PTLD-A"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "按难治性疾病治疗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-107",
+    "annotator": "",
+    "question": "PTLD患者怀疑中枢神经系统受累时，应选择何种影像学检查？",
+    "source_sentence": "Brain MRI may be useful in selected circumstances, especially when CNS involvement is suspected.",
+    "source_unit": "nccn:disc-ptld-p340-c3",
+    "G": [
+      [
+        "nccn:disc-ptld-p340-c3",
+        "nccn:disc-ptld-p339-c2"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "脑MRI在怀疑中枢神经系统受累的PTLD患者中可能有用。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-108",
+    "annotator": "",
+    "question": "哪些因素是移植后淋巴增殖性疾病的明确危险因素？",
+    "source_sentence": "EBV serology mismatch (recipient EBV-negative and donor EBV-positive), type of transplanted organ (highest risks for multiorgan, bowel, lung, and heart/lung transplants), intensity of induction immunosuppression, and type of immunosuppression are considered established risk factors for developing PTLD.",
+    "source_unit": "nccn:disc-ptld-p337-c0",
+    "G": [
+      [
+        "nccn:disc-ptld-p337-c0",
+        "nccn:disc-ptld-p338-c1"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "EBV血清学不匹配（受者EBV阴性而供者EBV阳性）、移植器官类型（多器官、肠道、肺、心肺移植风险最高）、诱导免疫抑制强度及免疫抑制剂类型。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-109",
+    "annotator": "",
+    "question": "HIV相关疾病患者一线治疗中是否推荐常规使用粒细胞集落刺激因子（G-CSF）？",
+    "source_sentence": "• Granulocyte colony-stimulating factor (G-CSF) for all patients",
+    "source_unit": "nccn:HIVLYM-3",
+    "G": [
+      "nccn:HIVLYM-3"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "对所有患者推荐使用粒细胞集落刺激因子（G-CSF）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-110",
+    "annotator": "",
+    "question": "HIV感染者如尚未接受抗逆转录病毒治疗（ART），应如何处理？",
+    "source_sentence": "• Initiate ART, if not already receiving",
+    "source_unit": "nccn:HIVLYM-3",
+    "G": [
+      "nccn:HIVLYM-3"
+    ],
+    "G_opt": [
+      "nccn:disc-hiv-related-b-cell-lymphomas-p327-c5",
+      "nccn:disc-hiv-related-b-cell-lymphomas-p325-c3"
+    ],
+    "expected_conclusion": "应启动抗逆转录病毒治疗（ART）。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-111",
+    "annotator": "",
+    "question": "HIV相关淋巴瘤患者CD4计数低于50/μL时，一线治疗期间应如何调整支持治疗策略？",
+    "source_sentence": "• If CD4 <50, maximize supportive care and monitor closely for cytopenias and infections while administering lymphoma therapy",
+    "source_unit": "nccn:HIVLYM-3",
+    "G": [
+      "nccn:HIVLYM-3"
+    ],
+    "G_opt": [
+      "nccn:HIVLYM-B",
+      "nccn:disc-hiv-related-b-cell-lymphomas-p327-c5",
+      "nccn:disc-hiv-related-b-cell-lymphomas-p325-c3"
+    ],
+    "expected_conclusion": "应加强支持治疗，并密切监测血细胞减少和感染。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-112",
+    "annotator": "",
+    "question": "HIV感染者接受一线抗肿瘤治疗时，应避免使用哪些抗病毒药物？",
+    "source_sentence": "In general, avoidance of zidovudine, cobicistat, and ritonavir is strongly recommended.",
+    "source_unit": "nccn:HIVLYM-3",
+    "G": [
+      "nccn:HIVLYM-3"
+    ],
+    "G_opt": [
+      "nccn:HIVLYM-4"
+    ],
+    "expected_conclusion": "应避免使用齐多夫定、考比司他和利托那韦。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-113",
+    "annotator": "",
+    "question": "HIV阳性患者诊断为HHV8阳性DLBCL、NOS或原发性渗出性淋巴瘤（PEL）时，一线治疗方案如何选择？",
+    "source_sentence": "DLBCL, HHV8-POSITIVE DLBCL, NOS, PEL - FIRST-LINE THERAPYb\n• If CD20-, rituximab is not indicated\nPreferred\n• EPOCH with dose adjustment (HIVLYM-B) + Rituximab",
+    "source_unit": "nccn:HIVLYM-A 1 OF 2",
+    "G": [
+      [
+        "nccn:HIVLYM-A 1 OF 2",
+        "nccn:HIVLYM-B"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-hiv-related-b-cell-lymphomas-p328-c6",
+      "nccn:HIVLYM-1",
+      "nccn:HIVLYM-4"
+    ],
+    "expected_conclusion": "首选EPOCH方案（依据HIVLYM-B研究进行剂量调整）联合利妥昔单抗；若CD20阴性，则不使用利妥昔单抗。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-114",
+    "annotator": "",
+    "question": "HIV相关淋巴瘤的一线治疗方案应参考什么？",
+    "source_sentence": "• First-line therapy - See Suggested Treatment Regimens (HIVLYM-A)e",
+    "source_unit": "nccn:HIVLYM-4",
+    "G": [
+      [
+        "nccn:HIVLYM-4",
+        "nccn:HIVLYM-A 1 OF 2"
+      ]
+    ],
+    "G_opt": [
+      "nccn:HIVLYM-3"
+    ],
+    "expected_conclusion": "应参考‘Suggested Treatment Regimens (HIVLYM-A)’中的推荐方案。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-115",
+    "annotator": "",
+    "question": "Burkitt淋巴瘤患者一线治疗前是否必须进行肿瘤溶解综合征预防？",
+    "source_sentence": "Prophylaxis for tumor lysis syndrome is mandatory for BL",
+    "source_unit": "nccn:HIVLYM-A 1 OF 2",
+    "G": [
+      "nccn:HIVLYM-A 1 OF 2"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "Burkitt淋巴瘤患者肿瘤溶解综合征预防是强制性的。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-116",
+    "annotator": "",
+    "question": "HIV相关淋巴瘤诊断中，如何准确区分不同亚型？",
+    "source_sentence": "The major factor in the diagnostic evaluation of HIV-associated lymphoma is to distinguish between different subtypes. Adequate immunophenotyping using immunohistochemistry (IHC) with or without flow cytometry analysis is essential to establish the diagnosis of the subtype of HIV-associated lymphomas.",
+    "source_unit": "nccn:disc-hiv-related-b-cell-lymphomas-p324-c2",
+    "G": [
+      [
+        "nccn:disc-hiv-related-b-cell-lymphomas-p324-c2",
+        "nccn:HIVLYM-1"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "需通过免疫组化（IHC）联合或不联合流式细胞术进行充分的免疫表型分析。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-117",
+    "annotator": "",
+    "question": "对于初治患者，放疗可选择哪些射线类型？",
+    "source_sentence": "Treatment with photons, electrons, or protons is appropriate depending upon clinical scenario.",
+    "source_unit": "nccn:NHODG-D 1 OF 4",
+    "G": [
+      [
+        "nccn:NHODG-D 1 OF 4",
+        "nccn:NHODG-D 3 OF 4"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "初治患者放疗可选用光子、电子或质子射线，具体取决于临床情况。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-118",
+    "annotator": "",
+    "question": "对于18岁以上青少年及年轻成人（AYA）霍奇金淋巴瘤患者，一线治疗中是否推荐使用右雷佐生作为心脏保护剂？",
+    "source_sentence": "The use of dexrazoxane as a cardioprotectant in combination with first-line therapy is not recommended in AYA patients >18 y.",
+    "source_unit": "nccn:NHODG-B 4 OF 5",
+    "G": [
+      "nccn:NHODG-B 4 OF 5"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "不推荐在18岁以上AYA患者的一线治疗中联合使用右雷佐生作为心脏保护剂。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-119",
+    "annotator": "",
+    "question": "接受抗CD20单抗治疗的患者是否需筛查乙型肝炎病毒（HBV）感染？",
+    "source_sentence": "Hepatitis B virus (HBV): • Anti-CD20 mAb-based chemoimmunotherapy is associated with risk of HBV reactivation. Hepatitis B surface antigen (HBsAg) and hepatitis B core antibody (HBcAb) testing for all patients receiving anti-CD20 mAb therapy",
+    "source_unit": "nccn:NHODG-B 2 OF 5",
+    "G": [
+      "nccn:NHODG-B 2 OF 5"
+    ],
+    "G_opt": [
+      "nccn:disc-overview-p147-c6"
+    ],
+    "expected_conclusion": "所有接受抗CD20单抗治疗的患者均应检测乙肝表面抗原（HBsAg）和乙肝核心抗体（HBcAb）",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-120",
+    "annotator": "",
+    "question": "成熟淋巴oid肿瘤的国际共识分类（ICC）最新版发布于哪一年？",
+    "source_sentence": "The International Consensus Classification (ICC) of Mature Lymphoid Neoplasms (2022)",
+    "source_unit": "nccn:ST-3",
+    "G": [
+      [
+        "nccn:ST-3",
+        "nccn:ST-2",
+        "nccn:ST-1",
+        "nccn:ST-4"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "2022年。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-121",
+    "annotator": "",
+    "question": "原发性皮肤边缘区淋巴瘤（PCMZL）属于哪一类皮肤淋巴瘤？",
+    "source_sentence": "• Primary cutaneous marginal zone lymphoma (PCMZL)",
+    "source_unit": "nccn:NHODG-A 8 OF 8",
+    "G": [
+      "nccn:NHODG-A 8 OF 8"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "PCMZL是一种原发于皮肤的B细胞淋巴瘤，属于结外边缘区黏膜相关淋巴组织（MALT）型淋巴瘤。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-122",
+    "annotator": "",
+    "question": "成熟淋巴oid肿瘤的国际共识分类（ICC）最新版发布于哪一年？",
+    "source_sentence": "The International Consensus Classification (ICC) of Mature Lymphoid Neoplasms (2022)",
+    "source_unit": "nccn:ST-1",
+    "G": [
+      [
+        "nccn:ST-1",
+        "nccn:ST-2",
+        "nccn:ST-3",
+        "nccn:ST-4"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "2022年。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-123",
+    "annotator": "",
+    "question": "利妥昔单抗静脉给药未出现严重不良反应前，是否可转换为皮下注射给药？",
+    "source_sentence": "Switching to subcutaneous rituximab is not recommended until a full intravenous dose of rituximab is successfully administered without experiencing severe adverse reactions.",
+    "source_unit": "nccn:disc-overview-p150-c9",
+    "G": [
+      "nccn:disc-overview-p150-c9"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "在成功完成一次完整剂量静脉利妥昔单抗输注且未发生严重不良反应前，不推荐转换为皮下注射给药。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-124",
+    "annotator": "",
+    "question": "HIV感染者中最常见的B细胞淋巴瘤亚型有哪些？",
+    "source_sentence": "DLBCL, Burkitt lymphoma (BL), and primary central nervous system lymphoma (PCNSL) are the most common subtypes of B-cell lymphomas in people with HIV (PWH).",
+    "source_unit": "nccn:disc-overview-p141-c0",
+    "G": [
+      "nccn:disc-overview-p141-c0"
+    ],
+    "G_opt": [],
+    "expected_conclusion": "DLBCL、伯基特淋巴瘤（BL）和原发性中枢神经系统淋巴瘤（PCNSL）是HIV感染者中最常见的B细胞淋巴瘤亚型。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-125",
+    "annotator": "",
+    "question": "肿瘤溶解综合征（TLS）通常在化疗免疫治疗开始后多长时间内出现？",
+    "source_sentence": "Tumor lysis syndrome (TLS) is a potentially serious complication of anticancer therapy characterized by metabolic and electrolyte abnormalities caused by the disintegration of malignant cells by anticancer therapy and rapid release of intracellular contents into peripheral blood. It is usually observed within 12 to 72 hours after start of chemoimmunotherapy.",
+    "source_unit": "nccn:disc-overview-p146-c5",
+    "G": [
+      [
+        "nccn:disc-overview-p146-c5",
+        "nccn:NHODG-B 1 OF 5"
+      ]
+    ],
+    "G_opt": [],
+    "expected_conclusion": "通常在化疗免疫治疗开始后12至72小时内出现。",
+    "agree": "",
+    "notes": ""
+  },
+  {
+    "id": "P2-N3-126",
+    "annotator": "",
+    "question": "慢性乙肝患者治疗期间及治疗结束后，病毒载量应如何监测？",
+    "source_sentence": "During the treatment period, viral load should be monitored monthly with PCR and then every 3 months after completion of treatment.",
+    "source_unit": "nccn:disc-overview-p148-c7",
+    "G": [
+      [
+        "nccn:disc-overview-p148-c7",
+        "nccn:disc-overview-p149-c8"
+      ]
+    ],
+    "G_opt": [
+      "nccn:disc-overview-p147-c6"
+    ],
+    "expected_conclusion": "治疗期间每月用PCR检测病毒载量，治疗结束后每3个月检测一次。",
+    "agree": "",
+    "notes": ""
+  }
+]

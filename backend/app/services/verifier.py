@@ -17,7 +17,14 @@ def verify_answer(
     hits: List[RetrievalHit],
     figures: Optional[Sequence[FigureReference]] = None,
     answer_kind: str = "guideline",
+    literature_appendix: str = "",
 ) -> Dict[str, object]:
+    # Only exclude the exact appendix supplied by the system, never a section
+    # identified by model-generated headings. Guideline checks still apply to
+    # the entire generated main answer.
+    appendix_text = literature_appendix.strip()
+    if appendix_text and answer.rstrip().endswith(appendix_text):
+        answer = answer.rstrip()[:-len(appendix_text)].rstrip()
     figures = list(figures or [])
     image_grounded = bool(figures)
     kind = (answer_kind or "guideline").strip().lower()
